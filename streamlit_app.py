@@ -3,7 +3,8 @@ from functions import *
 # --- Configuración de la Página de Streamlit ---
 st.set_page_config(layout="wide", page_title="Análisis Matrícula Universitaria Cuba", page_icon="🎓")
 
-df_main = cargar_datos_streamlit()
+df_main = cargar_datos_matricula() 
+df_ins = cargar_datos_instituciones()
 
 # Almacenar figuras cacheadas si es necesario para "Mirando al Futuro"
 # Esto se haría si las funciones son muy costosas y el df_main no cambia
@@ -19,9 +20,14 @@ else:
 
     # --- Navegación ---
     st.sidebar.header("🧭 Explorador del Análisis")
-    opciones_sidebar = ("Introducción", "1. Pulso Nacional", "2. Mosaico de Saberes",
-                        "3. Carreras Bajo la Lupa", "4. Perspectiva de Género", 
+    opciones_sidebar = ("Introducción",
+                        "1. Pulso Nacional", 
+                        "2. Mosaico de Saberes",
+                        "3. Carreras Bajo la Lupa", 
+                        "4. Perspectiva de Género", 
                         "5. Universidades: Fortalezas y Focos",
+                        "B1. Perfil Detallado de Carrera",
+                        "B2. Guía de Instituciones",
                         "6. Mirando al Mañana (Proyecciones)", 
                         "7. Áreas de Atención", "Conclusiones Finales")
     
@@ -65,7 +71,226 @@ else:
         ¡Que comience el descubrimiento!
         """)
         st.success("¡Tu viaje comienza aquí! Selecciona una sección en el menú lateral o usa el botón 'Siguiente'.")
-    
+
+    # --- SECCIÓN PARA EL PERFIL DETALLADO DE CARRERA ---
+    elif seccion_actual == "B1. Perfil Detallado de Carrera":
+        st.header("🔬 B1. Perfil Detallado de Carrera: Una Radiografía Completa")
+        st.markdown("""
+        Sumérgete en los detalles de la carrera que elijas. Descubre su evolución histórica de matrícula,
+        incluyendo la composición por género, su tasa de crecimiento promedio en el período que definas,
+        y un panorama de las universidades que la imparten actualmente. ¡Una visión 360º a tu alcance!
+        """)
+
+        todas_carreras_unicas = sorted(df_main['carrera'].unique())
+        carrera_sel_b1 = st.selectbox(
+            "Selecciona una Carrera para analizar su perfil:", 
+            options=todas_carreras_unicas, 
+            index=todas_carreras_unicas.index("MEDICINA") if "MEDICINA" in todas_carreras_unicas else 0,
+            key="sel_carrera_b1_perfil_final"
+        )
+
+        if carrera_sel_b1:
+            st.markdown("---")
+            
+            with st.spinner(f"Generando perfil para {carrera_sel_b1}..."):
+                # Llamada a la función de análisis (ya no pasa años CAGR)
+                fig_b1_evol_gen, df_evol_para_cagr_b1, df_unis_b1, datos_genero_ultimo_ano_b1, rama_b1, msg_b1 = analisis_perfil_carrera(
+                    df_main.copy(), 
+                    carrera_sel_b1
+                )
+            
+            st.subheader(f"Perfil Integral de: {carrera_sel_b1}")
+            st.markdown(f"**Rama de Ciencias:** {rama_b1}")
+            show_msg(msg_b1) # Mostrar cualquier mensaje de la función
+
+            # Mostrar el gráfico de evolución de matrícula y género primero
+            if fig_b1_evol_gen:
+                st.plotly_chart(fig_b1_evol_gen, use_container_width=True, key="fig_b1_perfil_evol_genero_final")
+            else:
+                st.warning("No se pudo generar el gráfico de evolución para esta carrera.")
+
+            st.markdown("---") # Separador antes de los controles CAGR y otros gráficos
+
+            # Controles para el CAGR (Slider) y muestra del CAGR
+            if df_evol_para_cagr_b1 is not None and not df_evol_para_cagr_b1.empty:
+                anos_disponibles_carrera_b1 = sorted(df_evol_para_cagr_b1['Ano_Inicio_Curso'].unique())
+                if len(anos_disponibles_carrera_b1) >= 2:
+                    st.markdown("**Crecimiento Promedio Anual (CAGR) para el Período Seleccionado:**")
+                    st.caption("El CAGR indica la tasa de crecimiento porcentual promedio por año. Ajusta el slider para explorar diferentes períodos.")
+                    
+                    selected_years_cagr = st.slider(
+                        "Selecciona el rango de años (inicio-fin) para el cálculo del CAGR:",
+                        min_value=int(anos_disponibles_carrera_b1[0]),
+                        max_value=int(anos_disponibles_carrera_b1[-1]),
+                        value=(int(anos_disponibles_carrera_b1[0]), int(anos_disponibles_carrera_b1[-1])),
+                        key=f"slider_cagr_dinamico_{carrera_sel_b1.replace(' ','_')}"
+                    )
+                    ano_inicio_cagr_sel = selected_years_cagr[0]
+                    ano_fin_cagr_sel = selected_years_cagr[1]
+
+                    if ano_inicio_cagr_sel < ano_fin_cagr_sel:
+                        cagr_b1_info = calcular_cagr_dinamico(df_evol_para_cagr_b1, ano_inicio_cagr_sel, ano_fin_cagr_sel)
+                        st.metric(
+                            label=f"CAGR {cagr_b1_info.get('periodo', '')}", 
+                            value=cagr_b1_info.get('valor', 'N/A')
+                        )
+                    else:
+                        st.warning("El año inicial del período CAGR debe ser menor que el año final para un cálculo válido.")
+                else:
+                    st.info(f"No hay suficientes años de datos para '{carrera_sel_b1}' para calcular un CAGR con período seleccionable.")
+            
+            st.markdown("---")
+            
+            # Métricas de Género y Gráfico de Pastel
+            col_b1_genero_metric, col_b1_genero_pie = st.columns([1,1]) # Dos columnas para esto
+
+            with col_b1_genero_metric:
+                st.markdown(f"**Composición de Género (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}):**")
+                if datos_genero_ultimo_ano_b1 and datos_genero_ultimo_ano_b1.get('Total', 0) > 0:
+                    porc_mujeres = (datos_genero_ultimo_ano_b1['Mujeres'] / datos_genero_ultimo_ano_b1['Total']) * 100
+                    st.metric(label="Total Mujeres", value=f"{int(datos_genero_ultimo_ano_b1['Mujeres']):,}")
+                    st.metric(label="Total Hombres", value=f"{int(datos_genero_ultimo_ano_b1['Hombres']):,}")
+                else:
+                    st.info("No hay datos de género disponibles para el último año.")
+
+            with col_b1_genero_pie:
+                if datos_genero_ultimo_ano_b1 and datos_genero_ultimo_ano_b1.get('Total', 0) > 0:
+                    df_pie_genero = pd.DataFrame({
+                        'Genero': ['Mujeres', 'Hombres'],
+                        'Cantidad': [datos_genero_ultimo_ano_b1['Mujeres'], datos_genero_ultimo_ano_b1['Hombres']]
+                    })
+                    fig_pie_genero = px.pie(df_pie_genero, values='Cantidad', names='Genero', 
+                                            title=f"Distribución de Género en {carrera_sel_b1}:",
+                                            color_discrete_map={'Mujeres':'lightpink', 'Hombres':'lightskyblue'})
+                    fig_pie_genero.update_traces(textposition='inside', textinfo='percent+label')
+                    st.plotly_chart(fig_pie_genero, use_container_width=True, key="pie_genero_b1")
+
+            st.markdown("---")
+            # Gráfico de Barras para Universidades
+            if df_unis_b1 is not None and not df_unis_b1.empty:
+                st.markdown(f"**Universidades que imparten '{carrera_sel_b1}' (Matrícula en último curso):**")
+                df_unis_b1_sorted = df_unis_b1.sort_values(by=f'Matrícula {df_main["Ano_Inicio_Curso"].max()}-{df_main["Ano_Inicio_Curso"].max()+1}', ascending=True)
+                fig_bar_unis = px.bar(
+                    df_unis_b1_sorted, 
+                    x=f'Matrícula {df_main["Ano_Inicio_Curso"].max()}-{df_main["Ano_Inicio_Curso"].max()+1}', 
+                    y='Universidad', 
+                    orientation='h',
+                    title=f"Distribución por Universidad: {carrera_sel_b1}",
+                    height=max(300, len(df_unis_b1_sorted) * 30) # Altura dinámica
+                )
+                fig_bar_unis.update_layout(yaxis_title="Universidad", xaxis_title="Matrícula")
+                st.plotly_chart(fig_bar_unis, use_container_width=True, key="fig_b1_bar_unis_final")
+            elif df_unis_b1 is not None and df_unis_b1.empty:
+                 st.info(f"Ninguna universidad registró matrícula para '{carrera_sel_b1}' en el último curso.")
+            else:
+                st.info("No se encontraron datos de universidades para esta carrera en el último año.")
+        else:
+            st.info("Por favor, selecciona una Carrera para continuar.")
+
+# --- SECCIÓN B2. GUÍA DE INSTITUCIONES ---
+    elif seccion_actual == "B2. Guía de Instituciones":
+        st.header("🗺️ B2. Guía de Instituciones: Explora la Oferta Académica por Localidad")
+        st.markdown("""
+        Descubre las instituciones de educación superior en Cuba, filtrando por provincia y municipio.
+        Para cada universidad, encontrarás información general, su composición de género, las ramas de ciencias
+        que ofrece y las carreras disponibles con su matrícula en el último año académico registrado.
+        """)
+
+        if df_ins.empty: # Usar df_ins como me indicaste
+            st.warning("Los datos de instituciones ('db_uni.parquet') no están disponibles o están vacíos. Esta sección no puede mostrarse.")
+        else:
+            st.markdown("#### Filtros de Búsqueda:")
+            col_filtro1, col_filtro2 = st.columns(2)
+            with col_filtro1:
+                provincias_disponibles_b2 = ["TODAS LAS PROVINCIAS"] + sorted(df_ins['provincia'].unique().tolist())
+                provincia_sel_b2 = st.selectbox(
+                   "Provincia:", options=provincias_disponibles_b2, key="sel_prov_b2_guia_cuerpo_final")
+            with col_filtro2:
+                municipios_disponibles_filtrados_b2 = ["TODOS LOS MUNICIPIOS"]
+                if provincia_sel_b2 != "TODAS LAS PROVINCIAS":
+                    municipios_de_provincia = sorted(df_ins[df_ins['provincia'] == provincia_sel_b2]['municipio'].unique().tolist())
+                    municipios_disponibles_filtrados_b2.extend(municipios_de_provincia)
+                municipio_sel_b2 = st.selectbox(
+                    "Municipio:", options=municipios_disponibles_filtrados_b2, key="sel_mun_b2_guia_cuerpo_final",
+                    disabled=(provincia_sel_b2 == "TODAS LAS PROVINCIAS" and len(municipios_disponibles_filtrados_b2) <=1)
+                )
+            st.markdown("---")
+
+            with st.spinner(f"Cargando guía de instituciones..."):
+                municipio_a_pasar = None
+                if provincia_sel_b2 != "TODAS LAS PROVINCIAS" and municipio_sel_b2 != "TODOS LOS MUNICIPIOS":
+                    municipio_a_pasar = municipio_sel_b2
+                
+                guia_data_b2, msg_b2 = analisis_guia_universidades(
+                    df_ins.copy(), df_main.copy(), 
+                    provincia_seleccionada=provincia_sel_b2,
+                    municipio_seleccionado=municipio_a_pasar )
+            show_msg(msg_b2)
+
+            if guia_data_b2:
+                st.markdown(f"**Mostrando {len(guia_data_b2)} institución(es) según los filtros aplicados:**")
+                for nombre_uni, data_uni in guia_data_b2.items():
+                    titulo_expander = f"🏛️ {nombre_uni} ({data_uni['sigla']})" # ... (título como antes) ...
+                    detalles_loc_exp = []
+                    if data_uni.get('municipio') and data_uni['municipio'] != 'N/D': detalles_loc_exp.append(data_uni['municipio'])
+                    if data_uni.get('provincia') and data_uni['provincia'] != 'N/D': detalles_loc_exp.append(data_uni['provincia'])
+                    if detalles_loc_exp: titulo_expander += f" | {', '.join(detalles_loc_exp)}"
+                    if data_uni.get('ano_creacion') and pd.notna(data_uni['ano_creacion']): 
+                        titulo_expander += f" (Fundada en {int(data_uni['ano_creacion'])})"
+                    
+                    with st.expander(titulo_expander):
+                        # --- Columnas para información básica y gráfico de pastel de género ---
+                        col_info_basica, col_genero_pastel_uni = st.columns([2,1]) # Dar más espacio a la info básica
+
+                        with col_info_basica:
+                            st.markdown(f"**Organismo:** `{data_uni.get('organismo', 'N/D')}`")
+                            st.markdown(f"**Dirección:** *{data_uni.get('direccion', 'N/D')}*")
+                            st.markdown(f"**Modalidad Principal:** `{data_uni.get('modalidad_estudio', 'N/D')}`")
+                        
+                        with col_genero_pastel_uni:
+                            datos_genero = data_uni.get("datos_genero_uni")
+                            if datos_genero and datos_genero.get('Total', 0) > 0:
+                                df_pie_genero_uni = pd.DataFrame({
+                                    'Género': ['Mujeres', 'Hombres'],
+                                    'Cantidad': [datos_genero['Mujeres'], datos_genero['Hombres']]
+                                })
+                                fig_pie_genero_uni = px.pie(df_pie_genero_uni, values='Cantidad', names='Género', 
+                                                        title=f"Género Total ({df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1})",
+                                                        color_discrete_map={'Mujeres':'orchid', 'Hombres':'royalblue'},
+                                                        height=250) # Gráfico compacto
+                                fig_pie_genero_uni.update_layout(margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
+                                fig_pie_genero_uni.update_traces(textposition='inside', textinfo='percent+label')
+                                st.plotly_chart(fig_pie_genero_uni, use_container_width=True)
+                            else:
+                                st.caption("Sin datos de género disponibles para el último año.")
+                        
+                        st.markdown("---")
+                        if data_uni["ramas_ofertadas"]:
+                            st.markdown("**Oferta Académica (Ramas y Carreras con matrícula en último año):**")
+                            for rama_info in data_uni["ramas_ofertadas"]:
+                                with st.container(): # Contenedor para cada rama
+                                    st.markdown(f"##### <span style='color: #1E90FF;'>►</span> {rama_info['nombre_rama']}", unsafe_allow_html=True)
+                                    if rama_info["carreras"]:
+                                        df_carreras_rama = pd.DataFrame(rama_info["carreras"])
+                                        df_carreras_rama.rename(columns={
+                                            'nombre_carrera': 'Carrera',
+                                            'matricula_ultimo_ano': 'Matrícula' # Más corto
+                                        }, inplace=True)
+                                        st.dataframe(df_carreras_rama.set_index('Carrera'))
+                                    else:
+                                        st.caption("  ↳ *Esta rama está indicada como ofertada, pero no se encontraron carreras con matrícula en el último año.*")
+                                    #st.markdown("---")
+                        else:
+                            st.info("Esta institución no tiene ramas de ciencias con oferta activa o carreras con matrícula reportada...")
+            # ... (resto del manejo de errores como antes) ...
+            elif provincia_sel_b2 and provincia_sel_b2 != "TODAS LAS PROVINCIAS":
+                st.info(f"No se encontraron instituciones para la provincia de '{provincia_sel_b2}'" + 
+                        (f" y el municipio de '{municipio_sel_b2}'" if municipio_sel_b2 and municipio_sel_b2 != "TODOS LOS MUNICIPIOS" else "") +
+                        " que cumplan los criterios.")
+            else:
+                st.info("No hay instituciones para mostrar con los filtros actuales, o no hay datos de instituciones cargados.")
+
+
     elif seccion_actual == "1. Pulso Nacional":
         st.header("🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?")
         st.markdown("""
@@ -312,7 +537,7 @@ else:
         *   Estos datos son una invitación a profundizar: ¿Cuáles son las causas de estos desbalances? ¿Cómo podemos inspirar a las nuevas generaciones a explorar todas las áreas del conocimiento sin sesgos de género?
         """)
 
-# --- SECCIÓN 5: EL ROL DE LAS UNIVERSIDADES (DENTRO DEL BLOQUE if/elif DE STREAMLIT) ---
+# --- SECCIÓN 5: EL ROL DE LAS UNIVERSIDADES ---
 
     elif seccion_actual == "5. Universidades: Fortalezas y Focos":
         st.header("🏛️ Universidades en Perspectiva: Descubriendo Fortalezas y Focos de Especialización")

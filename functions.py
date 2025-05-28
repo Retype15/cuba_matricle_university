@@ -6,23 +6,250 @@ from plotly.subplots import make_subplots
 from sklearn.linear_model import LinearRegression
 import streamlit as st
 
-# --- FUNCIÓN PARA CARGAR DATOS ---
+# --- FUNCIONES PARA CARGAR DATOS ---
 @st.cache_data
-def cargar_datos_streamlit():
+def cargar_datos_matricula(): # Antes cargar_datos_streamlit
     try:
-        df = pd.read_csv('db_long.csv')
+        df = pd.read_parquet('db.parquet') # Asumiendo que renombraste el de matrícula a db.parquet
+        # Asegurar tipos y columnas necesarias si vienen del parquet directamente
         if 'Ano_Inicio_Curso' in df.columns:
-            df['Ano_Inicio_Curso'] = pd.to_numeric(df['Ano_Inicio_Curso'], errors='coerce')
-            df.dropna(subset=['Ano_Inicio_Curso'], inplace=True)
-            df['Ano_Inicio_Curso'] = df['Ano_Inicio_Curso'].astype(int)
+            df['Ano_Inicio_Curso'] = pd.to_numeric(df['Ano_Inicio_Curso'], errors='coerce').fillna(0).astype(int)
         if 'Curso_Academico' not in df.columns and 'Ano_Inicio_Curso' in df.columns:
             df['Curso_Academico'] = df['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
+        # Asegurar que las columnas de matrícula son numéricas
+        for col in ['Matricula_Total', 'Matricula_Mujeres', 'Matricula_Hombres']:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         df.sort_values(by=['entidad', 'carrera', 'Ano_Inicio_Curso'], inplace=True)
         return df
     except FileNotFoundError:
+        return pd.DataFrame() # Retorna DataFrame vacío si no se encuentra
+
+@st.cache_data
+def cargar_datos_instituciones():
+    try:
+        df_uni = pd.read_parquet('db_uni.parquet')
+        # Aquí podrías añadir validaciones o transformaciones específicas si es necesario
+        # al cargar desde el parquet, aunque la idea es que ya esté limpio.
+        return df_uni
+    except FileNotFoundError:
         return pd.DataFrame()
+#-----------------------------------------------------
+
+def calcular_cagr_dinamico(df_evolucion_total_carrera, ano_inicio_cagr, ano_fin_cagr):
+    cagr_info = {"valor": "No calculable", "periodo": ""}
+    if df_evolucion_total_carrera is None or df_evolucion_total_carrera.empty:
+        return cagr_info
+        
+    anos_disponibles_carrera = sorted(df_evolucion_total_carrera['Ano_Inicio_Curso'].unique())
+    
+    if len(anos_disponibles_carrera) < 2 or ano_inicio_cagr is None or ano_fin_cagr is None:
+        return cagr_info # No hay suficientes datos o no se seleccionó período
+
+    if ano_inicio_cagr < ano_fin_cagr:
+        datos_cagr_periodo = df_evolucion_total_carrera[
+            (df_evolucion_total_carrera['Ano_Inicio_Curso'] >= ano_inicio_cagr) &
+            (df_evolucion_total_carrera['Ano_Inicio_Curso'] <= ano_fin_cagr)
+        ]
+        if len(datos_cagr_periodo['Ano_Inicio_Curso'].unique()) >= 2:
+            matricula_inicio_c = datos_cagr_periodo[datos_cagr_periodo['Ano_Inicio_Curso'] == datos_cagr_periodo['Ano_Inicio_Curso'].min()]['Matricula_Total'].sum()
+            matricula_fin_c = datos_cagr_periodo[datos_cagr_periodo['Ano_Inicio_Curso'] == datos_cagr_periodo['Ano_Inicio_Curso'].max()]['Matricula_Total'].sum()
+            if matricula_inicio_c > 0 and matricula_fin_c > 0:
+                n_anos_efectivos_cagr = datos_cagr_periodo['Ano_Inicio_Curso'].nunique()
+                if n_anos_efectivos_cagr > 1:
+                    cagr_val_c = ((matricula_fin_c / matricula_inicio_c)**(1 / (n_anos_efectivos_cagr - 1)) - 1) * 100
+                    cagr_info["valor"] = f"{cagr_val_c:.2f}%"
+                    cagr_info["periodo"] = f"({datos_cagr_periodo['Ano_Inicio_Curso'].min()}-{datos_cagr_periodo['Ano_Inicio_Curso'].max()})"
+                else: cagr_info["valor"] = "Período corto" # Muy corto
+            else: cagr_info["valor"] = "Matrícula cero"
+        else: cagr_info["valor"] = "Datos insuficientes" # Insuficientes en período
+    else: cagr_info["valor"] = "Rango inválido"
+    return cagr_info
 
 #------------------------------------------------------------------------------------------------
+@st.cache_data
+def analisis_guia_universidades(df_instituciones, df_matricula, provincia_seleccionada=None, municipio_seleccionado=None):
+    if df_instituciones.empty:
+        return {}, "Datos de instituciones no disponibles."
+
+    df_unis_filtradas = df_instituciones.copy()
+    if provincia_seleccionada and provincia_seleccionada != "TODAS LAS PROVINCIAS":
+        df_unis_filtradas = df_unis_filtradas[df_unis_filtradas['provincia'] == provincia_seleccionada]
+    if municipio_seleccionado and municipio_seleccionado != "TODOS LOS MUNICIPIOS":
+        df_unis_filtradas = df_unis_filtradas[df_unis_filtradas['municipio'] == municipio_seleccionado]
+    
+    if df_unis_filtradas.empty:
+        # ... (mensaje de error como antes) ...
+        msg = "No se encontraron instituciones"
+        if provincia_seleccionada and provincia_seleccionada != "TODAS LAS PROVINCIAS":
+            msg += f" en la provincia de '{provincia_seleccionada}'"
+        if municipio_seleccionado and municipio_seleccionado != "TODOS LOS MUNICIPIOS":
+            msg += f" en el municipio de '{municipio_seleccionado}'"
+        msg += "."
+        return {}, msg
+
+    ano_mas_reciente_matricula = 0
+    df_matricula_ultimo_ano_carreras = pd.DataFrame()
+    df_matricula_ultimo_ano_general_uni = pd.DataFrame() # Para totales de género por universidad
+
+    if not df_matricula.empty:
+        ano_mas_reciente_matricula = df_matricula['Ano_Inicio_Curso'].max()
+        
+        # Matrícula por carrera para la guía
+        df_matricula_ultimo_ano_carreras = df_matricula[df_matricula['Ano_Inicio_Curso'] == ano_mas_reciente_matricula]\
+                                    .groupby(['entidad', 'rama_ciencias', 'carrera'])['Matricula_Total'].sum().reset_index()
+        df_matricula_ultimo_ano_carreras = df_matricula_ultimo_ano_carreras[df_matricula_ultimo_ano_carreras['Matricula_Total'] > 0]
+
+        # Totales de género por universidad para el último año
+        df_matricula_ultimo_ano_general_uni = df_matricula[df_matricula['Ano_Inicio_Curso'] == ano_mas_reciente_matricula]\
+                                    .groupby('entidad').agg(
+                                        Total_General_Uni=('Matricula_Total', 'sum'),
+                                        Total_Mujeres_Uni=('Matricula_Mujeres', 'sum'),
+                                        Total_Hombres_Uni=('Matricula_Hombres', 'sum')
+                                    ).reset_index()
+
+    guia_data = {}
+    columnas_oferta_ramas = [col for col in df_instituciones.columns if col.startswith('oferta_')]
+    mapa_oferta_a_rama = { # Asegúrate que estas claves coincidan con tus columnas
+        'oferta_tecnicas': 'Ciencias Técnicas',
+        'oferta_naturales_mat': 'Ciencias Naturales y Matemáticas',
+        'oferta_agropecuarias': 'Ciencias Agropecuarias',
+        'oferta_economicas': 'Ciencias Económicas',
+        'oferta_sociales_humanisticas': 'Ciencias Sociales y Humanísticas',
+        'oferta_pedagogicas': 'Ciencias Pedagógicas',
+        'oferta_cultura_fisica_deporte': 'Ciencias de la Cultura Física y el Deporte',
+        'oferta_medicas': 'Ciencias Médicas',
+        'oferta_artes': 'Ciencias de las Artes',
+        'oferta_militares': 'Ciencias Militares'
+    }
+
+    df_unis_filtradas_sorted = df_unis_filtradas.sort_values(by='nombre_institucion')
+
+    for _, uni_row in df_unis_filtradas_sorted.iterrows():
+        sigla_uni = uni_row['sigla_institucion']
+        nombre_uni = uni_row['nombre_institucion']
+        
+        # Obtener datos de género para esta universidad
+        datos_genero_uni = df_matricula_ultimo_ano_general_uni[
+            df_matricula_ultimo_ano_general_uni['entidad'] == sigla_uni
+        ]
+        
+        info_basica_uni = {
+            "sigla": sigla_uni,
+            "ano_creacion": uni_row.get('ano_creacion', 'N/D'),
+            "organismo": uni_row.get('organismo', 'N/D'),
+            "direccion": uni_row.get('direccion_fisica', 'N/D'),
+            "provincia": uni_row.get('provincia', 'N/D'),
+            "municipio": uni_row.get('municipio', 'N/D'),
+            "modalidad_estudio": uni_row.get('modalidad_estudio', 'N/D'), # Nueva info
+            "datos_genero_uni": { # Para el gráfico de pastel
+                'Mujeres': datos_genero_uni['Total_Mujeres_Uni'].iloc[0] if not datos_genero_uni.empty else 0,
+                'Hombres': datos_genero_uni['Total_Hombres_Uni'].iloc[0] if not datos_genero_uni.empty else 0,
+                'Total': datos_genero_uni['Total_General_Uni'].iloc[0] if not datos_genero_uni.empty else 0,
+            },
+            "ramas_ofertadas": []
+        }
+        
+        ramas_activas_uni = []
+        for col_oferta in columnas_oferta_ramas:
+            if uni_row[col_oferta] == True:
+                nombre_rama_legible = mapa_oferta_a_rama.get(col_oferta, col_oferta.replace("oferta_", "").replace("_", " ").title())
+                carreras_info = []
+                if not df_matricula_ultimo_ano_carreras.empty:
+                    carreras_de_rama_uni = df_matricula_ultimo_ano_carreras[
+                        (df_matricula_ultimo_ano_carreras['entidad'] == sigla_uni) &
+                        (df_matricula_ultimo_ano_carreras['rama_ciencias'] == nombre_rama_legible)
+                    ].sort_values(by='Matricula_Total', ascending=False)
+                    for _, carrera_row in carreras_de_rama_uni.iterrows():
+                        carreras_info.append({
+                            "nombre_carrera": carrera_row['carrera'],
+                            "matricula_ultimo_ano": int(carrera_row['Matricula_Total'])
+                        })
+                if carreras_info or uni_row[col_oferta]:
+                    ramas_activas_uni.append({ "nombre_rama": nombre_rama_legible, "carreras": carreras_info })
+        
+        info_basica_uni["ramas_ofertadas"] = sorted(ramas_activas_uni, key=lambda x: x['nombre_rama'])
+        guia_data[nombre_uni] = info_basica_uni
+
+    return guia_data, (f"Guía generada para el curso {ano_mas_reciente_matricula}-{ano_mas_reciente_matricula+1}." 
+                       if ano_mas_reciente_matricula > 0 else 
+                       "Guía generada (datos de matrícula del último año no disponibles).")
+
+@st.cache_data
+def analisis_perfil_carrera(df, carrera_seleccionada): # Eliminados parámetros de CAGR
+    if df.empty:
+        return None, None, None, None, None, "DataFrame vacío." # fig_evol_gen, df_evol_para_cagr, df_unis, porc_mujeres, rama, msg
+    if not carrera_seleccionada:
+        return None, None, None, None, None, "Carrera no seleccionada."
+
+    df_carrera_completa = df[df['carrera'] == carrera_seleccionada]
+    if df_carrera_completa.empty:
+        return None, None, None, None, None, f"No hay datos para la carrera '{carrera_seleccionada}'."
+
+    rama_identificada = df_carrera_completa['rama_ciencias'].iloc[0] if not df_carrera_completa.empty else "No identificada"
+
+    # 1. Evolución histórica de matrícula (Total, Mujeres, Hombres) para ESA CARRERA
+    evolucion_genero_carrera = df_carrera_completa.groupby('Ano_Inicio_Curso').agg(
+        Matricula_Total=('Matricula_Total', 'sum'),
+        Matricula_Mujeres=('Matricula_Mujeres', 'sum'),
+        Matricula_Hombres=('Matricula_Hombres', 'sum')
+    ).reset_index()
+
+    if 'Curso_Academico' not in evolucion_genero_carrera.columns and not evolucion_genero_carrera.empty:
+        evolucion_genero_carrera['Curso_Academico'] = evolucion_genero_carrera['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
+    
+    fig_evolucion_genero = None
+    if not evolucion_genero_carrera.empty:
+        df_melted_evolucion = evolucion_genero_carrera.melt(
+            id_vars=['Ano_Inicio_Curso', 'Curso_Academico'], 
+            value_vars=['Matricula_Total', 'Matricula_Mujeres', 'Matricula_Hombres'],
+            var_name='Tipo_Matricula', 
+            value_name='Cantidad'
+        )
+        # Mapeo de nombres para la leyenda del gráfico de evolución
+        mapa_nombres_leyenda = {
+            'Matricula_Total': 'Total Estudiantes',
+            'Matricula_Mujeres': 'Mujeres',
+            'Matricula_Hombres': 'Hombres'
+        }
+        df_melted_evolucion['Tipo_Matricula_Display'] = df_melted_evolucion['Tipo_Matricula'].map(mapa_nombres_leyenda)
+        
+        fig_evolucion_genero = px.line(
+            df_melted_evolucion, 
+            x='Curso_Academico', 
+            y='Cantidad', 
+            color='Tipo_Matricula_Display', # Usar la columna con nombres amigables
+            title=f"Evolución Histórica Matrícula y Género: {carrera_seleccionada}",
+            markers=True,
+            labels={'Cantidad': 'Número de Estudiantes', 'Tipo_Matricula_Display': 'Desglose Matrícula'}
+        )
+        fig_evolucion_genero.update_layout(xaxis_title='Curso Académico', yaxis_title='Número de Estudiantes')
+
+    # 2. Devolver DataFrame para cálculo de CAGR (evolucion_genero_carrera contiene Matricula_Total y Ano_Inicio_Curso)
+    df_evolucion_para_cagr = evolucion_genero_carrera[['Ano_Inicio_Curso', 'Matricula_Total']].copy()
+
+    # 3. Universidades que la imparten y matrícula en último año
+    ano_mas_reciente_global = df['Ano_Inicio_Curso'].max()
+    df_unis_carrera = df_carrera_completa[df_carrera_completa['Ano_Inicio_Curso'] == ano_mas_reciente_global]\
+                        .groupby('entidad')['Matricula_Total'].sum().sort_values(ascending=False).reset_index()
+    df_unis_carrera = df_unis_carrera[df_unis_carrera['Matricula_Total'] > 0]
+    df_unis_carrera.rename(columns={'entidad':'Universidad', 'Matricula_Total':f'Matrícula {ano_mas_reciente_global}-{ano_mas_reciente_global+1}'}, inplace=True)
+
+    # 4. Datos de género para el último año (para gráfico de pastel y métrica)
+    # (Matricula_Mujeres y Matricula_Hombres ya están en evolucion_genero_carrera para el último año)
+    datos_genero_ultimo_ano = None
+    if not evolucion_genero_carrera.empty:
+        ultimo_ano_data = evolucion_genero_carrera[evolucion_genero_carrera['Ano_Inicio_Curso'] == ano_mas_reciente_global]
+        if not ultimo_ano_data.empty:
+            datos_genero_ultimo_ano = {
+                'Mujeres': ultimo_ano_data['Matricula_Mujeres'].iloc[0],
+                'Hombres': ultimo_ano_data['Matricula_Hombres'].iloc[0],
+                'Total': ultimo_ano_data['Matricula_Total'].iloc[0]
+            }
+    
+    return fig_evolucion_genero, df_evolucion_para_cagr, df_unis_carrera, datos_genero_ultimo_ano, rama_identificada, None
+
+
 # A1: Evolución Histórica y Proyectada de la Matrícula Nacional
 @st.cache_data
 def analisis_A1(df, incluir_proyeccion=False, showlegend=False):
