@@ -46,10 +46,9 @@ else:
 
     # --- Contenido por Sección ---
     
-    # Placeholder para mensajes de las funciones de análisis
-    def mostrar_mensaje(msg):
+    def show_msg(msg):
         if msg: st.caption(f"ℹ️ {msg}")
-
+    
     if seccion_actual == "Introducción":
         st.header("🎯 Bienvenidos al Corazón de la Educación Superior Cubana")
         st.markdown("""
@@ -58,7 +57,7 @@ else:
         explorando las corrientes que moldean la matrícula universitaria en Cuba. 
         
         Desde las tendencias generales hasta el detalle de cada carrera y universidad, desentrañaremos
-        historias ocultas en los números. ¿El objetivo? Proveer una brújula basada en evidencia para
+        las historias ocultas detrás de las distintas universidades del país. ¿El objetivo? Proveer una brújula basada en evidencia para
         la toma de decisiones estratégicas, fomentando un sistema de educación superior más fuerte,
         equitativo y alineado con el futuro de la nación.
 
@@ -66,7 +65,7 @@ else:
         ¡Que comience el descubrimiento!
         """)
         st.success("¡Tu viaje comienza aquí! Selecciona una sección en el menú lateral o usa el botón 'Siguiente'.")
-
+    
     elif seccion_actual == "1. Pulso Nacional":
         st.header("🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?")
         st.markdown("""
@@ -110,10 +109,11 @@ else:
         st.header("📚 Un Mosaico de Saberes: ¿Hacia Dónde se Inclinan los Futuros Profesionales?")
         st.markdown("""
         La universidad es un vasto jardín donde florecen diversas disciplinas. Cada rama del conocimiento,
-        desde las Ciencias Médicas hasta las Artes, representa un camino único de formación y contribución
+        desde las Ciencias Médicas o Matemáticas hasta las Artes, representa un camino único de formación y contribución
         a la sociedad. En esta sección, desglosamos la matrícula total para ver cómo se distribuyen
-        los estudiantes entre estas grandes áreas. ¿Hay protagonistas claros? ¿Cómo ha danzado el interés
-        estudiantil a lo largo de la última década?
+        los estudiantes entre estas grandes áreas, con el objetivo de responder preguntascomo:
+        - ¿Hay protagonistas claros?
+        - ¿Cómo ha danzado el interés estudiantil a lo largo de la última década?
         """)
         
         # Llamamos a la función de análisis A2, solicitando solo la evolución histórica
@@ -396,7 +396,7 @@ else:
         *   **Colaboración Interinstitucional:** Conocer las fortalezas de cada una puede fomentar sinergias, programas conjuntos y movilidad estudiantil y profesoral.
         """)
 
-# --- SECCIÓN 6: MIRANDO AL MAÑANA (PROYECCIONES) (DENTRO DEL BLOQUE if/elif DE STREAMLIT) ---
+# --- SECCIÓN 6: MIRANDO AL MAÑANA (PROYECCIONES) ---
 
     elif seccion_actual == "6. Mirando al Mañana (Proyecciones)":
         st.header("🔭 Mirando al Mañana: ¿Qué Podríamos Esperar? (Proyecciones)")
@@ -427,7 +427,7 @@ else:
             *   Hacia **2026-2027**, esta cifra podría situarse cerca de los **185,000-190,000 estudiantes**.
             *   **Reflexión:** Si esta tendencia se materializa, ¿qué implicaciones tendría para la capacidad instalada, la asignación de recursos y las estrategias de captación a nivel nacional?
             """)
-            if msg_a1_proy: st.caption(f"ℹ️ Detalles del modelo: {msg_a1_proy}")
+            show_msg(msg_a1_proy)
         else:
             st.warning(msg_a1_proy if msg_a1_proy else "No se pudo generar la proyección nacional.")
         st.markdown("---")
@@ -446,7 +446,7 @@ else:
             *   **Ramas Menores:** Aquellas con menor volumen (Agropecuarias, Cultura Física, Naturales, Artes) probablemente mantendrán matrículas comparativamente bajas, con proyecciones que siguen sus tendencias recientes, algunas de ellas también a la baja.
             *   **Consideración Clave:** La suma de estas proyecciones individuales por rama debería aproximarse a la proyección nacional total, pero pequeñas discrepancias pueden surgir debido a que cada modelo se ajusta independientemente.
             """)
-            if msg_a2_proy: st.caption(f"ℹ️ {msg_a2_proy}")
+            show_msg(msg_a2_proy)
         else:
             st.warning(msg_a2_proy if msg_a2_proy else "No se pudo generar la proyección por ramas.")
         st.markdown("---")
@@ -497,7 +497,7 @@ else:
         *   Fomentar un diálogo informado sobre el **futuro de la oferta académica** en Cuba.
         """)
 
-# --- SECCIÓN 7: ÁREAS DE ATENCIÓN (DENTRO DEL BLOQUE if/elif DE STREAMLIT) ---
+# --- SECCIÓN 7: ÁREAS DE ATENCIÓN ---
 
     elif seccion_actual == "7. Áreas de Atención":
         st.header("💡 Áreas de Atención: Identificando Desafíos y Oportunidades Específicas")
@@ -582,13 +582,13 @@ else:
         del país y asegurar la vitalidad y pertinencia de la oferta académica universitaria.
         """)
 
-# --- SECCIÓN DE CONCLUSIONES FINALES (DENTRO DEL BLOQUE if/elif DE STREAMLIT) ---
+# --- SECCIÓN DE CONCLUSIONES FINALES ---
 
     elif seccion_actual == "Conclusiones Finales":
         st.header("🏁 Conclusiones y Horizontes Futuros: Forjando la Universidad del Mañana")
         st.markdown("""
-        Hemos viajado a través de una década de datos, explorando el vibrante y complejo ecosistema
-        de la educación superior en Cuba. Donde cada gráfico nos ha contado
+        Hemos viajado a través de una década de datos, explorando el complejo ecosistema
+        de la educación superior en Cuba. Donde hemos visualizado
         una parte de una historia más grande: la historia de miles de aspiraciones, de esfuerzos institucionales
         y de la incesante búsqueda del conocimiento que define a nuestra nación.
 
@@ -600,7 +600,7 @@ else:
         )
         st.markdown("---")
 
-        st.subheader("🌟 Destellos del Viaje: Principales Hallazgos que Resuenan")
+        st.subheader("🌟 Destellos del Viaje: Principales Hallazgos en este Recorrido")
         st.markdown("""
         Al mirar atrás en nuestro análisis, emergen varios faros que guían nuestra comprensión:
 
@@ -650,13 +650,13 @@ else:
         st.header("✨ Un Legado Continuo, Un Futuro Brillante")
         st.markdown("""
         El análisis de estos datos no es meramente un ejercicio académico; es un acto de responsabilidad
-        y un compromiso con el futuro. La Universidad Cubana, con su rica historia y su papel trascendental
+        y un compromiso con el futuro. Las Universidades Cubanas, cada una con su rica historia y su papel trascendental
         en la sociedad, tiene ante sí el desafío y la oportunidad de seguir evolucionando, adaptándose
         e innovando.
-
-        Que la luz que emana de estos datos nos inspire a todos a trabajar juntos por una educación
+        
+        Esperamos que estos datos los inspire a todos a trabajar juntos por una educación
         superior que no solo responda a las necesidades del presente, sino que activamente modele
-        un mañana más próspero, justo y lleno de conocimiento para Cuba.
+        un mañana más próspero, justo y lleno de conocimiento para todos los jóvenes Cubanos.
         """)
         st.balloons()
 
@@ -667,6 +667,11 @@ else:
         if st.session_state.current_section_index > 0:
             if st.button("⬅️ Sección Anterior", key="btn_anterior"):
                 st.session_state.current_section_index -= 1
+                st.rerun()
+    with col_nav_2:
+        if st.session_state.current_section_index > 0:
+            if st.button("🔼 Volver al Inicio", key="btn_restart"):
+                st.session_state.current_section_index = 0
                 st.rerun()
     
     with col_nav_3:

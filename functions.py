@@ -25,7 +25,7 @@ def cargar_datos_streamlit():
 #------------------------------------------------------------------------------------------------
 # A1: Evolución Histórica y Proyectada de la Matrícula Nacional
 @st.cache_data
-def analisis_A1(df, incluir_proyeccion=False):
+def analisis_A1(df, incluir_proyeccion=False, showlegend=False):
     if df.empty:
         return None, "DataFrame vacío."
     
@@ -75,20 +75,14 @@ def analisis_A1(df, incluir_proyeccion=False):
                   markers=True, 
                   labels={'Matricula_Total': 'Matrícula Total Nacional', 'Tipo': 'Dato'},
                   title=f'Matrícula Nacional Total: {titulo_info}')
-    fig.update_layout(xaxis_title='Curso Académico', yaxis_title='Matrícula Total')
+    fig.update_layout(xaxis_title='Curso Académico', yaxis_title='Matrícula Total',showlegend=showlegend)
     
     if incluir_proyeccion and len(nacional_evolucion_completa) >= 2:
-        # x=8 es el índice de la categoría '2024-2025' si hay 9 puntos históricos (0 a 8)
-        # Este índice puede cambiar. Una forma más robusta sería:
-        # cursos_unicos = df_para_graficar['Curso_Academico'].unique()
-        # if ultimo_curso_historico_str in cursos_unicos:
-        #   x_vline = ultimo_curso_historico_str
-        # else: x_vline = 8 # fallback
         x_vline_pos = len(nacional_evolucion_completa) -1 # El índice del último punto histórico
         fig.add_vline(x=x_vline_pos, line_width=2, line_dash="dot", line_color="purple",
                       annotation_text="Inicio Proyección", annotation_position="top right",
                       annotation_font_size=10, annotation_font_color="grey")
-    return fig, None # No hay mensaje específico de error aquí si todo va bien
+    return fig, None
 
 # A2: Distribución y Evolución de la Matrícula por Rama de Ciencias
 @st.cache_data
@@ -164,14 +158,10 @@ def analisis_A2(df, incluir_proyeccion=False):
                           yaxis_title='Matrícula en Rama de Ciencias', legend_title_text='Rama de Ciencias')
     
     if incluir_proyeccion and proyeccion_realizada_alguna_rama and not rama_evolucion_historica.empty:
-        ultimo_ano_hist_global_num = rama_evolucion_historica['Ano_Inicio_Curso'].max()
-        punto_transicion_x_str_global = f"{ultimo_ano_hist_global_num}-{ultimo_ano_hist_global_num+1}"
-        fig_abs.add_vline(x=punto_transicion_x_str_global, line_width=2, line_dash="dot", line_color="grey")
-        if max_y_value_for_annotation > 0:
-            fig_abs.add_annotation(
-                x=punto_transicion_x_str_global, y=max_y_value_for_annotation * 1.05, 
-                xref="x", yref="y", text="Inicio Proyección", showarrow=False,
-                font=dict(size=10, color="dimgray"), bgcolor="rgba(255,255,255,0.7)", borderpad=2, xanchor='left')
+        x_vline_pos = rama_evolucion_historica['Ano_Inicio_Curso'].max()-rama_evolucion_historica['Ano_Inicio_Curso'].min() -1
+        fig_abs.add_vline(x=x_vline_pos, line_width=2, line_dash="dot", line_color="grey",
+                          annotation_text="Inicio Proyección", annotation_position="top right",
+                          annotation_font_size=10, annotation_font_color="grey")
 
     # Gráfico Porcentual (siempre histórico)
     fig_pct = None
@@ -417,7 +407,7 @@ def analisis_A7(df, carreras_seleccionadas=None): # Nuevo parámetro
         minn = df_historico_general['Ano_Inicio_Curso'].min()
         punto_transicion_x_str_global = maxx-minn-1
         fig.add_vline(x=punto_transicion_x_str_global, line_width=2, line_dash="dot", line_color="grey",
-                      annotation_text="Inicio Proyección", annotation_position="top left",
+                      annotation_text="Inicio Proyección", annotation_position="top right",
                       annotation_font_size=10, annotation_font_color="grey")
                       
     return fig, f"{info_seleccion} Métodos: {'; '.join(msg_detalle_proy)}."
