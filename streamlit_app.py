@@ -79,7 +79,8 @@ else:
         """)
         
         # Llamamos a la función de análisis A1, solicitando solo la evolución histórica
-        fig_a1, msg_a1 = analisis_A1( df_main, incluir_proyeccion=False) 
+        with st.spinner("Construyendo la gráfica A2, por favor espere...", show_time=True):
+            fig_a1, msg_a1 = analisis_A1( df_main, incluir_proyeccion=False) 
         
         if fig_a1:
             st.plotly_chart(fig_a1, use_container_width=True, key="fig_a1_pulso_nacional")
@@ -117,7 +118,8 @@ else:
         """)
         
         # Llamamos a la función de análisis A2, solicitando solo la evolución histórica
-        fig_a2_abs, fig_a2_pct, msg_a2 = analisis_A2( df_main, incluir_proyeccion=False) 
+        with st.spinner("Construyendo la gráfica A2, uno de los trabajadores se clavó por accidente una espada en la rodilla...", show_time=True):
+            fig_a2_abs, fig_a2_pct, msg_a2 = analisis_A2( df_main, incluir_proyeccion=False) 
         
         if fig_a2_abs:
             st.subheader("La Fuerza de Cada Rama: Evolución Histórica de la Matrícula")
@@ -179,8 +181,8 @@ else:
         ({df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}). A la derecha, vemos la evolución histórica de la matrícula
         para las 10 carreras que actualmente se encuentran en la cima de este ranking.
         """)
-
-        fig_a3_evolucion, df_ranking_completo_a3, _, msg_a3 = analisis_A3( df_main)
+        with st.spinner("Construyendo la gráfica A3, nos esforzamos para que reciba su gráfica cuanto antes...", show_time=True):
+            fig_a3_evolucion, df_ranking_completo_a3, _, msg_a3 = analisis_A3( df_main)
         # Nota: La función analisis_A3 fue modificada para retornar el ranking completo y la figura de evolución de las top N.
         
         col_ranking, col_evolucion_top = st.columns([1, 2]) # Ajusta la proporción si es necesario
@@ -215,8 +217,8 @@ else:
         Calcula el crecimiento (o decrecimiento) porcentual promedio de la matrícula de una carrera cada año,
         considerando todo el período analizado (2015-2024). Un CAGR alto sugiere una expansión rápida.
         """)
-        
-        fig_a6_top_cagr, fig_a6_bottom_cagr, msg_a6 = analisis_A6( df_main)
+        with st.spinner("Construyendo la gráfica A6, los trabajadores están en horario de chismes...", show_time=True):
+            fig_a6_top_cagr, fig_a6_bottom_cagr, msg_a6 = analisis_A6( df_main)
         
         col_cagr_top, col_cagr_bottom = st.columns(2)
 
@@ -265,8 +267,8 @@ else:
         tradicionalmente asociadas a un género que mantienen esos patrones, o estamos presenciando
         una transformación hacia una mayor paridad? Acompáñanos a descubrirlo.
         """)
-        
-        fig_a4_ramas, fig_a4_carreras, msg_a4 = analisis_A4( df_main)
+        with st.spinner("Construyendo la gráfica A4, nadie quiere trabajar...", show_time=True):
+            fig_a4_ramas, fig_a4_carreras, msg_a4 = analisis_A4( df_main)
         
         if fig_a4_ramas:
             st.subheader(f"Participación Femenina por Rama de Ciencias (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1})")
@@ -321,8 +323,8 @@ else:
         ¿Existen centros altamente especializados en ciertas ramas o carreras? ¿Y qué carreras
         son joyas raras, ofrecidas solo por unas pocas instituciones?
         """)
-        
-        fig_a5_treemap, df_carreras_unicas_a5, msg_a5 = analisis_A5( df_main)
+        with st.spinner("Construyendo la gráfica A5, aunque es horario de almuerzo...", show_time=True):
+            fig_a5_treemap, df_carreras_unicas_a5, msg_a5 = analisis_A5( df_main)
         
         if fig_a5_treemap:
             st.subheader(f"Mapa Interactivo de la Matrícula Universitaria (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1})")
@@ -378,7 +380,8 @@ else:
         )
         
         if carreras_seleccionadas_a9:
-            fig_a9, msg_a9 = analisis_A9( df_main, carreras_a_comparar=carreras_seleccionadas_a9)
+            with st.spinner("Construyendo la gráfica A2, los trabajadores se rebelan...", show_time=True):
+                fig_a9, msg_a9 = analisis_A9( df_main, carreras_a_comparar=carreras_seleccionadas_a9)
             
             if fig_a9:
                 st.plotly_chart(fig_a9, use_container_width=True, key="fig_a9_comparativa_unis")
@@ -417,7 +420,8 @@ else:
 
         # --- Proyección Nacional ---
         st.subheader(" Horizonte Nacional: Proyección de la Matrícula Total")
-        fig_a1_proy, msg_a1_proy = analisis_A1( df_main, incluir_proyeccion=True) 
+        with st.spinner("Construyendo la gráfica A1, por favor espere...", show_time=True):
+            fig_a1_proy, msg_a1_proy = analisis_A1( df_main, incluir_proyeccion=True) 
         if fig_a1_proy:
             st.plotly_chart(fig_a1_proy, use_container_width=True, key="fig_a1_futuro_proy_sec6") # Key única
             st.markdown("""
@@ -434,7 +438,8 @@ else:
 
         # --- Proyección por Rama de Ciencias ---
         st.subheader(" Mosaico de Saberes del Mañana: Proyección por Rama de Ciencias")
-        fig_a2_abs_proy, _, msg_a2_proy = analisis_A2( df_main, incluir_proyeccion=True) 
+        with st.spinner("Construyendo la gráfica A2, nos falta mano de obra...", show_time=True):
+            fig_a2_abs_proy, _, msg_a2_proy = analisis_A2( df_main, incluir_proyeccion=True) 
         if fig_a2_abs_proy:
             st.plotly_chart(fig_a2_abs_proy, use_container_width=True, key="fig_a2_abs_futuro_proy_sec6") # Key única
             st.markdown("""
@@ -472,7 +477,8 @@ else:
         )
 
         if carreras_seleccionadas_a7:
-            fig_a7_proy, msg_a7_proy = analisis_A7( df_main, carreras_seleccionadas=carreras_seleccionadas_a7)
+            with st.spinner("Construyendo la gráfica A7, por favor espere...", show_time=True):
+                fig_a7_proy, msg_a7_proy = analisis_A7( df_main, carreras_seleccionadas=carreras_seleccionadas_a7)
             if fig_a7_proy:
                 st.plotly_chart(fig_a7_proy, use_container_width=True, key="fig_a7_futuro_proy_dinamica") # Key única
                 st.markdown(f"""
@@ -508,8 +514,8 @@ else:
         de estudiantes. Identificar estos casos no es señalar problemas, sino descubrir oportunidades
         para una gestión académica más precisa, ágil y adaptada a las realidades cambiantes.
         """)
-        
-        resultados_a8, msg_a8 = analisis_A8(df_main)
+        with st.spinner("Construyendo la tabla A8, comenzaremos en cuánto lleguen los materiales...", show_time=True):
+            resultados_a8, msg_a8 = analisis_A8(df_main)
         
         if msg_a8: # Mostrar cualquier mensaje general de la función
              st.caption(f"ℹ️ {msg_a8}")
@@ -659,7 +665,6 @@ else:
         un mañana más próspero, justo y lleno de conocimiento para todos los jóvenes Cubanos.
         """)
         st.balloons()
-
     # --- Botones de Navegación Siguiente/Anterior ---
     col_nav_1, col_nav_2, col_nav_3 = st.columns([1,1,1])
 
