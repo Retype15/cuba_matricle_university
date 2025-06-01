@@ -7,30 +7,26 @@ from sklearn.linear_model import LinearRegression
 import streamlit as st
 
 # --- FUNCIONES PARA CARGAR DATOS ---
-@st.cache_data
-def cargar_datos_matricula(): # Antes cargar_datos_streamlit
+@st.cache_resource
+def cargar_datos_matricula():
     try:
-        df = pd.read_parquet('db.parquet') # Asumiendo que renombraste el de matrícula a db.parquet
-        # Asegurar tipos y columnas necesarias si vienen del parquet directamente
+        df = pd.read_parquet('db.parquet')
         if 'Ano_Inicio_Curso' in df.columns:
             df['Ano_Inicio_Curso'] = pd.to_numeric(df['Ano_Inicio_Curso'], errors='coerce').fillna(0).astype(int)
         if 'Curso_Academico' not in df.columns and 'Ano_Inicio_Curso' in df.columns:
             df['Curso_Academico'] = df['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
-        # Asegurar que las columnas de matrícula son numéricas
         for col in ['Matricula_Total', 'Matricula_Mujeres', 'Matricula_Hombres']:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         df.sort_values(by=['entidad', 'carrera', 'Ano_Inicio_Curso'], inplace=True)
         return df
     except FileNotFoundError:
-        return pd.DataFrame() # Retorna DataFrame vacío si no se encuentra
+        return pd.DataFrame()
 
 @st.cache_data
 def cargar_datos_instituciones():
     try:
         df_uni = pd.read_parquet('db_uni.parquet')
-        # Aquí podrías añadir validaciones o transformaciones específicas si es necesario
-        # al cargar desde el parquet, aunque la idea es que ya esté limpio.
         return df_uni
     except FileNotFoundError:
         return pd.DataFrame()

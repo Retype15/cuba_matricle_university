@@ -1,14 +1,11 @@
 from functions import *
+from streamlit_extended import HierarchicalSidebarNavigation
 
 # --- Configuración de la Página de Streamlit ---
 st.set_page_config(layout="wide", page_title="Análisis Matrícula Universitaria Cuba", page_icon="🎓")
 
 df_main = cargar_datos_matricula() 
 df_ins = cargar_datos_instituciones()
-
-# Almacenar figuras cacheadas si es necesario para "Mirando al Futuro"
-# Esto se haría si las funciones son muy costosas y el df_main no cambia
-# Por ahora, las llamaremos de nuevo.
 
 if df_main.empty:
     st.error("Error crítico: No se pudieron cargar los datos ('db_long.csv'). La aplicación no puede continuar.")
@@ -18,8 +15,8 @@ else:
     st.markdown("Un viaje a través de los datos (2015-2025) para iluminar el camino de la Educación Superior.")
     st.markdown("---")
 
-    # --- Navegación ---
-    st.sidebar.header("🧭 Explorador del Análisis")
+    # --- Navegación ---    
+    st.sidebar.header("🧭 Explorador")
     opciones_sidebar = ("Introducción",
                         "1. Pulso Nacional", 
                         "2. Mosaico de Saberes",
@@ -52,7 +49,7 @@ else:
 
     # --- Contenido por Sección ---
     
-    def show_msg(msg):
+    def info_msg(msg):
         if msg: st.caption(f"ℹ️ {msg}")
     
     if seccion_actual == "Introducción":
@@ -101,7 +98,7 @@ else:
             
             st.subheader(f"Perfil Integral de: {carrera_sel_b1}")
             st.markdown(f"**Rama de Ciencias:** {rama_b1}")
-            show_msg(msg_b1) # Mostrar cualquier mensaje de la función
+            info_msg(msg_b1) # Mostrar cualquier mensaje de la función
 
             # Mostrar el gráfico de evolución de matrícula y género primero
             if fig_b1_evol_gen:
@@ -196,7 +193,7 @@ else:
         que ofrece y las carreras disponibles con su matrícula en el último año académico registrado.
         """)
 
-        if df_ins.empty: # Usar df_ins como me indicaste
+        if df_ins.empty:
             st.warning("Los datos de instituciones ('db_uni.parquet') no están disponibles o están vacíos. Esta sección no puede mostrarse.")
         else:
             st.markdown("#### Filtros de Búsqueda:")
@@ -214,23 +211,34 @@ else:
                     "Municipio:", options=municipios_disponibles_filtrados_b2, key="sel_mun_b2_guia_cuerpo_final",
                     disabled=(provincia_sel_b2 == "TODAS LAS PROVINCIAS" and len(municipios_disponibles_filtrados_b2) <=1)
                 )
+                #Usar un cuadro para escribir parte del nombre a buscar:
+            pattern_sel_b2 = st.text_input(
+                        "Buscar por nombre o info de institución (opcional):",
+                        value="",
+                        autocomplete="on",
+                        key="sel_patron_b2",
+                        disabled=  len(municipios_disponibles_filtrados_b2) > 1 
+            )
             st.markdown("---")
 
-            with st.spinner(f"Cargando guía de instituciones..."):
+            with st.spinner(f"Cargando guía de instituciones... Obreros ocupados..."):
                 municipio_a_pasar = None
                 if provincia_sel_b2 != "TODAS LAS PROVINCIAS" and municipio_sel_b2 != "TODOS LOS MUNICIPIOS":
                     municipio_a_pasar = municipio_sel_b2
                 
                 guia_data_b2, msg_b2 = analisis_guia_universidades(
-                    df_ins.copy(), df_main.copy(), 
+                    df_ins, df_main, 
                     provincia_seleccionada=provincia_sel_b2,
-                    municipio_seleccionado=municipio_a_pasar )
-            show_msg(msg_b2)
+                    municipio_seleccionado=municipio_a_pasar)
+            info_msg(msg_b2)
 
             if guia_data_b2:
                 st.markdown(f"**Mostrando {len(guia_data_b2)} institución(es) según los filtros aplicados:**")
                 for nombre_uni, data_uni in guia_data_b2.items():
+
                     titulo_expander = f"🏛️ {nombre_uni} ({data_uni['sigla']})" # ... (título como antes) ...
+                    if pattern_sel_b2 and pattern_sel_b2.lower() not in titulo_expander.lower():
+                        continue
                     detalles_loc_exp = []
                     if data_uni.get('municipio') and data_uni['municipio'] != 'N/D': detalles_loc_exp.append(data_uni['municipio'])
                     if data_uni.get('provincia') and data_uni['provincia'] != 'N/D': detalles_loc_exp.append(data_uni['provincia'])
@@ -390,96 +398,157 @@ else:
         if msg_a2: # Si la función A2 retornó algún mensaje adicional
             st.caption(f"ℹ️ {msg_a2}")
 
+# --- SECCIÓN 3. CARRERAS BAJO LA LUPA (REFACTORIZADA CON SUBSECCIONES) ---
     elif seccion_actual == "3. Carreras Bajo la Lupa":
         st.header("🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo")
         st.markdown("""
         Tras explorar las grandes ramas del saber, es momento de enfocar nuestra lente en las unidades
-        fundamentales: las carreras universitarias. ¿Cuáles son las que capturan el mayor interés estudiantil?
-        ¿Cómo ha sido su evolución individual? Y, muy importante, ¿cuáles muestran un crecimiento
-        acelerado y cuáles parecen estar perdiendo impulso?
-        """)
-        
-        # --- Subsección: El Podio de las Carreras ---
-        st.subheader("🏆 El Podio de las Carreras: ¿Cuáles Lideran la Matrícula Actual?")
-        st.markdown(f"""
-        A la izquierda observamos el ranking de todas las carreras según su matrícula total en el curso más reciente
-        ({df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}). A la derecha, vemos la evolución histórica de la matrícula
-        para las 10 carreras que actualmente se encuentran en la cima de este ranking.
-        """)
-        with st.spinner("Construyendo la gráfica A3, nos esforzamos para que reciba su gráfica cuanto antes...", show_time=True):
-            fig_a3_evolucion, df_ranking_completo_a3, _, msg_a3 = analisis_A3( df_main)
-        # Nota: La función analisis_A3 fue modificada para retornar el ranking completo y la figura de evolución de las top N.
-        
-        col_ranking, col_evolucion_top = st.columns([1, 2]) # Ajusta la proporción si es necesario
-
-        with col_ranking:
-            if df_ranking_completo_a3 is not None and not df_ranking_completo_a3.empty:
-                st.dataframe(df_ranking_completo_a3, height=500) # Muestra el ranking completo
-            else:
-                st.info("No hay datos de ranking de carreras para mostrar.")
-        
-        with col_evolucion_top:
-            if fig_a3_evolucion:
-                st.plotly_chart(fig_a3_evolucion, use_container_width=True, key="fig_a3_lupa_evolucion")
-            else:
-                st.info("No se generó gráfico de evolución para las carreras top actuales.")
-        
-        if msg_a3: st.caption(f"ℹ️ {msg_a3}")
-
-        st.markdown("""
-        **Puntos Clave del Podio:**
-        *   **Liderazgo Indiscutible:** **Medicina** se posiciona firmemente como la carrera con la mayor matrícula (35,889 estudiantes), una constante que ya habíamos vislumbrado al analizar las ramas del saber.
-        *   **Fuerzas Significativas:** Le siguen **Cultura Física** (14,695) y **Educación Primaria** (12,867), demostrando una demanda considerable en estas áreas.
-        *   **Top 5 Robusto:** **Enfermería** (9,999) y **Contabilidad y Finanzas** (9,883) completan el top 5, ambas con una matrícula muy cercana a los 10,000 estudiantes.
-        *   **Evolución de las Líderes:** El gráfico de la derecha nos permite ver cómo estas carreras (y otras del top 10) han llegado a su posición actual. Observa cómo algunas han tenido un crecimiento más sostenido, mientras otras muestran picos y valles más pronunciados.
+        fundamentales: las carreras universitarias. Presentamos primero un panorama general de las más demandadas
+        y su dinamismo, y luego te invitamos a explorar herramientas interactivas para profundizar.
         """)
         st.markdown("---")
 
-        # --- Subsección: El Ritmo del Cambio (CAGR) ---
-        st.subheader("🚀 El Ritmo del Cambio: ¿Qué Carreras Despegan o Aterrizan?")
+        # --- Parte 1: Análisis General (Histórico) ---
+        st.subheader("🏆 El Podio Actual y la Evolución de las Líderes")
+        st.markdown(f"A la izquierda, el ranking de todas las carreras por matrícula en el curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}. A la derecha, la trayectoria histórica de las 10 más populares actualmente.")
+        
+        with st.spinner("Cargando ranking y evolución de carreras..."):
+            fig_a3_evolucion, df_ranking_completo_a3, _, msg_a3 = analisis_A3(df_main.copy())
+        
+        col_ranking_a3, col_evolucion_top_a3 = st.columns([1, 2])
+        with col_ranking_a3:
+            if df_ranking_completo_a3 is not None and not df_ranking_completo_a3.empty:
+                st.dataframe(df_ranking_completo_a3, height=500, key="df_ranking_a3_sub")
+            else:
+                st.info("No hay datos de ranking de carreras.")
+        with col_evolucion_top_a3:
+            if fig_a3_evolucion:
+                st.plotly_chart(fig_a3_evolucion, use_container_width=True, key="fig_a3_evolucion_sub")
+        info_msg(msg_a3)
+        # ... (Puedes añadir aquí tu texto de interpretación para el ranking y la evolución A3) ...
         st.markdown("""
-        La **Tasa de Crecimiento Anual Compuesto (CAGR)** nos ofrece una perspectiva del dinamismo.
-        Calcula el crecimiento (o decrecimiento) porcentual promedio de la matrícula de una carrera cada año,
-        considerando todo el período analizado (2015-2024). Un CAGR alto sugiere una expansión rápida.
+        **Puntos Clave del Podio:**
+        *   **Liderazgo Indiscutible:** **Medicina** se posiciona firmemente como la carrera con la mayor matrícula...
+        *   *(resto de tu interpretación de A3)*
         """)
-        with st.spinner("Construyendo la gráfica A6, los trabajadores están en horario de chismes...", show_time=True):
-            fig_a6_top_cagr, fig_a6_bottom_cagr, msg_a6 = analisis_A6( df_main)
-        
-        col_cagr_top, col_cagr_bottom = st.columns(2)
+        st.markdown("---")
 
-        with col_cagr_top:
+        st.subheader("🚀 El Ritmo del Cambio: Crecimiento Promedio Anual (CAGR)")
+        st.markdown("""
+        El CAGR (Tasa de Crecimiento Anual Compuesto) nos indica el crecimiento porcentual promedio
+        de la matrícula de una carrera cada año, durante todo el período 2015-2024.
+        """)
+        with st.spinner("Calculando tasas de crecimiento (CAGR)..."):
+            fig_a6_top_cagr, fig_a6_bottom_cagr, msg_a6 = analisis_A6(df_main.copy())
+        
+        col_cagr_top_a6, col_cagr_bottom_a6 = st.columns(2)
+        with col_cagr_top_a6:
             if fig_a6_top_cagr:
-                st.markdown("📈 **Top 15 Carreras con Mayor Crecimiento Promedio Anual**")
-                st.plotly_chart(fig_a6_top_cagr, use_container_width=True, key="fig_a6_top_lupa_cagr")
-                st.markdown("""
-                Estas carreras han experimentado la expansión más notable en su matrícula promedio anual.
-                *   **Sorprendente Despegue:** **Servicios Estomatológicos** lidera con un CAGR superior al 100%, lo que indica una duplicación (o más) de su matrícula promedio año tras año.
-                *   **Ingenierías en Auge:** Varias ingenierías como **Artística**, **Procesos Agroindustriales** e **Informática** muestran un crecimiento muy saludable.
-                *   **Educación con Impulso:** Ramas de la educación como **Preescolar**, **Agropecuaria** y **Primaria** también figuran con un CAGR positivo y significativo.
-                """)
-            else:
-                st.info("No se pudo generar el gráfico de carreras con mayor CAGR.")
-        
-        with col_cagr_bottom:
+                st.markdown("📈 **Top 15 Carreras con Mayor Crecimiento**")
+                st.plotly_chart(fig_a6_top_cagr, use_container_width=True, key="fig_a6_top_cagr_sub")
+            else: st.info("No se generó gráfico de mayor CAGR.")
+        with col_cagr_bottom_a6:
             if fig_a6_bottom_cagr:
-                st.markdown("📉 **Top 15 Carreras con Menor Crecimiento o Mayor Decrecimiento Promedio Anual**")
-                st.plotly_chart(fig_a6_bottom_cagr, use_container_width=True, key="fig_a6_bottom_lupa_cagr")
-                st.markdown("""
-                En el otro extremo, estas carreras han visto su matrícula promedio anual disminuir o crecer a un ritmo mucho menor.
-                *   **Ajustes Notables:** **Estudios Socioculturales** y **Estomatología** (no confundir con Servicios Estomatológicos) presentan los mayores decrecimientos promedio.
-                *   **Desafíos Diversos:** Carreras como **Ingeniería Agrícola**, **Artes Visuales**, **Matemática**, **Música** y varias **Ingenierías** (Hidráulica, Civil, Telecomunicaciones, Industrial) también aparecen en esta lista, sugiriendo una revisión de sus tendencias.
-                """)
-            else:
-                st.info("No se pudo generar el gráfico de carreras con menor CAGR.")
-
-        if msg_a6: st.caption(f"ℹ️ {msg_a6}")
-        
+                st.markdown("📉 **Top 15 Carreras con Menor Crecimiento / Mayor Decrecimiento**")
+                st.plotly_chart(fig_a6_bottom_cagr, use_container_width=True, key="fig_a6_bottom_cagr_sub")
+            else: st.info("No se generó gráfico de menor CAGR.")
+        info_msg(msg_a6)
+        # ... (Puedes añadir aquí tu texto de interpretación para los gráficos de CAGR) ...
         st.markdown("""
         **Reflexiones Estratégicas a partir de estos Ritmos:**
-        *   Un **alto CAGR** no siempre significa una matrícula total masiva (podría ser una carrera pequeña creciendo rápido), pero sí indica una **tendencia positiva fuerte** que merece atención, ya sea para fomentar o para asegurar recursos.
-        *   Un **CAGR bajo o negativo** en carreras importantes podría ser una señal para investigar las causas: ¿cambios en el mercado laboral, preferencias estudiantiles, oferta académica?
-        *   Es crucial cruzar esta información de CAGR con la matrícula absoluta (del ranking) para obtener una imagen completa.
+        *   Un **alto CAGR** no siempre significa una matrícula total masiva...
+        *   *(resto de tu interpretación de A6)*
         """)
+        st.markdown("---")
+        
+        # --- Parte 2: Subsecciones Interactivas con st.tabs ---
+        st.subheader("🔬 Explora a Fondo: Herramientas Interactivas")
+        
+        tab1_b1, tab2_a9 = st.tabs(["📊 Perfil Detallado de Carrera (B1)", "🆚 Comparar Universidades por Carrera (A9)"])
+
+        with tab1_b1:
+            st.markdown("""
+            **Selecciona una carrera para ver su perfil completo:** evolución de matrícula total y por género,
+            tasa de crecimiento (CAGR) para el período que elijas, y las universidades que la imparten.
+            """)
+            
+            todas_carreras_unicas_b1_sub = sorted(df_main['carrera'].unique())
+            carrera_sel_b1_sub = st.selectbox(
+                "Carrera a perfilar:", 
+                options=todas_carreras_unicas_b1_sub, 
+                index=todas_carreras_unicas_b1_sub.index("MEDICINA") if "MEDICINA" in todas_carreras_unicas_b1_sub else 0,
+                key="sel_carrera_b1_subseccion"
+            )
+
+            if carrera_sel_b1_sub:
+                anos_disp_carrera_b1_sub = sorted(df_main[df_main['carrera'] == carrera_sel_b1_sub]['Ano_Inicio_Curso'].unique())
+                ano_ini_cagr_b1_sub, ano_fin_cagr_b1_sub = None, None
+                if len(anos_disp_carrera_b1_sub) >= 2:
+                    st.markdown("**Período para CAGR:**")
+                    selected_years_cagr_b1_sub = st.slider(
+                        "Rango de años:",
+                        min_value=int(anos_disp_carrera_b1_sub[0]), max_value=int(anos_disp_carrera_b1_sub[-1]),
+                        value=(int(anos_disp_carrera_b1_sub[0]), int(anos_disp_carrera_b1_sub[-1])),
+                        key=f"slider_cagr_b1_sub_{carrera_sel_b1_sub.replace(' ','_')}"
+                    )
+                    ano_ini_cagr_b1_sub, ano_fin_cagr_b1_sub = selected_years_cagr_b1_sub
+                    if ano_ini_cagr_b1_sub >= ano_fin_cagr_b1_sub:
+                        st.warning("Año inicial debe ser menor al final para CAGR.")
+                        ano_ini_cagr_b1_sub, ano_fin_cagr_b1_sub = None, None # Invalida para no calcular
+                
+                with st.spinner(f"Generando perfil para {carrera_sel_b1_sub}..."):
+                    fig_evol_gen, df_evol_cagr, df_unis, datos_genero_ult, rama, msg = analisis_perfil_carrera(
+                        df_main.copy(), carrera_sel_b1_sub
+                    ) # analisis_perfil_carrera ya no toma años cagr, los calculamos después
+
+                st.markdown(f"##### {carrera_sel_b1_sub} (Rama: {rama})")
+                info_msg(msg)
+                if fig_evol_gen:
+                    st.plotly_chart(fig_evol_gen, use_container_width=True, key="fig_b1_evol_sub")
+                
+                # Calcular y mostrar CAGR dinámicamente
+                if ano_ini_cagr_b1_sub and ano_fin_cagr_b1_sub and df_evol_cagr is not None:
+                    cagr_info_b1_sub = calcular_cagr_dinamico(df_evol_cagr, ano_ini_cagr_b1_sub, ano_fin_cagr_b1_sub)
+                    st.metric(label=f"CAGR {cagr_info_b1_sub.get('periodo', '')}", value=cagr_info_b1_sub.get('valor', 'N/A'))
+
+                # Gráfico de pastel y tabla de universidades
+                col_pie_b1_sub, col_unis_b1_sub = st.columns(2)
+                with col_pie_b1_sub:
+                    if datos_genero_ult and datos_genero_ult.get('Total', 0) > 0:
+                        df_pie_g = pd.DataFrame({'Genero': ['Mujeres', 'Hombres'], 'Cantidad': [datos_genero_ult['Mujeres'], datos_genero_ult['Hombres']]})
+                        fig_pie_g = px.pie(df_pie_g, values='Cantidad', names='Genero', title="Género (Últ. Año)",
+                                           color_discrete_map={'Mujeres':'lightpink', 'Hombres':'lightskyblue'}, height=250)
+                        fig_pie_g.update_layout(margin=dict(t=30, b=0, l=0, r=0), showlegend=True)
+                        fig_pie_g.update_traces(textposition='inside', textinfo='percent')
+                        st.plotly_chart(fig_pie_g, use_container_width=True, key="pie_b1_sub")
+                with col_unis_b1_sub:
+                    if df_unis is not None and not df_unis.empty:
+                        st.markdown("**Universidades (Últ. Año):**")
+                        st.dataframe(df_unis, height=250, key="df_unis_b1_sub")
+
+        with tab2_a9:
+            st.markdown("""
+            **Compara la evolución de la matrícula entre diferentes universidades para carreras específicas.**
+            Selecciona hasta 3 carreras para ver sus trayectorias lado a lado, desglosadas por institución.
+            """)
+            todas_carreras_a9_sub = sorted(df_main['carrera'].unique())
+            default_carreras_a9_sub = []
+            if todas_carreras_a9_sub:
+                try: default_carreras_a9_sub = df_main.groupby('carrera')['Matricula_Total'].sum().nlargest(1).index.tolist()
+                except: default_carreras_a9_sub = todas_carreras_a9_sub[:1]
+
+            carreras_sel_a9_sub = st.multiselect(
+                "Carreras a comparar:", options=todas_carreras_a9_sub,
+                default=default_carreras_a9_sub, max_selections=3, key="sel_carreras_a9_subseccion"
+            )
+            if carreras_sel_a9_sub:
+                with st.spinner("Generando comparativa de universidades..."):
+                    fig_a9_sub, msg_a9_sub = analisis_A9(df_main.copy(), carreras_a_comparar=carreras_sel_a9_sub)
+                info_msg(msg_a9_sub)
+                if fig_a9_sub:
+                    st.plotly_chart(fig_a9_sub, use_container_width=True, key="fig_a9_sub")
+            else:
+                st.info("Selecciona al menos una carrera.")
 
 # --- SECCIÓN 4: PERSPECTIVA DE GÉNERO ---
 
@@ -656,7 +725,7 @@ else:
             *   Hacia **2026-2027**, esta cifra podría situarse cerca de los **185,000-190,000 estudiantes**.
             *   **Reflexión:** Si esta tendencia se materializa, ¿qué implicaciones tendría para la capacidad instalada, la asignación de recursos y las estrategias de captación a nivel nacional?
             """)
-            show_msg(msg_a1_proy)
+            info_msg(msg_a1_proy)
         else:
             st.warning(msg_a1_proy if msg_a1_proy else "No se pudo generar la proyección nacional.")
         st.markdown("---")
@@ -676,7 +745,7 @@ else:
             *   **Ramas Menores:** Aquellas con menor volumen (Agropecuarias, Cultura Física, Naturales, Artes) probablemente mantendrán matrículas comparativamente bajas, con proyecciones que siguen sus tendencias recientes, algunas de ellas también a la baja.
             *   **Consideración Clave:** La suma de estas proyecciones individuales por rama debería aproximarse a la proyección nacional total, pero pequeñas discrepancias pueden surgir debido a que cada modelo se ajusta independientemente.
             """)
-            show_msg(msg_a2_proy)
+            info_msg(msg_a2_proy)
         else:
             st.warning(msg_a2_proy if msg_a2_proy else "No se pudo generar la proyección por ramas.")
         st.markdown("---")
