@@ -167,6 +167,5 @@ db_long.csv
 db_uni_old.parquet
 test.ipynb
 tests.py
-data/
 .devcontainer/
 .vscode/

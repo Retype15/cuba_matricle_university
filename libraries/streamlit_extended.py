@@ -251,6 +251,7 @@ class HierarchicalSidebarNavigation:
             current_step_num = self._get_current_step_index()
         
         # Use 3 columns for alignment, middle one can be for step count or Home
+        st.markdown("---")
         col1, col_mid, col3 = st.columns([2,1,2]) # Give more space to prev/next buttons
 
         with col1: # Previous Buttoncurrent_main_section

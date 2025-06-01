@@ -8,9 +8,9 @@ import streamlit as st
 
 # --- FUNCIONES PARA CARGAR DATOS ---
 @st.cache_resource
-def cargar_datos_matricula():
+def cargar_datos_matricula(rute:str):
     try:
-        df = pd.read_parquet('db.parquet')
+        df = pd.read_parquet(rute)
         if 'Ano_Inicio_Curso' in df.columns:
             df['Ano_Inicio_Curso'] = pd.to_numeric(df['Ano_Inicio_Curso'], errors='coerce').fillna(0).astype(int)
         if 'Curso_Academico' not in df.columns and 'Ano_Inicio_Curso' in df.columns:
@@ -24,9 +24,9 @@ def cargar_datos_matricula():
         return pd.DataFrame()
 
 @st.cache_data
-def cargar_datos_instituciones():
+def cargar_datos_instituciones(rute:str):
     try:
-        df_uni = pd.read_parquet('db_uni.parquet')
+        df_uni = pd.read_parquet(rute)
         return df_uni
     except FileNotFoundError:
         return pd.DataFrame()
