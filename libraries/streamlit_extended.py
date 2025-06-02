@@ -257,7 +257,6 @@ class HierarchicalSidebarNavigation:
         with col1: # Previous Buttoncurrent_main_section
             if prev_main is not None:
                 btn_prev_text = f"{default_prev_prefix}{prev_text_static}"
-                print(btn_prev_text, prev_text_static)
                 if use_dynamic_names:
                     if prev_text_static == "⬅️ Previous Step":
                         btn_prev_text = ""
