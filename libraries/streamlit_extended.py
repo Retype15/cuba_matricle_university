@@ -213,8 +213,8 @@ class HierarchicalSidebarNavigation:
         return 0 # Should not happen if state is valid
 
     def create_navigation_buttons(self, 
-                                  prev_text_static="⬅️ Previous Step",
-                                  next_text_static="Next Step ➡️",
+                                  prev_text="⬅️ Previous Step",
+                                  next_text="Next Step ➡️",
                                   default_prev_prefix="⬅️ ", 
                                   default_next_prefix=" ➡️", 
                                   title_home="🔼 Home",
@@ -226,9 +226,9 @@ class HierarchicalSidebarNavigation:
         Buttons are hidden if navigation is not possible (e.g., "Previous" on the first step).
 
         Args:
-            prev_text_static (str, optional): Static text for the "Previous" button
+            prev_text (str, optional): Static text for the "Previous" button
                                                if use_dynamic_names is False. Defaults to "⬅️ Previous Step".
-            next_text_static (str, optional): Static text for the "Next" button
+            next_text (str, optional): Static text for the "Next" button
                                                if use_dynamic_names is False. Defaults to "Next Step ➡️".
             default_prev_prefix (str, optional): Prefix for dynamic "Previous" button label.
                                                   Defaults to "⬅️ ".
@@ -256,15 +256,15 @@ class HierarchicalSidebarNavigation:
 
         with col1: # Previous Buttoncurrent_main_section
             if prev_main is not None:
-                btn_prev_text = f"{default_prev_prefix}{prev_text_static}"
+                btn_prev_text = f"{default_prev_prefix}{prev_text}"
                 if use_dynamic_names:
-                    if prev_text_static == "⬅️ Previous Step":
+                    if prev_text == "⬅️ Previous Step":
                         btn_prev_text = ""
                     btn_prev_text += self._format_step_name(prev_main, prev_sub)
                 else:
-                    btn_prev_text = prev_text_static
+                    btn_prev_text = prev_text
                 
-                if st.button(btn_prev_text, key=f"{self.section_key}_btn_prev_dyn", help=f"{prev_text_static}{prev_main}/{prev_sub}" if prev_sub else f"{prev_text_static}{prev_main}"):
+                if st.button(btn_prev_text, key=f"{self.section_key}_btn_prev_dyn", help=f"{prev_text}{prev_main}/{prev_sub}" if prev_sub else f"{prev_text}{prev_main}"):
                     self.navigate_to(prev_main, prev_sub)
             else:
                 st.container() # Placeholder to maintain layout
@@ -286,13 +286,13 @@ class HierarchicalSidebarNavigation:
 
         with col3: # Next Button
             if next_main is not None:
-                btn_next_text = next_text_static 
+                btn_next_text = next_text 
                 if use_dynamic_names:
-                    if next_text_static == "Next Step ➡️":
+                    if next_text == "Next Step ➡️":
                         btn_next_text = ""
                     btn_next_text += f"{self._format_step_name(next_main, next_sub)}{default_next_prefix}"
                 
-                if st.button(btn_next_text, key=f"{self.section_key}_btn_next_dyn", help=f"{prev_text_static}{next_main}/{next_sub}" if next_sub else next_text_static+next_main):
+                if st.button(btn_next_text, key=f"{self.section_key}_btn_next_dyn", help=f"{prev_text}{next_main}/{next_sub}" if next_sub else next_text+next_main):
                     self.navigate_to(next_main, next_sub)
             else:
                 st.container()
@@ -384,7 +384,7 @@ if __name__ == "__main__":
     # Display navigation buttons
     st.markdown("---") # Visual separator before buttons
     navigator.create_navigation_buttons(
-        prev_text_static="Previous: ", # Example of static text
-        next_text_static="Next: ",
+        prev_text="Previous: ", # Example of static text
+        next_text="Next: ",
         #use_dynamic_names=True,
     )

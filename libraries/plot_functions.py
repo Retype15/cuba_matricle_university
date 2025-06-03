@@ -6,6 +6,29 @@ from plotly.subplots import make_subplots
 from sklearn.linear_model import LinearRegression
 import streamlit as st
 
+import pandas as pd
+from typing import Optional, List
+
+def category_order(df: pd.DataFrame, * , y_col: str, color_col: str, top_n: Optional[int] = None) -> List[str]:
+    """
+    Filtra y ordena las categorías por la suma de valores numéricos en orden descendente.
+
+    Parámetros:
+    - df (pd.DataFrame): DataFrame con los datos.
+    - y_col (str): Nombre de la columna con valores numéricos (ej. matrícula total).
+    - color_col (str): Nombre de la columna de categorías (ej. carreras).
+    - top_n (Optional[int]): Número máximo de categorías a incluir en el orden. Si es None, se incluirán todas.
+
+    Retorna:
+    - List[str]: Lista ordenada de categorías de mayor a menor según la suma de `y_col`.
+    """
+    orden_categorias = df.groupby(color_col)[y_col].sum().sort_values(ascending=False).index.tolist()
+    
+    if top_n is not None:
+        orden_categorias = orden_categorias[:top_n]
+    
+    return orden_categorias
+
 # --- FUNCIONES PARA CARGAR DATOS ---
 @st.cache_resource
 def cargar_datos_matricula(rute:str):
@@ -407,14 +430,14 @@ def analisis_A2(df, incluir_proyeccion=False):
 @st.cache_data
 def analisis_A3(df):
     if df.empty:
-        return None, None, None, "DataFrame vacío."
+        return None, None, "DataFrame vacío."
     
     ano_mas_reciente = df['Ano_Inicio_Curso'].max()
     curso_mas_reciente = f"{ano_mas_reciente}-{ano_mas_reciente+1}"
     carreras_demanda_reciente = df[df['Ano_Inicio_Curso'] == ano_mas_reciente].groupby('carrera')['Matricula_Total'].sum().sort_values(ascending=False)
     
     if carreras_demanda_reciente.empty:
-        return None, None, None, f"No hay datos de demanda de carreras para {curso_mas_reciente}."
+        return None, None, f"No hay datos de demanda de carreras para {curso_mas_reciente}."
 
     df_todas_carreras_ranking = carreras_demanda_reciente.reset_index()
     
@@ -427,12 +450,14 @@ def analisis_A3(df):
         evolucion_carreras = df[df['carrera'].isin(carreras_para_grafico)].groupby(['Ano_Inicio_Curso', 'carrera'])['Matricula_Total'].sum().reset_index()
         if not evolucion_carreras.empty:
             evolucion_carreras['Curso_Academico'] = evolucion_carreras['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
+            orden_carreras = category_order(df=evolucion_carreras, y_col='Matricula_Total',color_col='carrera')
             fig = px.line(evolucion_carreras, x='Curso_Academico', y='Matricula_Total', color='carrera',
                         title=f'Evolución Histórica de Matrícula (Top {top_n_grafico} Carreras Actuales)',
-                        markers=True, labels={'Matricula_Total': 'Matrícula Total'})
+                        markers=True, labels={'Matricula_Total': 'Matrícula Total'},
+                        category_orders={'carrera': orden_carreras})
             fig.update_layout(xaxis_title='Curso Académico', yaxis_title='Matrícula en Carrera')
     
-    return fig, df_todas_carreras_ranking, None, None # Fig, Df ranking, Df bottom (None por ahora), Msg (None)
+    return fig, df_todas_carreras_ranking, None
 
 # A4: Análisis de la Brecha de Género
 @st.cache_data
