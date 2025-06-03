@@ -59,7 +59,7 @@ Si deseas ejecutar la aplicación en tu propio entorno para desarrollo o pruebas
     ```
 
 4.  **Prepara el Archivo de Datos:**
-    Asegúrate de que el archivo de datos `db_long.csv` se encuentre en la raíz del directorio del proyecto.
+    Asegúrate de que el archivo de datos `db.parquet` y `db_uni.parquet` se encuentre en la carpeta *data* del directorio del proyecto.
 
 5.  **Ejecuta la Aplicación:**
     Utiliza el siguiente comando en tu terminal:
@@ -69,7 +69,7 @@ Si deseas ejecutar la aplicación en tu propio entorno para desarrollo o pruebas
     Streamlit iniciará un servidor local y la aplicación se abrirá en tu navegador (usualmente en `http://localhost:8501`).
 
 ## 📊 Datos
-La aplicación se basa en un conjunto de datos (`db_long.csv`) que detalla la matrícula en universidades cubanas por rama de ciencias, carrera, entidad (universidad) y género, para los cursos académicos desde 2015-2016 hasta 2024-2025.
+La aplicación se basa en un conjunto de datos proporcionados por el **Ministerio de Educación Superior** que detalla la matrícula en universidades cubanas por rama de ciencias, carrera, entidad (universidad) y género, para los cursos académicos desde 2015-2016 hasta 2024-2025, obviando el curso 2018-2019 por causas aún desconocidas.
 
 ## 🧑‍💻 Colaboradores del Proyecto
 
