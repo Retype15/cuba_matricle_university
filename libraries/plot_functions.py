@@ -270,64 +270,214 @@ def analisis_perfil_carrera(df, carrera_seleccionada): # Eliminados parámetros 
 
 
 # A1: Evolución Histórica y Proyectada de la Matrícula Nacional
-@st.cache_data
+#@st.cache_data
 def analisis_A1(df, incluir_proyeccion=False, showlegend=False):
     if df.empty:
         return None, "DataFrame vacío."
+
+    # 1. Agrupar datos históricos incluyendo género (asegurando que sean enteros)
+    datos_agrupados = df.groupby('Ano_Inicio_Curso').agg(
+        Matricula_Total=('Matricula_Total', 'sum'),
+        Matricula_Hombres=('Matricula_Hombres', 'sum'),
+        Matricula_Mujeres=('Matricula_Mujeres', 'sum')
+    ).reset_index()
     
-    nacional_evolucion_completa = df.groupby('Ano_Inicio_Curso')['Matricula_Total'].sum().reset_index()
-    if nacional_evolucion_completa.empty:
+    # Asegurar que los datos agrupados sean enteros
+    for col in ['Matricula_Total', 'Matricula_Hombres', 'Matricula_Mujeres']:
+        datos_agrupados[col] = datos_agrupados[col].astype(int)
+
+    if datos_agrupados.empty:
         return None, "No hay datos para el análisis A1."
-        
-    nacional_evolucion_completa['Tipo'] = 'Histórica'
-    nacional_evolucion_completa['Curso_Academico'] = nacional_evolucion_completa['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
+
+    datos_agrupados['Tipo'] = 'Histórica'
+    datos_agrupados['Curso_Academico'] = datos_agrupados['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
     
-    df_para_graficar = nacional_evolucion_completa.copy()
+    df_para_graficar_barras = datos_agrupados.copy() # Para las barras, se actualizará con proyección
     titulo_info = "Evolución Histórica"
+    
+    ultimo_ano_historico_num = -1
+    n_puntos_historicos = len(datos_agrupados)
+    df_proyeccion_para_linea = pd.DataFrame() # Para la línea de proyección
+
 
     if incluir_proyeccion:
         N_ULTIMOS_ANOS_REGRESION = 6
-        if len(nacional_evolucion_completa) < 2:
+        if n_puntos_historicos < 2:
             return None, "Datos históricos insuficientes para proyección."
         
-        if len(nacional_evolucion_completa) < N_ULTIMOS_ANOS_REGRESION:
-            datos_regresion = nacional_evolucion_completa
+        if n_puntos_historicos < N_ULTIMOS_ANOS_REGRESION:
+            datos_regresion = datos_agrupados
             msg_regresion = f"Usando todos los {len(datos_regresion)} años"
         else:
-            datos_regresion = nacional_evolucion_completa.tail(N_ULTIMOS_ANOS_REGRESION)
+            datos_regresion = datos_agrupados.tail(N_ULTIMOS_ANOS_REGRESION)
             msg_regresion = f"Basada en {N_ULTIMOS_ANOS_REGRESION} últimos años"
 
         X_reg = datos_regresion['Ano_Inicio_Curso'].values.reshape(-1, 1)
-        y_reg = datos_regresion['Matricula_Total'].values
-        model = LinearRegression().fit(X_reg, y_reg) 
+        y_reg_total = datos_regresion['Matricula_Total'].values
         
-        ultimo_ano_historico_num = nacional_evolucion_completa['Ano_Inicio_Curso'].max()
-        ultima_matricula_historica = nacional_evolucion_completa[nacional_evolucion_completa['Ano_Inicio_Curso'] == ultimo_ano_historico_num]['Matricula_Total'].iloc[0]
+        model_total = LinearRegression().fit(X_reg, y_reg_total)
+        
+        ultimo_ano_historico_num = datos_agrupados['Ano_Inicio_Curso'].max()
+        ultimo_dato_historico = datos_agrupados[datos_agrupados['Ano_Inicio_Curso'] == ultimo_ano_historico_num].iloc[0]
+        
+        ultima_matricula_total_historica = int(ultimo_dato_historico['Matricula_Total'])
+        ultima_matricula_hombres_historica = int(ultimo_dato_historico['Matricula_Hombres'])
+        ultima_matricula_mujeres_historica = int(ultimo_dato_historico['Matricula_Mujeres'])
+
+        ratio_hombres = 0.0
+        ratio_mujeres = 0.0
+        if ultima_matricula_total_historica > 0:
+            ratio_hombres = ultima_matricula_hombres_historica / ultima_matricula_total_historica
+            ratio_mujeres = ultima_matricula_mujeres_historica / ultima_matricula_total_historica
+            # Asegurar que la suma de ratios sea 1
+            if abs(ratio_hombres + ratio_mujeres - 1.0) > 1e-9: # Si no suman 1
+                 ratio_mujeres = 1.0 - ratio_hombres
+        else: # Si el último total histórico es 0, no hay base para ratios o se asume 50/50
+            ratio_hombres = 0.5 
+            ratio_mujeres = 0.5
+
         anos_proyeccion_puros = np.array([ultimo_ano_historico_num + 1, ultimo_ano_historico_num + 2])
-        matricula_proyectada_pura = model.predict(anos_proyeccion_puros.reshape(-1,1))
+        matricula_proyectada_total_pura = model_total.predict(anos_proyeccion_puros.reshape(-1,1)).round(0).astype(int).clip(min=0)
          
-        df_proyeccion_graf = pd.DataFrame({
+        df_proyeccion_para_linea = pd.DataFrame({ # También usado para las barras proyectadas
             'Ano_Inicio_Curso': np.concatenate(([ultimo_ano_historico_num], anos_proyeccion_puros)),
-            'Matricula_Total': np.concatenate(([ultima_matricula_historica], matricula_proyectada_pura.round(0).clip(min=0))),
-            'Tipo': 'Proyectada'
+            'Matricula_Total': np.concatenate(([ultima_matricula_total_historica], matricula_proyectada_total_pura)).astype(int),
+            'Tipo': 'Proyectada' # Todos estos puntos son para la línea/barras "proyectadas"
         })
-        df_proyeccion_graf['Curso_Academico'] = df_proyeccion_graf['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
-        df_para_graficar = pd.concat([nacional_evolucion_completa, df_proyeccion_graf], ignore_index=True)
+        
+        df_proyeccion_para_linea['Matricula_Hombres'] = 0
+        df_proyeccion_para_linea['Matricula_Mujeres'] = 0
+
+        # El primer punto (último histórico) usa los valores históricos reales
+        df_proyeccion_para_linea.loc[0, 'Matricula_Hombres'] = ultima_matricula_hombres_historica
+        df_proyeccion_para_linea.loc[0, 'Matricula_Mujeres'] = ultima_matricula_mujeres_historica
+        
+        # Calcular H/M para los puntos puramente proyectados
+        for i in range(1, len(df_proyeccion_para_linea)):
+            total_proy = df_proyeccion_para_linea.loc[i, 'Matricula_Total']
+            hombres_proy = np.round(total_proy * ratio_hombres).astype(int).clip(min=0)
+            mujeres_proy = (total_proy - hombres_proy).astype(int).clip(min=0)
+            
+            df_proyeccion_para_linea.loc[i, 'Matricula_Hombres'] = hombres_proy
+            df_proyeccion_para_linea.loc[i, 'Matricula_Mujeres'] = mujeres_proy
+        
+        df_proyeccion_para_linea['Curso_Academico'] = df_proyeccion_para_linea['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
+        
+        # df_para_graficar_barras: históricos (todos menos el último) + datos de proyección (que incluye el último histórico)
+        df_para_graficar_barras = pd.concat([
+            datos_agrupados[datos_agrupados['Ano_Inicio_Curso'] < ultimo_ano_historico_num], 
+            df_proyeccion_para_linea # Este ya contiene el último histórico como su primer punto
+        ], ignore_index=True)
+        
         titulo_info = f"Evolución y Proyección (Reg. Lin. {msg_regresion})"
 
-    fig = px.line(df_para_graficar, x='Curso_Academico', y='Matricula_Total', 
-                  line_dash='Tipo' if incluir_proyeccion else None, 
-                  color='Tipo' if incluir_proyeccion else None, 
-                  markers=True, 
-                  labels={'Matricula_Total': 'Matrícula Total Nacional', 'Tipo': 'Dato'},
-                  title=f'Matrícula Nacional Total: {titulo_info}')
-    fig.update_layout(xaxis_title='Curso Académico', yaxis_title='Matrícula Total',showlegend=showlegend)
+    # Calcular porcentajes y texto para las barras en el DF final de barras
+    df_para_graficar_barras['Pct_Hombres'] = df_para_graficar_barras.apply(
+        lambda row: (row['Matricula_Hombres'] / row['Matricula_Total'] * 100) if row['Matricula_Total'] > 0 else 0, axis=1
+    )
+    df_para_graficar_barras['Pct_Mujeres'] = df_para_graficar_barras.apply(
+        lambda row: (row['Matricula_Mujeres'] / row['Matricula_Total'] * 100) if row['Matricula_Total'] > 0 else 0, axis=1
+    )
+
+    df_para_graficar_barras['Texto_Hombres'] = df_para_graficar_barras.apply(
+        lambda row: f"{row['Matricula_Hombres']:,}<br>({row['Pct_Hombres']:.1f}%)" if row['Matricula_Total'] > 0 and row['Matricula_Hombres'] > 0 else f"{row['Matricula_Hombres']:,}", axis=1
+    )
+    df_para_graficar_barras['Texto_Mujeres'] = df_para_graficar_barras.apply(
+        lambda row: f"{row['Matricula_Mujeres']:,}<br>({row['Pct_Mujeres']:.1f}%)" if row['Matricula_Total'] > 0 and row['Matricula_Mujeres'] > 0 else f"{row['Matricula_Mujeres']:,}", axis=1
+    )
     
-    if incluir_proyeccion and len(nacional_evolucion_completa) >= 2:
-        x_vline_pos = len(nacional_evolucion_completa) -1 # El índice del último punto histórico
-        fig.add_vline(x=x_vline_pos, line_width=2, line_dash="dot", line_color="purple",
-                      annotation_text="Inicio Proyección", annotation_position="top right",
-                      annotation_font_size=10, annotation_font_color="grey")
+    fig = go.Figure()
+
+    # Colores
+    color_mujeres_barra = 'hotpink'
+    color_hombres_barra = 'skyblue'
+    color_linea_hist = 'mediumpurple' # Morado para histórica
+    color_linea_proy = 'royalblue'         # Morado claro para proyectada
+
+    # Añadir traza de barras para Mujeres (primero para que esté abajo en el stack)
+    fig.add_trace(go.Bar(
+        x=df_para_graficar_barras['Curso_Academico'],
+        y=df_para_graficar_barras['Matricula_Mujeres'],
+        name='Mujeres',
+        marker_color=color_mujeres_barra,
+        marker_line=dict(color='rgba(255,100,155,0.9)', width=2), # Borde sutil
+        text=df_para_graficar_barras['Texto_Mujeres'],
+        textposition='outside',
+        textfont=dict(color='white', size=16)
+    ))
+
+    # Añadir traza de barras para Hombres
+    fig.add_trace(go.Bar(
+        x=df_para_graficar_barras['Curso_Academico'],
+        y=df_para_graficar_barras['Matricula_Hombres'],
+        name='Hombres',
+        marker_color=color_hombres_barra,
+        marker_line=dict(color='rgba(200,200,255,0.9)', width=2), # Borde sutil
+        text=df_para_graficar_barras['Texto_Hombres'],
+        textposition='inside',
+        textfont=dict(color='white', size=16)
+    ))
+    
+    # Añadir traza de línea para Matrícula Total
+    if incluir_proyeccion:
+        # Línea proyectada (desde el último histórico hacia adelante)
+        fig.add_trace(go.Scatter(
+            x=df_proyeccion_para_linea['Curso_Academico'], # Usa el df de proyección que empieza en el último histórico
+            y=df_proyeccion_para_linea['Matricula_Total'],
+            name='Matrícula Total (Proyectada)',
+            mode='lines+markers',
+            line=dict(color=color_linea_proy, width=3, dash='dash'),
+            marker=dict(size=10, symbol='diamond', color=color_linea_proy)
+        ))
+        # Línea histórica (todos los puntos históricos originales)
+        fig.add_trace(go.Scatter(
+            x=datos_agrupados['Curso_Academico'], # Usa el df original de datos históricos
+            y=datos_agrupados['Matricula_Total'],
+            name='Matrícula Total (Histórica)',
+            mode='lines+markers',
+            line=dict(color=color_linea_hist, width=3), # Línea un poco más gruesa
+            marker=dict(size=11, color=color_linea_hist)
+        ))
+        
+
+    else: # Solo línea histórica
+        fig.add_trace(go.Scatter(
+            x=datos_agrupados['Curso_Academico'],
+            y=datos_agrupados['Matricula_Total'],
+            name='Matrícula Total',
+            mode='lines+markers',
+            line=dict(color=color_linea_hist, width=3),
+            marker=dict(size=10, color=color_linea_hist)
+        ))
+
+    # Actualizar layout
+    fig.update_layout(
+        template='plotly_dark', # Aplicar tema oscuro
+        barmode='stack',
+        title=f'Matrícula Nacional: {titulo_info}',
+        xaxis_title='Curso Académico',
+        yaxis_title='Matrícula',
+        legend_title_text='Leyenda',
+        showlegend=showlegend,
+        uniformtext_minsize=8, 
+        uniformtext_mode='hide',
+        yaxis=dict(tickformat=","),
+        xaxis=dict(type='category')
+    )
+
+    if incluir_proyeccion and n_puntos_historicos >= 2 and not df_proyeccion_para_linea.empty:
+        x_vline_pos = n_puntos_historicos - 0.5 
+        fig.add_vline(
+            x=x_vline_pos, 
+            line_width=2, 
+            line_dash="dot", 
+            line_color="rgba(255,255,0,0.7)",
+            annotation_text="Inicio Proyección", 
+            annotation_position="top right",
+            annotation_font_size=15, 
+            annotation_font_color="rgba(255,255,0,0.9)"
+        )
+    
     return fig, None
 
 # A2: Distribución y Evolución de la Matrícula por Rama de Ciencias
@@ -425,6 +575,61 @@ def analisis_A2(df, incluir_proyeccion=False):
                         labels={'Porcentaje': '% Matrícula'})
             fig_pct.update_layout(xaxis_title='Curso Académico', yaxis_title='Porcentaje de Matrícula (%)')
     return fig_abs, fig_pct, None
+
+#A2 extra
+def analisis_A2_correlacion_crecimiento_ramas(df: pd.DataFrame):
+    if df.empty:
+        return None, None, "DataFrame de entrada vacío para análisis de correlación."
+    if not all(col in df.columns for col in ['Ano_Inicio_Curso', 'rama_ciencias', 'Matricula_Total']):
+        return None, None, "El DataFrame debe contener 'Ano_Inicio_Curso', 'rama_ciencias', y 'Matricula_Total' para correlación."
+
+    matricula_anual_rama = df.groupby(['Ano_Inicio_Curso', 'rama_ciencias'])['Matricula_Total'].sum().unstack(level='rama_ciencias')
+    matricula_anual_rama = matricula_anual_rama.dropna(axis=1, how='all')
+    
+    columnas_validas_para_pct_change = [col for col in matricula_anual_rama.columns if matricula_anual_rama[col].count() >= 2]
+    
+    if len(columnas_validas_para_pct_change) < 2:
+        return None, None, "No hay suficientes ramas con datos (>1 año) para calcular una matriz de correlación."
+        
+    matricula_pivot_filtrada = matricula_anual_rama[columnas_validas_para_pct_change]
+    cambio_pct_ramas = matricula_pivot_filtrada.pct_change() * 100
+    cambio_pct_ramas.replace([np.inf, -np.inf], np.nan, inplace=True)
+    
+    min_periods_corr = max(2, len(cambio_pct_ramas.dropna(how='all')) // 3) 
+    
+    df_correlacion = cambio_pct_ramas.corr(min_periods=min_periods_corr)
+    df_correlacion = df_correlacion.dropna(axis=0, how='all').dropna(axis=1, how='all')
+
+    if df_correlacion.empty or df_correlacion.shape[0] < 2 or df_correlacion.shape[1] < 2:
+        return None, None, "Error al generar una matriz de correlación significativa (datos insuficientes tras el procesamiento)."
+
+    fig = px.imshow(
+        df_correlacion,
+        text_auto=".2f",
+        aspect="auto",
+        color_continuous_scale='ice_r',
+        zmin=-1, zmax=1,
+        labels=dict(color="Coef. Correlación"),
+        title='Matriz de Correlación del Crecimiento Anual entre Ramas de Ciencias'
+    )
+
+    fig.update_layout(
+        template='plotly_dark',
+        xaxis_title='Rama de Ciencias',
+        yaxis_title='Rama de Ciencias',
+        height=max(450, 55 * len(df_correlacion.columns)),
+        width=max(550, 70 * len(df_correlacion.columns)),
+        xaxis_showgrid=False,
+        yaxis_showgrid=False,
+        margin=dict(l=100, r=50, t=80, b=120)
+    )
+    
+    fig.update_xaxes(
+        tickangle=45, 
+        side="bottom", # Asegurar que las etiquetas estén abajo
+    )
+    
+    return fig, df_correlacion, None
 
 # A3: Ranking y Evolución de Carreras por Demanda
 @st.cache_data
@@ -537,7 +742,7 @@ def analisis_A5(df):
                          values='Matricula_Total', title=f'Distribución de Matrícula ({curso_mas_reciente})',
                          color='Matricula_Total', hover_data=['Matricula_Total'], height=700)
         fig_treemap.update_layout(margin = dict(t=50, l=25, r=25, b=25))
-    return fig_treemap, df_carreras_pocas_unis, None
+    return fig_treemap, df_treemap_data, df_carreras_pocas_unis, None
 
 # A6: Tasas de Crecimiento Anual Compuesto (CAGR)
 @st.cache_data

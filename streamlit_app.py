@@ -1,6 +1,7 @@
-#from libraries.plot_functions import *
 from libraries.streamlit_extended import HierarchicalSidebarNavigation
 from libraries.st_options import *
+
+import streamlit.components.v1 as components
 
 # --- Configuración de la Página de Streamlit ---
 st.set_page_config(layout="wide", page_title="Análisis Matrícula Universitaria Cuba", page_icon="🎓")
@@ -60,7 +61,6 @@ else:
     elif seccion_actual == "Playground!":
         if active_sub == "Perfil Detallado de Carrera": B1(df_main)
         elif active_sub == "Guía de Instituciones": B2(df_main, df_ins)
-        else: ...
 
     elif seccion_actual == "7. Áreas de Atención": A7(df_main)
 
