@@ -1,6 +1,3 @@
-from scipy.__config__ import show
-from sqlalchemy import desc
-from sympy import ask
 from .plot_functions import *
 from .ai_functions import ask_ai_component
 
