@@ -11,6 +11,7 @@ import time
 import numpy as np
 
 # --- Configuración de la API de Gemini ---
+@st.cache_resource(show_spinner=False, ttl=3600)
 def configure_gemini_client():
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -109,6 +110,7 @@ def generate_ai_response_stream(user_message, conversation_history_for_gemini, s
 
 # --- El Componente de Chat para Streamlit (con Botón de Reinicio Integrado) ---
 def ask_ai_component(analysis_context, key, extra_data=None):
+    
     with st.expander(f"🤖 ¿Preguntas sobre este análisis? ¡Pregúntale al Asistente de IA!", expanded=False):
         
         history_key = f"messages_{key}"
