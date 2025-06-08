@@ -1,3 +1,4 @@
+from sympy import ask
 from .plot_functions import *
 from .ai_functions import ask_ai_component
 from .general_functions import to_csv_string
