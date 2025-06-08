@@ -1,8 +1,6 @@
 # --- START OF FILE ai_functions.py ---
 
 import os
-import io
-import sys
 import pandas as pd
 from plotly import graph_objects as go
 from google import genai
@@ -92,12 +90,11 @@ def _convert_context_to_gemini_parts(context_list):
                 parts.append(types.Part.from_text(text=f"Datos de Tabla (Contexto {item_idx+1}, formato Markdown):\n```markdown\n{markdown_data}\n```"))
             except Exception as e:
                 st.warning(f"Error al convertir DataFrame a JSON para IA: {e}")
-                parts.append(types.Part.from_text(text="[ERROR AL PROCESAR DATAFRAME]"))
+                parts.append(types.Part.from_text(text=f"[ERROR AL PROCESAR DATAFRAME, LOG: {e}]"))
         elif isinstance(item, go.Figure):
             try:
                 fig_dict = item.to_dict()
                 clean_dict = _clean_plotly_dict_for_ai(fig_dict)
-                fig_json = json.dumps(clean_dict, indent=2)
                 parts.append(types.Part.from_text(text=f"Descripción de Gráfico Plotly (Contexto {item_idx+1}, formato DICT):\n```dict\n{clean_dict}\n```"))
             except Exception as e:
                 st.warning(f"Error al convertir gráfico Plotly a JSON para IA: {e}")
@@ -170,7 +167,7 @@ def ask_ai_component(analysis_context: str, key: str, extra_data: list | None = 
                     if "code" in message["content"] and message["content"]["code"]:
                         st.download_button(
                             label="📥 Descargar Código", data=message["content"]["code"],
-                            file_name=f"codigo_grafico_{int(time.time())}.py", mime="text/x-python",
+                            file_name=f"{key}.py", mime="text/x-python",
                             key=f"download_hist_{key}_{i}"
                         )
                     st.image(message["content"]["data"], caption=f"Imagen generada ({message['content'].get('mime_type', 'image/png')})")
@@ -180,11 +177,11 @@ def ask_ai_component(analysis_context: str, key: str, extra_data: list | None = 
         system_instruction_for_ai = """
         Eres un asistente de análisis de datos altamente eficiente, experto en el sistema de educación superior de Cuba. Tu objetivo es responder a las preguntas del usuario de forma clara y precisa, basándote EXCLUSIVAMENTE en el contexto que se te proporciona.
         **Directrices de Análisis:**
-        1.  **Contexto:** Recibirás contexto en forma de texto y datos estructurados.
-        2.  **Procesamiento de Datos:** Tu primer paso debe ser interpretar los datos recibidos y cargarlos en un DataFrame de pandas para facilitar cualquier cálculo o análisis. Sé directo y eficiente en tu código, por lo que NO debes transcribir NUNCA el JSON completo ni en formato crudo. En su lugar, extrae únicamente los datos relevantes (e.g., años, matrículas, categorías) y preséntalos de forma compacta, utilizando listas o diccionarios de Python para su fácil manipulación.
-        3.  **Ejecución de Código:** Tienes acceso a una herramienta para ejecutar código de Python. Úsala para realizar cálculos, analizar datos o generar nuevas visualizaciones.
+        1.  **Contexto:** Recibirás contexto en forma de texto y datos estructurados, también graficos de plotly en formato de diccionario para la lectura precisa por tu parte(tu ves un diccionario pero el usuario ve una gráfica en plotly).
+        2.  **Procesamiento de Datos:** Tu primer paso debe ser interpretar los datos recibidos y cargarlos en un DataFrame de pandas para facilitar cualquier cálculo o análisis. Sé directo y eficiente en tu código, por lo que NO debes escribir el diccionario completo ni en formato crudo. En su lugar, extrae únicamente los datos relevantes para el análisis (e.g., años, matrículas, categorías, etc) y preséntalos de forma compacta en el código, utilizando listas o diccionarios de Python para su fácil manipulación.
+        3.  **Ejecución de Código:** Tienes acceso a una herramienta para ejecutar código de Python. Úsala para realizar cálculos, analizar datos o generar nuevas visualizaciones para el usuario.
         **Generación de Gráficos:**
-        - Solo escribe el código necesario para completar la solicitud del usuario, compacta dicho codigo y cumple la exigencia de nunca usar el diccionario recibido, sino extraer de él los datos importantes y trabajar con ellos.
+        - Solo escribe el código necesario para completar la solicitud del usuario, compacta dicho codigo y cumple la exigencia de no usar el diccionario recibido a menos que necesites todos los datos de él, sino extraer los datos importantes y trabajar con ellos.
         - Para crear cualquier visualización, usa **exclusivamente la biblioteca `matplotlib`**.
         - Para mostrar el gráfico, simplemente **usa `plt.show()` al final de tu script de graficación**. El sistema capturará automáticamente la imagen y la mostrará al usuario.
         **Estructura de la Respuesta:**
