@@ -9,3 +9,4 @@ scipy
 kaleido
 google-genai
 google-generativeai
+tabulate
