@@ -24,50 +24,66 @@ def introduction():
     st.success("¡Tu viaje comienza aquí! Selecciona una sección en el menú lateral o usa el botón 'Siguiente'.")
 
 def A1(df_main):
-        st.header("🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?")
-        st.markdown("""
-        Imagina que podemos tomarle el pulso a todo el sistema universitario cubano a lo largo de una década.
-        ¿Cómo ha sido su ritmo? ¿Ha experimentado momentos de vigoroso crecimiento, períodos de estabilidad,
-        o quizás fases donde el latido se ha vuelto más pausado?
+    st.header("🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?")
+    st.markdown("""
+    Imagina que podemos tomarle el pulso a todo el sistema universitario cubano a lo largo de una década.
+    ¿Cómo ha sido su ritmo? ¿Ha experimentado momentos de vigoroso crecimiento, períodos de estabilidad,
+    o quizás fases donde el latido se ha vuelto más pausado?
 
-        Este primer vistazo nos ofrece la perspectiva más amplia, el electrocardiograma de la matrícula total
-        en nuestras universidades. Es el punto de partida esencial para comprender las dinámicas más profundas
-        que exploraremos a continuación.
-        """)
+    Este primer vistazo nos ofrece la perspectiva más amplia, el electrocardiograma de la matrícula total
+    en nuestras universidades. Es el punto de partida esencial para comprender las dinámicas más profundas
+    que exploraremos a continuación.
+    """)
+
+    # Llamamos a la función de análisis A1, solicitando solo la evolución histórica
+    with st.spinner("Construyendo la gráfica A1, por favor espere..."):
+        fig_a1, msg_a1 = analisis_A1(df_main, incluir_proyeccion=False)
+
+    if fig_a1:
+        # --- RENDERIZADO PARA EL USUARIO (sin cambios) ---
+        st.plotly_chart(fig_a1, use_container_width=True, key="fig_a1_pulso_nacional")
+        if msg_a1:
+            show_info(msg_a1)
         
-        # Llamamos a la función de análisis A1, solicitando solo la evolución histórica
-        with st.spinner("Construyendo la gráfica A2, por favor espere...", show_time=True):
-            fig_a1, msg_a1 = analisis_A1(df_main, incluir_proyeccion=False) 
+        st.subheader("Descifrando el Ritmo de la Década (2015-2025):")
+        descripcion_analisis_a1 = """
+        Observando la trayectoria de la matrícula nacional total en el gráfico superior, podemos identificar varias fases clave:
+
+        *   **Impulso Inicial (2015-16 a 2016-17):** El viaje comienza en el curso 2015-2016 con una cifra que ronda los **165,000 estudiantes**. Inmediatamente, en el siguiente curso (2016-2017), se aprecia un **salto significativo y vigoroso**, elevando la matrícula hasta aproximadamente **220,000 estudiantes**. Este fue el mayor incremento interanual del período.
+
+        *   **Crecimiento Sostenido hacia la Cima (2017-18 a 2020-21):** Tras una ligera consolidación en 2017-2018 (alrededor de **225,000**), la tendencia ascendente se retoma con fuerza. La matrícula crece de forma constante, pasando por los **258,000** en 2019-2020, hasta alcanzar su **punto más álgido en el curso 2020-2021, superando los 285,000 estudiantes**. Este representa el pico de matrícula en la década analizada.
+
+        *   **Meseta y Comienzo del Declive (2021-22 a 2022-23):** El curso 2021-2022 muestra una ligera contracción, manteniendo la matrícula aún por encima de los **280,000**. Sin embargo, es en el curso 2022-2023 donde se evidencia un cambio de tendencia más claro, con una **disminución más notable** que sitúa la cifra en torno a los **263,000 estudiantes**.
+
+        *   **Ajuste Reciente (2023-24 a 2024-25):** Los dos últimos cursos registrados muestran una **continuación de la tendencia descendente**, siendo la caída más pronunciada entre 2022-23 y 2023-24 (llegando a unos **218,000**). El curso 2024-2025 cierra con una matrícula cercana a los **205,000 estudiantes**, indicando que, si bien la disminución persiste, su ritmo parece haberse moderado en comparación con el salto anterior.
+
+        Esta panorámica general nos invita a preguntarnos: ¿Qué factores podrían haber impulsado el crecimiento inicial? ¿Qué circunstancias podrían explicar el cambio de tendencia y el declive posterior?
+        Estas son preguntas que, aunque no podemos responder completamente solo con estos datos de matrícula, nos preparan para los análisis más detallados que siguen.
+        """
+        st.markdown(descripcion_analisis_a1)
+
+        # --- PREPARACIÓN DEL CONTEXTO PARA LA IA (OPTIMIZADO) ---
         
-        if fig_a1:
-            st.plotly_chart(fig_a1, use_container_width=True, key="fig_a1_pulso_nacional")
-            if msg_a1: # Si hay algún mensaje de la función (ej. sobre datos insuficientes)
-                show_info(msg_a1)
-            
-            st.subheader("Descifrando el Ritmo de la Década (2015-2025):")
-            descripcion_analisis_a1 = """
-            Observando la trayectoria de la matrícula nacional total en el gráfico superior, podemos identificar varias fases clave:
+        # 1. Creamos un contexto textual breve y directo.
+        contexto_texto_ia = (
+            "El análisis actual es sobre la evolución de la matrícula nacional total en Cuba. "
+            "Los datos brutos se proporcionan en el objeto de gráfico adjunto."
+        )
+        if msg_a1:
+            # Si hay un mensaje importante del análisis (ej. datos faltantes), lo añadimos.
+            contexto_texto_ia += f"\nNota importante del análisis: {msg_a1}"
 
-            *   **Impulso Inicial (2015-16 a 2016-17):** El viaje comienza en el curso 2015-2016 con una cifra que ronda los **165,000 estudiantes**. Inmediatamente, en el siguiente curso (2016-2017), se aprecia un **salto significativo y vigoroso**, elevando la matrícula hasta aproximadamente **220,000 estudiantes**. Este fue el mayor incremento interanual del período.
+        # 2. Los datos extra son ÚNICAMENTE el gráfico.
+        # Nuestra función de limpieza extraerá los datos eficientemente de él.
+        datos_para_ia = [fig_a1]
 
-            *   **Crecimiento Sostenido hacia la Cima (2017-18 a 2020-21):** Tras una ligera consolidación en 2017-2018 (alrededor de **225,000**), la tendencia ascendente se retoma con fuerza. La matrícula crece de forma constante, pasando por los **258,000** en 2019-2020, hasta alcanzar su **punto más álgido en el curso 2020-2021, superando los 285,000 estudiantes**. Este representa el pico de matrícula en la década analizada.
-
-            *   **Meseta y Comienzo del Declive (2021-22 a 2022-23):** El curso 2021-2022 muestra una ligera contracción, manteniendo la matrícula aún por encima de los **280,000**. Sin embargo, es en el curso 2022-2023 donde se evidencia un cambio de tendencia más claro, con una **disminución más notable** que sitúa la cifra en torno a los **263,000 estudiantes**.
-
-            *   **Ajuste Reciente (2023-24 a 2024-25):** Los dos últimos cursos registrados muestran una **continuación de la tendencia descendente**, siendo la caída más pronunciada entre 2022-23 y 2023-24 (llegando a unos **218,000**). El curso 2024-2025 cierra con una matrícula cercana a los **205,000 estudiantes**, indicando que, si bien la disminución persiste, su ritmo parece haberse moderado en comparación con el salto anterior.
-
-            Esta panorámica general nos invita a preguntarnos: ¿Qué factores podrían haber impulsado el crecimiento inicial? ¿Qué circunstancias podrían explicar el cambio de tendencia y el declive posterior?
-            Estas son preguntas que, aunque no podemos responder completamente solo con estos datos de matrícula, nos preparan para los análisis más detallados que siguen.
-            """
-            st.markdown(descripcion_analisis_a1)
-            ask_ai_component(
-                analysis_context=f"El análisis actual es sobre la evolución de la matrícula nacional total en Cuba. {descripcion_analisis_a1}",
-                key="a1_nacional",
-                extra_data=[fig_a1, msg_a1]
-            )
-        else:
-            # Si msg_a1 ya fue generado por la función, se muestra, sino un mensaje genérico.
-            st.warning(msg_a1 if msg_a1 else "No se pudo generar el gráfico del panorama nacional (A1).")
+        ask_ai_component(
+            analysis_context=contexto_texto_ia,
+            key="a1_nacional",
+            extra_data=datos_para_ia
+        )
+    else:
+        st.warning(msg_a1 if msg_a1 else "No se pudo generar el gráfico del panorama nacional (A1).")
 
 def A2(df_main):
     st.header("📚 Un Mosaico de Saberes: ¿Hacia Dónde se Inclinan los Futuros Profesionales?")
@@ -79,14 +95,15 @@ def A2(df_main):
     - ¿Hay protagonistas claros?
     - ¿Cómo ha danzado el interés estudiantil a lo largo de la última década?
     """)
-    
-    # Llamamos a la función de análisis A2, solicitando solo la evolución histórica
-    with st.spinner("Construyendo la gráfica A2, uno de los trabajadores se clavó por accidente una espada en la rodilla...", show_time=True):
-        fig_a2_abs, fig_a2_pct, msg_a2 = analisis_A2( df_main, incluir_proyeccion=False) 
-    
+
+    # --- Análisis y renderizado de la evolución absoluta ---
+    with st.spinner("Analizando la evolución de las ramas de ciencias..."):
+        fig_a2_abs, fig_a2_pct, msg_a2 = analisis_A2(df_main, incluir_proyeccion=False)
+
     if fig_a2_abs:
         st.subheader("La Fuerza de Cada Rama: Evolución Histórica de la Matrícula")
         st.plotly_chart(fig_a2_abs, use_container_width=True, key="fig_a2_abs_mosaico")
+        
         descripcion_analisis_a2 = """
         **Cada Línea, una Corriente del Conocimiento:**
         Este gráfico traza el viaje de la matrícula absoluta (número total de estudiantes) para cada rama de ciencias a lo largo de los años.
@@ -103,14 +120,17 @@ def A2(df_main):
         *   **Nicho Especializado:** Las **Ciencias Naturales y Matemáticas** (línea morada) y las **Ciencias de las Artes** (línea violeta) representan las ramas con menor volumen de matrícula, manteniéndose consistentemente por debajo de los 5,000 estudiantes a lo largo de toda la década. Esto sugiere una alta especialización o una demanda más acotada.
         """
         st.markdown(descripcion_analisis_a2)
+        
+        contexto_abs_ia = "El análisis actual es sobre la evolución de la matrícula absoluta (número de estudiantes) por rama de ciencias en Cuba. Los datos están en el gráfico adjunto."
         ask_ai_component(
-            analysis_context=f"El análisis actual es sobre la evolución de la matrícula por ramas de ciencias en Cuba. {descripcion_analisis_a2}",
-            key="a2_mosaico",
-            extra_data=[fig_a2_abs, msg_a2]
+            analysis_context=contexto_abs_ia,
+            key="a2_mosaico_abs",
+            extra_data=[fig_a2_abs]
         )
     else:
         st.warning("No se pudo generar el gráfico de evolución absoluta por rama (A2).")
 
+    # --- Análisis y renderizado de la evolución porcentual ---
     if fig_a2_pct:
         st.subheader("El Reparto del Pastel Académico: Distribución Porcentual Histórica")
         st.plotly_chart(fig_a2_pct, use_container_width=True, key="fig_a2_pct_mosaico")
@@ -129,16 +149,19 @@ def A2(df_main):
         Este análisis porcentual es crucial porque nos permite entender no solo cuántos estudiantes hay en cada rama, sino también cómo se distribuye el interés o la capacidad de admisión en relación con el conjunto del sistema universitario.
         """
         st.markdown(descripcion_analisis_a2_pct)
+        
+        contexto_pct_ia = "El análisis actual es sobre la distribución porcentual de la matrícula por rama de ciencias en Cuba. Los datos están en el gráfico de área apilada adjunto."
         ask_ai_component(
-            analysis_context=f"El análisis actual es sobre la distribución porcentual de la matrícula por ramas de ciencias en Cuba. {descripcion_analisis_a2_pct}",
+            analysis_context=contexto_pct_ia,
             key="a2_mosaico_pct",
-            extra_data=[fig_a2_pct, msg_a2]
+            extra_data=[fig_a2_pct]
         )
     else:
         st.warning("No se pudo generar el gráfico de distribución porcentual por rama (A2).")
     
     show_info(msg_a2)
     
+    # --- Análisis y renderizado del mapa de correlación ---
     st.subheader("🔗 Interconexiones en el Crecimiento: ¿Cómo se Relacionan las Ramas?")
     st.markdown("""
         No todas las ramas de ciencias crecen o decrecen de forma aislada. Algunas pueden mostrar
@@ -155,11 +178,6 @@ def A2(df_main):
 
     if fig_corr_ramas:
         st.plotly_chart(fig_corr_ramas, use_container_width=True, key="fig_a2_corr_heatmap")
-        
-        # --- Interpretación Dinámica del Heatmap (Opcional pero Recomendado) ---
-        # Podrías añadir un expander con el análisis textual como el que hicimos arriba.
-        # Para hacerlo más dinámico, podrías incluso intentar extraer las N correlaciones más altas/bajas
-        # del df_corr_ramas si no es None.
         
         with st.expander("🔍 Análisis Detallado de las Correlaciones Observadas"):
             st.markdown("""
@@ -185,13 +203,18 @@ def A2(df_main):
                 *   La independencia de Ciencias Naturales y Matemáticas podría requerir un enfoque y monitoreo diferenciado para asegurar su vitalidad y alineación con las necesidades de desarrollo científico-técnico del país.
                 *   La ausencia de correlaciones fuertemente negativas (en este gráfico) sugiere que, a nivel agregado de cambio anual, no hay una "canibalización" evidente donde el crecimiento de una rama sea directamente a costa de otra, aunque no se descartan dinámicas competitivas a niveles más específicos.
             """)
-            #if df_corr_ramas is not None:
-            #    st.caption("Datos de la Matriz de Correlación:")
-            #    st.dataframe(df_corr_ramas.style.format("{:.2f}").background_gradient(cmap='RdPu', vmin=-1, vmax=1)) # Muestra el DF con formato
+
+        contexto_corr_ia = "El análisis actual es sobre la matriz de correlación del crecimiento anual de matrícula entre las diferentes ramas de ciencias. Los datos se proporcionan en la tabla de correlación adjunta."
+        datos_corr_ia = []
+        if df_corr_ramas is not None:
+            datos_corr_ia.append(df_corr_ramas)
+        if msg_corr_ramas:
+            contexto_corr_ia += f"\nNota importante del análisis: {msg_corr_ramas}"
+            
         ask_ai_component(
-            analysis_context="El análisis actual es sobre la correlación del crecimiento anual de matrícula entre ramas de ciencias en Cuba.",
+            analysis_context=contexto_corr_ia,
             key="a2_corr_ramas",
-            extra_data=[df_corr_ramas, msg_corr_ramas]
+            extra_data=datos_corr_ia
         )
     else:
         st.warning(msg_corr_ramas if msg_corr_ramas else "No se pudo generar el mapa de correlación entre ramas.")
@@ -204,32 +227,31 @@ def A3(df_main):
     ¿Cómo ha sido su evolución individual? Y, muy importante, ¿cuáles muestran un crecimiento
     acelerado y cuáles parecen estar perdiendo impulso?
     """)
-        
-    # --- Subsección: El Podio de las Carreras ---
+
+    # --- Subsección 1: El Podio de las Carreras ---
     st.subheader("🏆 El Podio de las Carreras: ¿Cuáles Lideran la Matrícula Actual?")
     st.markdown(f"""
     A la izquierda observamos el ranking de todas las carreras según su matrícula total en el curso más reciente
     ({df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}). A la derecha, vemos la evolución histórica de la matrícula
     para las 10 carreras que actualmente se encuentran en la cima de este ranking.
     """)
-    with st.spinner("Construyendo la gráfica A3, nos esforzamos para que reciba su gráfica cuanto antes...", show_time=True): # Eliminé df_main.copy()
+    with st.spinner("Analizando el ranking y evolución de las carreras top..."):
         fig_a3_evolucion, df_ranking_completo_a3, msg_a3 = analisis_A3(df_main)
-    # Nota: La función analisis_A3 fue modificada para retornar el ranking completo y la figura de evolución de las top N.
-    
-    col_ranking, col_evolucion_top = st.columns([1, 2]) # Ajusta la proporción si es necesario
+
+    col_ranking, col_evolucion_top = st.columns([1, 2])
 
     with col_ranking:
         if df_ranking_completo_a3 is not None and not df_ranking_completo_a3.empty:
-            st.dataframe(df_ranking_completo_a3, height=500) # Muestra el ranking completo
+            st.dataframe(df_ranking_completo_a3, height=500)
         else:
             st.info("No hay datos de ranking de carreras para mostrar.")
-    
+
     with col_evolucion_top:
         if fig_a3_evolucion:
             st.plotly_chart(fig_a3_evolucion, use_container_width=True, key="fig_a3_lupa_evolucion")
         else:
             st.info("No se generó gráfico de evolución para las carreras top actuales.")
-    
+
     show_info(msg_a3)
 
     st.markdown("""
@@ -239,23 +261,33 @@ def A3(df_main):
     *   **Top 5 Robusto:** **Enfermería** (9,999) y **Contabilidad y Finanzas** (9,883) completan el top 5, ambas con una matrícula muy cercana a los 10,000 estudiantes.
     *   **Evolución de las Líderes:** El gráfico de la derecha nos permite ver cómo estas carreras (y otras del top 10) han llegado a su posición actual. Observa cómo algunas han tenido un crecimiento más sostenido, mientras otras muestran picos y valles más pronunciados.
     """)
+
+    contexto_podio_ia = "El análisis actual muestra el ranking de matrícula de carreras en el último año y la evolución histórica de las 10 carreras más populares. Los datos se proporcionan en una tabla de ranking y un gráfico de líneas."
+    datos_podio_ia = []
+    if df_ranking_completo_a3 is not None:
+        datos_podio_ia.append(df_ranking_completo_a3)
+    if fig_a3_evolucion:
+        datos_podio_ia.append(fig_a3_evolucion)
+    if msg_a3:
+        contexto_podio_ia += f"\nNota del análisis: {msg_a3}"
+
     ask_ai_component(
-        analysis_context="El análisis actual es sobre las carreras universitarias más populares en Cuba, su ranking y evolución.",
+        analysis_context=contexto_podio_ia,
         key="a3_carreras_top",
-        extra_data=[df_ranking_completo_a3, msg_a3]
+        extra_data=datos_podio_ia
     )
     st.markdown("---")
 
-    # --- Subsección: El Ritmo del Cambio (CAGR) ---
+    # --- Subsección 2: El Ritmo del Cambio (CAGR) ---
     st.subheader("🚀 El Ritmo del Cambio: ¿Qué Carreras Despegan o Aterrizan?")
     st.markdown("""
     La **Tasa de Crecimiento Anual Compuesto (CAGR)** nos ofrece una perspectiva del dinamismo.
     Calcula el crecimiento (o decrecimiento) porcentual promedio de la matrícula de una carrera cada año,
     considerando todo el período analizado (2015-2024). Un CAGR alto sugiere una expansión rápida.
     """)
-    with st.spinner("Construyendo la gráfica A6, los trabajadores están en horario de chismes...", show_time=True): # Eliminé df_main.copy()
+    with st.spinner("Calculando el dinamismo de las carreras (CAGR)..."):
         fig_a6_top_cagr, fig_a6_bottom_cagr, msg_a6 = analisis_A6(df_main)
-    
+
     col_cagr_top, col_cagr_bottom = st.columns(2)
 
     with col_cagr_top:
@@ -270,7 +302,7 @@ def A3(df_main):
             """)
         else:
             st.info("No se pudo generar el gráfico de carreras con mayor CAGR.")
-    
+
     with col_cagr_bottom:
         if fig_a6_bottom_cagr:
             st.markdown("📉 **Top 15 Carreras con Menor Crecimiento o Mayor Decrecimiento Promedio Anual**")
@@ -282,19 +314,29 @@ def A3(df_main):
             """)
         else:
             st.info("No se pudo generar el gráfico de carreras con menor CAGR.")
-    
+
     show_info(msg_a6)
-    
+
     st.markdown("""
     **Reflexiones Estratégicas a partir de estos Ritmos:**
     *   Un **alto CAGR** no siempre significa una matrícula total masiva (podría ser una carrera pequeña creciendo rápido), pero sí indica una **tendencia positiva fuerte** que merece atención, ya sea para fomentar o para asegurar recursos.
     *   Un **CAGR bajo o negativo** en carreras importantes podría ser una señal para investigar las causas: ¿cambios en el mercado laboral, preferencias estudiantiles, oferta académica?
     *   Es crucial cruzar esta información de CAGR con la matrícula absoluta (del ranking) para obtener una imagen completa.
     """)
+
+    contexto_cagr_ia = "El análisis actual muestra las carreras con mayor y menor Tasa de Crecimiento Anual Compuesto (CAGR) de su matrícula. Los datos se presentan en dos gráficos de barras."
+    datos_cagr_ia = []
+    if fig_a6_top_cagr:
+        datos_cagr_ia.append(fig_a6_top_cagr)
+    if fig_a6_bottom_cagr:
+        datos_cagr_ia.append(fig_a6_bottom_cagr)
+    if msg_a6:
+        contexto_cagr_ia += f"\nNota del análisis: {msg_a6}"
+
     ask_ai_component(
-        analysis_context="El análisis actual es sobre el crecimiento anual compuesto (CAGR) de las carreras universitarias en Cuba.",
+        analysis_context=contexto_cagr_ia,
         key="a3_carreras_cagr",
-        extra_data=[fig_a6_top_cagr, fig_a6_bottom_cagr, msg_a6]
+        extra_data=datos_cagr_ia
     )
     st.markdown("---")
 
@@ -307,9 +349,10 @@ def A4(df_main):
     tradicionalmente asociadas a un género que mantienen esos patrones, o estamos presenciando
     una transformación hacia una mayor paridad? Acompáñanos a descubrirlo.
     """)
-    with st.spinner("Construyendo la gráfica A4, nadie quiere trabajar...", show_time=True):
-        fig_a4_ramas, fig_a4_carreras, msg_a4 = analisis_A4( df_main)
-        
+    with st.spinner("Analizando la perspectiva de género..."):
+        fig_a4_ramas, fig_a4_carreras, msg_a4 = analisis_A4(df_main)
+
+    # --- Análisis y renderizado de género por ramas ---
     if fig_a4_ramas:
         st.subheader(f"Participación Femenina por Rama de Ciencias (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1})")
         st.plotly_chart(fig_a4_ramas, use_container_width=True, key="fig_a4_ramas_genero")
@@ -322,15 +365,22 @@ def A4(df_main):
         *   **Cerca de la Paridad o Ligera Mayoría Masculina:** Las **Ciencias Agropecuarias** se encuentran más cerca del equilibrio, aunque aún con una ligera mayoría femenina (casi el 50%).
         *   **Desafíos en Áreas Técnicas y Deportivas:** En contraste, las **Ciencias Técnicas** (aproximadamente 35% mujeres) y, de manera más marcada, las **Ciencias de la Cultura Física y el Deporte** (alrededor del 32% mujeres) son las ramas con la menor representación femenina, indicando una persistente brecha de género en estos campos.
         """)
+        
+        contexto_ramas_ia = "El análisis actual muestra el porcentaje de participación femenina por rama de ciencias en Cuba para el último curso académico. Los datos están en el gráfico de barras adjunto."
+        datos_ramas_ia = [fig_a4_ramas]
+        if msg_a4:
+            contexto_ramas_ia += f"\nNota del análisis: {msg_a4}"
+        
         ask_ai_component(
-            analysis_context="El análisis actual es sobre la participación de género en las ramas de ciencias en Cuba.",
+            analysis_context=contexto_ramas_ia,
             key="a4_ramas_genero",
-            extra_data=[fig_a4_ramas, msg_a4]
+            extra_data=datos_ramas_ia
         )
     else:
         st.warning("No se pudo generar el gráfico de género por ramas.")
-        show_info(msg_a4) # Mostrar mensaje si existe aunque no haya gráfico
+        show_info(msg_a4)
 
+    # --- Análisis y renderizado de género por carreras ---
     if fig_a4_carreras:
         st.subheader(f"Zoom a las Carreras: Extremos del Espectro de Género (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}, Matrícula >= 20)")
         st.plotly_chart(fig_a4_carreras, use_container_width=True, key="fig_a4_carreras_genero")
@@ -344,16 +394,23 @@ def A4(df_main):
 
         *   **Matices Importantes:** Es crucial observar que incluso dentro de las "Top 10 con Menor % de Mujeres", los porcentajes varían. Mientras algunas ingenierías apenas superan el 5-10% de presencia femenina, otras pueden estar más cerca del 20-25%.
         """)
+
+        contexto_carreras_ia = "El análisis actual muestra las 10 carreras con mayor y menor porcentaje de participación femenina, para el último curso académico. Los datos están en el gráfico de barras adjunto."
+        datos_carreras_ia = [fig_a4_carreras]
+        if msg_a4:
+             contexto_carreras_ia += f"\nNota del análisis: {msg_a4}"
+        
         ask_ai_component(
-            analysis_context="El análisis actual es sobre la participación de género en las carreras universitarias en Cuba.",
+            analysis_context=contexto_carreras_ia,
             key="a4_carreras_genero",
-            extra_data=[fig_a4_carreras, msg_a4]
+            extra_data=datos_carreras_ia
         )
     else:
         st.warning("No se pudo generar el gráfico de género por carreras.")
-        # Mostrar msg_a4 aquí también si el primer gráfico falló pero este no, o si msg_a4 es general.
-        if msg_a4 and not fig_a4_ramas: st.caption(f"ℹ️ {msg_a4}")
-        
+        if not fig_a4_ramas: # Mostrar mensaje solo si el primer gráfico tampoco se mostró
+            show_info(msg_a4)
+
+    # --- Texto de reflexión final para el usuario ---
     st.markdown("""
     ---
     **Reflexiones para la Acción:**
@@ -371,9 +428,10 @@ def A5(df_main):
     ¿Existen centros altamente especializados en ciertas ramas o carreras? ¿Y qué carreras
     son joyas raras, ofrecidas solo por unas pocas instituciones?
     """)
-    with st.spinner("Construyendo la gráfica A5, aunque es horario de almuerzo...", show_time=True):
-        fig_a5_treemap, df_treemap_data, df_carreras_unicas_a5, msg_a5 = analisis_A5( df_main)
-        
+    with st.spinner("Preparando el análisis institucional..."):
+        fig_a5_treemap, df_treemap_data, df_carreras_unicas_a5, msg_a5 = analisis_A5(df_main)
+
+    # --- Subsección 1: Treemap de Matrícula ---
     if fig_a5_treemap:
         st.subheader(f"Mapa Interactivo de la Matrícula Universitaria (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1})")
         st.plotly_chart(fig_a5_treemap, use_container_width=True, key="fig_a5_treemap_unis")
@@ -384,32 +442,49 @@ def A5(df_main):
         *   **Identifica los Gigantes:** A simple vista, puedes identificar las universidades con mayor volumen de estudiantes. Por ejemplo, la **UCMLH (Universidad de Ciencias Médicas de La Habana)**, **UCM SC (Universidad de Ciencias Médicas de Santiago de Cuba)**, y **UM (Universidad de Matanzas)**, entre otras, muestran rectángulos considerablemente grandes, indicando una matrícula importante.
         *   **Focos de Especialización:** Observa cómo algunas universidades tienen casi toda su "área" concentrada en una o dos ramas (ej. las Universidades de Ciencias Médicas predominantemente en "Ciencias Médicas"), mientras otras muestran una mayor diversificación.
         """)
+        
+        contexto_treemap_ia = "El análisis actual es sobre la distribución jerárquica de la matrícula por universidad, rama de ciencias y carrera, para el último curso. Los datos completos están en el DataFrame adjunto."
+        datos_treemap_ia = []
+        if df_treemap_data is not None:
+            datos_treemap_ia.append(df_treemap_data)
+        if msg_a5:
+             contexto_treemap_ia += f"\nNota del análisis: {msg_a5}"
+
         ask_ai_component(
-            analysis_context="El análisis actual es sobre la distribución de la matrícula universitaria por universidades y ramas en Cuba.",
+            analysis_context=contexto_treemap_ia,
             key="a5_treemap_unis",
-            extra_data=[]#[df_treemap_data, msg_a5]
+            extra_data=datos_treemap_ia
         )
     else:
         st.warning("No se pudo generar el treemap de distribución.")
         show_info(msg_a5)
 
+    # --- Subsección 2: Carreras con Oferta Limitada ---
     if df_carreras_unicas_a5 is not None and not df_carreras_unicas_a5.empty:
         st.subheader("Joyas Académicas: Carreras con Oferta Limitada")
         st.markdown(f"Listado de carreras y el número de universidades que las impartieron con matrícula en el curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}, ordenadas de menor a mayor número de oferentes.")
-        st.dataframe(df_carreras_unicas_a5, height=350) # Muestra todas
+        st.dataframe(df_carreras_unicas_a5, height=350)
         st.markdown("""
         *   Las carreras en la parte superior de esta lista son ofrecidas por muy pocas instituciones, lo que puede indicar una alta especialización, una nueva oferta en expansión, o la necesidad de evaluar si su alcance geográfico es adecuado para la demanda potencial.
         """)
+
+        contexto_unicas_ia = "El análisis actual muestra un listado de carreras y el número de universidades que las ofrecen, identificando aquellas con oferta más limitada. Los datos se proporcionan en la tabla adjunta."
+        datos_unicas_ia = [df_carreras_unicas_a5]
+        if msg_a5:
+            contexto_unicas_ia += f"\nNota del análisis: {msg_a5}"
+
         ask_ai_component(
-            analysis_context="El análisis actual es sobre las carreras universitarias con oferta limitada en Cuba, es decir, aquellas ofrecidas por pocas universidades.",
+            analysis_context=contexto_unicas_ia,
             key="a5_carreras_unicas",
-            extra_data=[df_carreras_unicas_a5, msg_a5]
+            extra_data=datos_unicas_ia
         )
     else:
-        # Mostrar mensaje de msg_a5 si existe, incluso si df_carreras_unicas_a5 está vacío pero se intentó generar
-        if msg_a5 and not fig_a5_treemap : st.caption(f"ℹ️ {msg_a5}")
-            
+        if msg_a5 and not fig_a5_treemap:
+            show_info(msg_a5)
+    
     st.markdown("---")
+    
+    # --- Subsección 3: Comparativa de Carreras por Universidad ---
     st.subheader("Lupa en Carreras Clave: ¿Quién es Quién en la Formación Específica?")
     st.markdown("""
     Selecciona hasta 3 carreras de tu interés. El gráfico mostrará la evolución histórica de la matrícula
@@ -418,41 +493,50 @@ def A5(df_main):
         
     *Si el gráfico parece muy denso, intenta seleccionar menos carreras o concéntrate en las tendencias generales de las universidades más grandes para cada carrera.*
     """)
-        
+
     todas_carreras_sorted = sorted(df_main['carrera'].unique())
     default_carreras_a9 = []
-    if todas_carreras_sorted: 
+    if todas_carreras_sorted:
         top_carreras_df = df_main.groupby('carrera')['Matricula_Total'].sum().nlargest(2)
         if not top_carreras_df.empty:
             default_carreras_a9 = top_carreras_df.index.tolist()
-        else: # Fallback si no hay datos o nlargest no devuelve nada
+        else:
             default_carreras_a9 = todas_carreras_sorted[:min(2, len(todas_carreras_sorted))]
 
     carreras_seleccionadas_a9 = st.multiselect(
-        "Carreras para comparar evoluciones por universidad:", 
+        "Carreras para comparar evoluciones por universidad:",
         options=todas_carreras_sorted,
-        default=default_carreras_a9, 
-        max_selections=3, 
+        default=default_carreras_a9,
+        max_selections=3,
         key="select_carreras_a9_unis"
     )
-        
+
     if carreras_seleccionadas_a9:
-        with st.spinner("Construyendo la gráfica A2, los trabajadores se rebelan...", show_time=True):
-            fig_a9, msg_a9 = analisis_A9( df_main, carreras_a_comparar=carreras_seleccionadas_a9)
-            
+        with st.spinner("Generando gráfico comparativo por universidad..."):
+            fig_a9, msg_a9 = analisis_A9(df_main, carreras_a_comparar=carreras_seleccionadas_a9)
+
         if fig_a9:
             st.plotly_chart(fig_a9, use_container_width=True, key="fig_a9_comparativa_unis")
             show_info(msg_a9)
+
+            contexto_comparativa_ia = f"El análisis actual muestra la evolución histórica de la matrícula para las carreras seleccionadas ({', '.join(carreras_seleccionadas_a9)}), desglosada por cada universidad que las imparte. Los datos están en el gráfico adjunto."
+            datos_comparativa_ia = [fig_a9]
+            if msg_a9:
+                 contexto_comparativa_ia += f"\nNota del análisis: {msg_a9}"
+
+            # Clave dinámica para mantener el contexto de cada selección de carreras
+            dynamic_key = "a5_comparativa_unis_" + "_".join(sorted([c.replace(' ','_') for c in carreras_seleccionadas_a9]))
+
+            ask_ai_component(
+                analysis_context=contexto_comparativa_ia,
+                key=dynamic_key,
+                extra_data=datos_comparativa_ia
+            )
         else:
-             st.warning(msg_a9 if msg_a9 else f"No se pudo generar el gráfico comparativo para: {', '.join(carreras_seleccionadas_a9)}.")
-        ask_ai_component(
-            analysis_context="El análisis actual es sobre la evolución de matrícula por universidad para carreras seleccionadas en Cuba.",
-            key="a5_comparativa_unis",
-            extra_data=[fig_a9, msg_a9]
-        )
+            st.warning(msg_a9 if msg_a9 else f"No se pudo generar el gráfico comparativo para: {', '.join(carreras_seleccionadas_a9)}.")
     else:
         st.info("Selecciona al menos una carrera para ver la comparativa de su evolución por universidad.")
-        
+    
     st.markdown("""
     ---
     **Visiones Estratégicas para la Red de Universidades:**
@@ -480,10 +564,10 @@ def A6(df_main):
 
     # --- Proyección Nacional ---
     st.subheader(" Horizonte Nacional: Proyección de la Matrícula Total")
-    with st.spinner("Construyendo la gráfica A1, por favor espere...", show_time=True):
-        fig_a1_proy, msg_a1_proy = analisis_A1( df_main, incluir_proyeccion=True) 
+    with st.spinner("Calculando la proyección de matrícula nacional..."):
+        fig_a1_proy, msg_a1_proy = analisis_A1(df_main, incluir_proyeccion=True)
     if fig_a1_proy:
-        st.plotly_chart(fig_a1_proy, use_container_width=True, key="fig_a1_futuro_proy_sec6") # Key única
+        st.plotly_chart(fig_a1_proy, use_container_width=True, key="fig_a1_futuro_proy_sec6")
         st.markdown("""
         **Interpretando la Tendencia Nacional Proyectada:**
         *   Partiendo de la matrícula del curso 2024-2025 (alrededor de **205,000 estudiantes**), la proyección basada en la tendencia de los últimos seis años sugiere una **continuación de la fase de ajuste o declive moderado**.
@@ -492,10 +576,16 @@ def A6(df_main):
         *   **Reflexión:** Si esta tendencia se materializa, ¿qué implicaciones tendría para la capacidad instalada, la asignación de recursos y las estrategias de captación a nivel nacional?
         """)
         show_info(msg_a1_proy)
+
+        contexto_proy_nac_ia = "El análisis actual es sobre la proyección de la matrícula total nacional en Cuba para los próximos dos cursos. Los datos históricos y proyectados están en el gráfico adjunto."
+        datos_proy_nac_ia = [fig_a1_proy]
+        if msg_a1_proy:
+            contexto_proy_nac_ia += f"\nNota del análisis: {msg_a1_proy}"
+
         ask_ai_component(
-            analysis_context="El análisis actual es sobre la proyección de matrícula total nacional en Cuba.",
-            key="a1_proy_nacional",
-            extra_data=[fig_a1_proy, msg_a1_proy]
+            analysis_context=contexto_proy_nac_ia,
+            key="a6_proy_nacional",
+            extra_data=datos_proy_nac_ia
         )
     else:
         st.warning(msg_a1_proy if msg_a1_proy else "No se pudo generar la proyección nacional.")
@@ -503,10 +593,10 @@ def A6(df_main):
 
     # --- Proyección por Rama de Ciencias ---
     st.subheader(" Mosaico de Saberes del Mañana: Proyección por Rama de Ciencias")
-    with st.spinner("Construyendo la gráfica A2, nos falta mano de obra...", show_time=True):
-        fig_a2_abs_proy, _, msg_a2_proy = analisis_A2( df_main, incluir_proyeccion=True) 
+    with st.spinner("Calculando la proyección por ramas de ciencias..."):
+        fig_a2_abs_proy, _, msg_a2_proy = analisis_A2(df_main, incluir_proyeccion=True)
     if fig_a2_abs_proy:
-        st.plotly_chart(fig_a2_abs_proy, use_container_width=True, key="fig_a2_abs_futuro_proy_sec6") # Key única
+        st.plotly_chart(fig_a2_abs_proy, use_container_width=True, key="fig_a2_abs_futuro_proy_sec6")
         st.markdown("""
         **Dinámicas Proyectadas en las Áreas del Conocimiento:**
         Observando las líneas discontinuas para cada rama:
@@ -517,19 +607,25 @@ def A6(df_main):
         *   **Consideración Clave:** La suma de estas proyecciones individuales por rama debería aproximarse a la proyección nacional total, pero pequeñas discrepancias pueden surgir debido a que cada modelo se ajusta independientemente.
         """)
         show_info(msg_a2_proy)
+
+        contexto_proy_ramas_ia = "El análisis actual es sobre la proyección de la matrícula por rama de ciencias en Cuba para los próximos dos cursos. Los datos están en el gráfico adjunto."
+        datos_proy_ramas_ia = [fig_a2_abs_proy]
+        if msg_a2_proy:
+            contexto_proy_ramas_ia += f"\nNota del análisis: {msg_a2_proy}"
+
         ask_ai_component(
-            analysis_context="El análisis actual es sobre la proyección de matrícula por rama de ciencias en Cuba.",
-            key="a2_proy_ramas",
-            extra_data=[fig_a2_abs_proy, msg_a2_proy]
+            analysis_context=contexto_proy_ramas_ia,
+            key="a6_proy_ramas",
+            extra_data=datos_proy_ramas_ia
         )
     else:
         st.warning(msg_a2_proy if msg_a2_proy else "No se pudo generar la proyección por ramas.")
     st.markdown("---")
 
-    # --- Proyección por Carreras Seleccionadas (CON SELECTOR) ---
+    # --- Proyección por Carreras Seleccionadas ---
     st.subheader(" Carreras Clave en el Horizonte: Proyección Interactiva")
     st.markdown("Selecciona hasta 3 carreras de tu interés para visualizar su proyección de matrícula individual.")
-        
+
     todas_carreras_sorted_a7 = sorted(df_main['carrera'].unique())
     default_carreras_a7 = []
     if todas_carreras_sorted_a7:
@@ -547,27 +643,35 @@ def A6(df_main):
     )
 
     if carreras_seleccionadas_a7:
-        with st.spinner("Construyendo la gráfica A7, por favor espere...", show_time=True):
-            fig_a7_proy, msg_a7_proy = analisis_A7( df_main, carreras_seleccionadas=carreras_seleccionadas_a7)
+        with st.spinner("Calculando la proyección para las carreras seleccionadas..."):
+            fig_a7_proy, msg_a7_proy = analisis_A7(df_main, carreras_seleccionadas=carreras_seleccionadas_a7)
         if fig_a7_proy:
-            st.plotly_chart(fig_a7_proy, use_container_width=True, key="fig_a7_futuro_proy_dinamica") # Key única
+            st.plotly_chart(fig_a7_proy, use_container_width=True, key="fig_a7_futuro_proy_dinamica")
             st.markdown(f"""
             **Posibles Escenarios para las Carreras Seleccionadas ({', '.join(carreras_seleccionadas_a7)}):**
             *   Observa las líneas discontinuas para cada una de las carreras que elegiste. ¿Qué tendencia general muestran?
             *   ¿Alguna de ellas parece tener una proyección de crecimiento, estabilidad o declive más marcada?
             *   **Implicaciones:** Estas proyecciones individuales son cruciales. Un descenso proyectado en una carrera de alta demanda, por ejemplo, requeriría un análisis profundo de sus causas y posibles impactos.
             """)
-            if msg_a7_proy: st.caption(f"ℹ️ Detalles de los modelos: {msg_a7_proy}")
+            show_info(msg_a7_proy)
+
+            contexto_proy_carreras_ia = f"El análisis actual es sobre la proyección de matrícula para las carreras seleccionadas: {', '.join(carreras_seleccionadas_a7)}. Los datos están en el gráfico adjunto."
+            datos_proy_carreras_ia = [fig_a7_proy]
+            if msg_a7_proy:
+                contexto_proy_carreras_ia += f"\nNota del análisis: {msg_a7_proy}"
+
+            dynamic_key = "a6_proy_carreras_" + "_".join(sorted([c.replace(' ', '_') for c in carreras_seleccionadas_a7]))
+            
             ask_ai_component(
-                analysis_context="El análisis actual es sobre la proyección de matrícula para carreras universitarias seleccionadas en Cuba.",
-                key="a7_proy_carreras",
-                extra_data=[fig_a7_proy, msg_a7_proy]
+                analysis_context=contexto_proy_carreras_ia,
+                key=dynamic_key,
+                extra_data=datos_proy_carreras_ia
             )
         else:
             st.warning(msg_a7_proy if msg_a7_proy else f"No se pudo generar la proyección para: {', '.join(carreras_seleccionadas_a7)}.")
     else:
         st.info("Selecciona al menos una carrera para ver su proyección.")
-        
+
     st.markdown("""
     ---
     **Planificando con Visión de Futuro:**
@@ -587,13 +691,13 @@ def A7(df_main):
     de estudiantes. Identificar estos casos no es señalar problemas, sino descubrir oportunidades
     para una gestión académica más precisa, ágil y adaptada a las realidades cambiantes.
     """)
-    with st.spinner("Construyendo la tabla A8, comenzaremos en cuánto lleguen los materiales...", show_time=True):
+    with st.spinner("Identificando casos de atención específica..."):
         resultados_a8, msg_a8 = analisis_A8(df_main)
     
-    show_info(msg_a8) # Mostrar mensaje de estado general de A8
+    show_info(msg_a8)
 
     if resultados_a8:
-        # --- Subsección: Nuevas Ofertas o Reactivaciones ---
+        # --- Subsección 1: Nuevas Ofertas o Reactivaciones ---
         st.subheader("🌱 Sembrando el Futuro: Posibles Nuevas Ofertas o Reactivaciones")
         st.markdown("""
         Aquí listamos carreras que no registraban matrícula en los primeros años del período analizado (2015-16),
@@ -602,19 +706,25 @@ def A7(df_main):
         """)
         df_nuevas = resultados_a8.get("nuevas_ofertas")
         if df_nuevas is not None and not df_nuevas.empty:
-            st.dataframe(df_nuevas) # Mostrar todas las detectadas
+            st.dataframe(df_nuevas)
             st.markdown(f"*Se detectaron **{len(df_nuevas)}** casos que cumplen este criterio.*")
+
+            contexto_nuevas_ia = "El análisis actual muestra un listado de carreras que parecen ser nuevas ofertas o reactivaciones, ya que no tenían matrícula al inicio del período pero sí al final. Los datos están en la tabla adjunta."
+            datos_nuevas_ia = [df_nuevas]
+            if msg_a8:
+                contexto_nuevas_ia += f"\nNota general del análisis: {msg_a8}"
+
             ask_ai_component(
-                analysis_context="El análisis actual es sobre la identificación de nuevas ofertas o reactivaciones de carreras universitarias en Cuba.",
-                key="a8_nuevas_ofertas",
-                extra_data=[df_nuevas, msg_a8]
+                analysis_context=contexto_nuevas_ia,
+                key="a7_nuevas_ofertas",
+                extra_data=datos_nuevas_ia
             )
         else:
             st.info("No se identificaron carreras que cumplan claramente con el criterio de 'nueva oferta reciente' en el período analizado.")
         st.markdown("---")
 
-        # --- Subsección: Posibles Ceses de Oferta ---
-        st.subheader("🍂 Ciclos que Concluyen: Posibles Casos de Oferta")
+        # --- Subsección 2: Posibles Ceses de Oferta ---
+        st.subheader("🍂 Ciclos que Concluyen: Posibles Ceses de Oferta")
         st.markdown("""
         Presentamos carreras que contaban con matrícula al inicio del período de análisis pero que
         no registran estudiantes en los últimos cursos. Esto podría sugerir una discontinuación
@@ -622,20 +732,26 @@ def A7(df_main):
         """)
         df_cesadas = resultados_a8.get("cesadas_ofertas")
         if df_cesadas is not None and not df_cesadas.empty:
-            st.dataframe(df_cesadas) # Mostrar todas las detectadas
+            st.dataframe(df_cesadas)
             st.markdown(f"*Se detectaron **{len(df_cesadas)}** casos que cumplen este criterio.*")
+
+            contexto_cesadas_ia = "El análisis actual muestra un listado de carreras que podrían haber cesado su oferta, ya que tenían matrícula al inicio del período pero no al final. Los datos están en la tabla adjunta."
+            datos_cesadas_ia = [df_cesadas]
+            if msg_a8:
+                contexto_cesadas_ia += f"\nNota general del análisis: {msg_a8}"
+
             ask_ai_component(
-                analysis_context="El análisis actual es sobre la identificación de carreras universitarias que podrían haber cesado su oferta en Cuba.",
-                key="a8_cese_oferta",
-                extra_data=[df_cesadas, msg_a8]
+                analysis_context=contexto_cesadas_ia,
+                key="a7_cese_oferta",
+                extra_data=datos_cesadas_ia
             )
         else:
             st.info("No se identificaron carreras que cumplan claramente con el criterio de 'cese de oferta reciente'.")
         st.markdown("---")
             
-        # --- Subsección: Matrícula Reducida ---
+        # --- Subsección 3: Matrícula Reducida ---
         df_baja = resultados_a8.get("baja_matricula")
-        umbral = resultados_a8.get("umbral_bajo", 10) # Obtener umbral usado en A8
+        umbral = resultados_a8.get("umbral_bajo", 10)
         st.subheader(f"📉 Focos de Atención: Carreras con Matrícula Reducida (Inferior a {umbral} Estudiantes)")
         st.markdown(f"""
         Finalmente, listamos aquellas carreras que, en el último curso académico registrado
@@ -644,12 +760,18 @@ def A7(df_main):
         y ameritan un análisis particularizado.
         """)
         if df_baja is not None and not df_baja.empty:
-            st.dataframe(df_baja) # Mostrar todas las detectadas
+            st.dataframe(df_baja)
             st.markdown(f"*Se detectaron **{len(df_baja)}** casos con matrícula inferior a {umbral} (y >0) en el último año.*")
+
+            contexto_baja_ia = f"El análisis actual muestra un listado de carreras con matrícula reducida (menor a {umbral} estudiantes) en el último año. Los datos están en la tabla adjunta."
+            datos_baja_ia = [df_baja]
+            if msg_a8:
+                contexto_baja_ia += f"\nNota general del análisis: {msg_a8}"
+
             ask_ai_component(
-                analysis_context="El análisis actual es sobre la identificación de carreras universitarias con matrícula reducida en Cuba.",
-                key="a8_baja_matricula",
-                extra_data=[df_baja, umbral, msg_a8]
+                analysis_context=contexto_baja_ia,
+                key="a7_baja_matricula",
+                extra_data=datos_baja_ia
             )
         else:
             st.info(f"No se identificaron carreras con matrícula inferior a {umbral} (y >0) en el último año.")
@@ -968,7 +1090,7 @@ def B2(df_main, df_ins):
             st.info(f"No se encontraron instituciones para los filtros aplicados.")
         else:
             st.info("No hay instituciones para mostrar con los filtros actuales.")
-
+    st.markdown('---')
     ask_ai_component(
         analysis_context=contexto_texto_ia,
         key="b2_guia_instituciones",
@@ -992,7 +1114,7 @@ def conclusion():
     st.markdown("---")
 
     st.subheader("🌟 Destellos del Viaje: Principales Hallazgos en este Recorrido")
-    st.markdown("""
+    hallazgos_texto = """
     Al mirar atrás en nuestro análisis, emergen varios faros que guían nuestra comprensión:
 
     1.  **El Pulso Dinámico de la Nación:** La matrícula universitaria nacional ha mostrado una notable capacidad de expansión, alcanzando picos significativos a principios de la década de 2020, seguida de una fase de ajuste más reciente. Esta fluctuación nos recuerda la sensibilidad del sistema a factores contextuales y la necesidad de una planificación flexible. *(Ref. Sección 1)*
@@ -1008,11 +1130,12 @@ def conclusion():
     6.  **Una Mirada Prudente al Mañana:** Las proyecciones, aunque sujetas a la incertidumbre inherente al futuro, sugieren una posible continuación de la fase de ajuste en la matrícula general y en varias ramas y carreras clave. Esto no es un augurio, sino una invitación a la preparación y a la acción proactiva. *(Ref. Sección 6)*
 
     7.  **La Importancia de los Detalles:** El análisis de "Áreas de Atención" nos ha recordado que la salud del sistema también reside en la vitalidad de cada uno de sus componentes, incluyendo las carreras emergentes, aquellas con matrícula reducida o las que podrían estar concluyendo su ciclo. *(Ref. Sección 7)*
-    """)
+    """
+    st.markdown(hallazgos_texto)
     st.markdown("---")
 
     st.subheader("🧭 Trazando la Carta de Navegación: Recomendaciones Estratégicas")
-    st.markdown("""
+    recomendaciones_texto = """
     Con estos hallazgos como brújula, proponemos las siguientes líneas de acción para la Sede Central
     y todos los actores involucrados en la Educación Superior cubana:
 
@@ -1035,7 +1158,8 @@ def conclusion():
     *   **Integrar la Voz de los Actores:**
         *   **Acción:** Complementar los análisis cuantitativos con investigaciones cualitativas que recojan las percepciones y experiencias de estudiantes, profesores, egresados y empleadores.
         *   **Impacto Esperado:** Decisiones más holísticas y políticas mejor adaptadas a las realidades y expectativas de la comunidad universitaria y la sociedad.
-    """)
+    """
+    st.markdown(recomendaciones_texto)
     st.markdown("---")
         
     st.header("✨ Un Legado Continuo, Un Futuro Brillante")
@@ -1049,4 +1173,23 @@ def conclusion():
     superior que no solo responda a las necesidades del presente, sino que activamente modele
     un mañana más próspero, justo y lleno de conocimiento para todos los jóvenes Cubanos.
     """)
-    st.balloons()
+    #Limitar a los balloons a una sola vez para evitar sobrecarga visual
+    if 'balloons_shown' not in st.session_state:
+        st.session_state.balloons_shown = True
+        st.balloons()
+    
+    # --- Preparación del contexto para la IA ---
+    contexto_conclusion_ia = (
+        "Esta es la sección de conclusiones y recomendaciones finales del análisis sobre la educación superior en Cuba. "
+        "A continuación se presentan los principales hallazgos y las recomendaciones estratégicas derivadas de los datos. "
+        "Tu rol es discutir estos puntos, ofrecer perspectivas adicionales o responder preguntas sobre estas conclusiones."
+        "\n\n--- HALLAZGOS PRINCIPALES ---\n"
+        f"{hallazgos_texto}"
+        "\n\n--- RECOMENDACIONES ESTRATÉGICAS ---\n"
+        f"{recomendaciones_texto}"
+    )
+
+    ask_ai_component(
+        analysis_context=contexto_conclusion_ia,
+        key="conclusiones_finales",
+    )

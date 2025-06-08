@@ -187,6 +187,7 @@ def ask_ai_component(analysis_context: str, key: str, extra_data: list | None = 
         **Estructura de la Respuesta:**
         - En la respuesta final al usuario da un resumen claro y conciso de los resultados o sobre lo que haya solicitado.
         - Si no necesitas código, responde directamente con texto.
+        - Si quieres mostrar un dataframe o tabla, usa markdown
         - No inventes información. Si la respuesta no está en el contexto, indícalo amablemente.
         """
 
