@@ -29,16 +29,53 @@ def configure_gemini_client():
 gemini_client = configure_gemini_client()
 
 # --- Funciones Auxiliares para Conversión de Contexto (Sin cambios) ---
-def _clean_fig_dict_for_json(d):
-    """Convierte ndarrays a listas para serialización JSON."""
-    if isinstance(d, dict):
-        return {k: _clean_fig_dict_for_json(v) for k, v in d.items()}
-    elif isinstance(d, list):
-        return [_clean_fig_dict_for_json(v) for v in d]
-    elif isinstance(d, np.ndarray):
-        return d.tolist()
-    else:
-        return d
+def _clean_plotly_dict_for_ai(d):
+    """
+    Limpia recursivamente un diccionario de Plotly para reducirlo a su esencia semántica,
+    conservando la información de color principal para el diálogo con el usuario.
+    """
+    KEY_WHITELISTS = {
+        'root':   {'data', 'layout'},
+        'data':   {'type', 'name', 'x', 'y', 'z', 'labels', 'values', 'text', 'marker', 'line'},
+        'layout': {'title', 'xaxis', 'yaxis', 'barmode', 'legend'},
+        'axis':   {'title', 'type'},
+        'title':  {'text'},
+        'legend': {'title'},
+        'style_object': {'color'} # Nueva lista blanca para marker y line
+    }
+
+    CONTEXT_MAP = {
+        'data': 'data',
+        'layout': 'layout',
+        'xaxis': 'axis',
+        'yaxis': 'axis',
+        'title': 'title',
+        'legend': 'legend',
+        'marker': 'style_object', # marker y line usarán el contexto 'style_object'
+        'line': 'style_object'
+    }
+
+    def recursive_clean(item, context='root'):
+        if isinstance(item, np.ndarray):
+            return item.tolist()
+        if not isinstance(item, (dict, list)):
+            return item
+        
+        if isinstance(item, list):
+            return [recursive_clean(i, context) for i in item]
+
+        if isinstance(item, dict):
+            new_dict = {}
+            allowed_keys = KEY_WHITELISTS.get(context, set())
+            for key, value in item.items():
+                if key in allowed_keys:
+                    new_context = CONTEXT_MAP.get(key, context)
+                    cleaned_value = recursive_clean(value, new_context)
+                    if cleaned_value or isinstance(cleaned_value, (int, float, bool, str)):
+                        new_dict[key] = cleaned_value
+            return new_dict
+
+    return recursive_clean(d)
 
 def _convert_context_to_gemini_parts(context_list):
     """Convierte una lista de contextos (texto, df, fig) a partes para la API de Gemini."""
@@ -47,22 +84,24 @@ def _convert_context_to_gemini_parts(context_list):
         if item is None: continue
         if isinstance(item, str):
             parts.append(types.Part.from_text(text=item))
+        elif isinstance(item, dict):#Escribe exactamente los datos que te proporcione exactamente como te los envié
+            parts.append(types.Part.from_text(text=f"Datos dict (Contexto {item_idx+1}):\n```dict\n{item}\n```"))
         elif isinstance(item, pd.DataFrame):
             try:
-                json_data = item.to_json(orient="records", indent=2)
-                parts.append(types.Part.from_text(text=f"Datos de Tabla (Contexto {item_idx+1}, formato JSON):\n```json\n{json_data}\n```"))
+                markdown_data = item.to_markdown(index=False)
+                parts.append(types.Part.from_text(text=f"Datos de Tabla (Contexto {item_idx+1}, formato Markdown):\n```markdown\n{markdown_data}\n```"))
             except Exception as e:
                 st.warning(f"Error al convertir DataFrame a JSON para IA: {e}")
                 parts.append(types.Part.from_text(text="[ERROR AL PROCESAR DATAFRAME]"))
         elif isinstance(item, go.Figure):
             try:
                 fig_dict = item.to_dict()
-                clean_dict = _clean_fig_dict_for_json(fig_dict)
+                clean_dict = _clean_plotly_dict_for_ai(fig_dict)
                 fig_json = json.dumps(clean_dict, indent=2)
-                parts.append(types.Part.from_text(text=f"Descripción de Gráfico Plotly (Contexto {item_idx+1}, formato JSON):\n```json\n{fig_json}\n```"))
+                parts.append(types.Part.from_text(text=f"Descripción de Gráfico Plotly (Contexto {item_idx+1}, formato DICT):\n```dict\n{clean_dict}\n```"))
             except Exception as e:
                 st.warning(f"Error al convertir gráfico Plotly a JSON para IA: {e}")
-                parts.append(types.Part.from_text(text=f"[GRÁFICO NO CONVERTIDO A JSON: {str(e)}]"))
+                parts.append(types.Part.from_text(text=f"[GRÁFICO NO CONVERTIDO A DICT: {str(e)}]"))
         else:
             st.warning(f"Tipo de contexto no soportado para IA: {type(item)}. Se ignorará.")
     return parts
@@ -80,23 +119,19 @@ def stream_ai_chat_response(chat_session: ChatSession, prompt: str):
         # La llamada ahora es simple: solo envía el texto del prompt actual.
         stream = chat_session.send_message_stream(prompt)
         
-        print(f"Iniciando la generación de contenido con Gemini ChatSession... {'-'*40}")
+        #print(f"Iniciando la generación de contenido con Gemini ChatSession... {'-'*40}")
         for chunk in stream:
             if not chunk.candidates: continue
             for part in chunk.candidates[0].content.parts:
                 if part.text:
-                    print(part.text, end="", flush=True)
                     yield ("text", part.text, None)
                 elif part.executable_code:
-                    print(f"\nCódigo ejecutable recibido:\n{part.executable_code.code}")
                     yield ("code", part.executable_code.code, None)
                 elif part.code_execution_result:
-                    print(f"\nResultado de ejecución: {part.code_execution_result}")
                     outcome = getattr(part.code_execution_result, 'outcome', 'UNKNOWN')
                     output = getattr(part.code_execution_result, 'output', '')
                     if outcome == "OUTCOME_OK":
                         if isinstance(output, types.Blob):
-                            print(f"\nImagen generada con éxito: {output.mime_type}")
                             yield ("image", output.data, output.mime_type)
                         else:
                             yield ("result", str(output), None)
@@ -105,10 +140,7 @@ def stream_ai_chat_response(chat_session: ChatSession, prompt: str):
                         yield ("result", f"Error en ejecución: {outcome}\n{output}", None)
                 elif hasattr(part, 'inline_data') and part.inline_data.data:
                     yield ("image", part.inline_data.data, part.inline_data.mime_type)
-                elif hasattr(part, 'function_call'):
-                    print(f"\nLlamada a función recibida: {part.function_call.name}")
-                    yield ("function_call", part.function_call, None)
-        print("\n--- Fin de la generación ---")
+        #print("\n--- Fin de la generación ---")
 
     except Exception as e:
         st.error(f"Error en la comunicación con Gemini: {e}")
@@ -180,7 +212,7 @@ def ask_ai_component(analysis_context: str, key: str, extra_data: list | None = 
                 chat_session = st.session_state.get(gemini_chat_key)
                 
                 if chat_session is None:
-                    print("Creando nueva sesión de chat con contexto en historial...")
+                    #print("Creando nueva sesión de chat con contexto en historial...")
                     tools = [types.Tool(code_execution=types.ToolCodeExecution)]
                     
                     # CORRECCIÓN: Configuración completa creada una sola vez.
@@ -196,10 +228,9 @@ def ask_ai_component(analysis_context: str, key: str, extra_data: list | None = 
                     current_textual_context = f"Contexto textual del análisis actual:\n---\n{analysis_context}\n---"
                     initial_context_data = [current_textual_context] + (extra_data if extra_data else [])
                     history_parts = _convert_context_to_gemini_parts(initial_context_data)
-                    print(history_parts)
                     initial_history = [
                         types.Content(role="user", parts=[types.Part.from_text(text=str(history_parts))]),
-                        types.Content(role="model", parts=[types.Part.from_text(text="Contexto recibido. Estoy listo para tus preguntas sobre estos datos.")])
+                        types.Content(role="model", parts=[types.Part.from_text(text="Datos recibidos. Estoy listo para tus preguntas sobre estos datos.")])
                         ]
 
                     chat_session = gemini_client.chats.create(
