@@ -206,7 +206,6 @@ def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data:
                         
                         with response_container.container():
                             st.download_button(label="📥 Descargar Código", data=content, file_name=f"codigo_{key}.py", mime="text/x-python", key=f"download_live_code_{key}_{time.time()}")
-                            st.markdown("Presiona el botón para descargar el código generado.")
                         
                         display_messages_to_add.append({"role": "assistant", "content": {"type": "code_download", "code": content}})
                         text_placeholder = response_container.empty()
