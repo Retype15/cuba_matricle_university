@@ -1,4 +1,5 @@
 import io
+import re
 
 def to_csv_string(list_of_dicts):
     """
@@ -21,3 +22,18 @@ def to_csv_string(list_of_dicts):
         
     # Devolver el contenido de la cadena, eliminando el último '\n'
     return output.getvalue().strip()
+
+
+def parse_blocks(pattern, texto):
+    """
+    Encuentra bloques de texto delimitados por ```tipo y ``` en el texto dado.
+    Devuelve un iterador con tuplas (tipo, contenido) para cada bloque encontrado.
+
+    Args:
+        texto (str): El texto a analizar.
+
+    Yields:
+        tuple: Una tupla (tipo, contenido) para cada bloque encontrado.
+    """
+    for match in re.finditer(pattern, texto): #DEBE SER  re.DOTALL el pattern
+        yield match.group("tipo"), match.group("contenido")
