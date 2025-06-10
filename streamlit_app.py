@@ -30,6 +30,22 @@ else:
         "7. Áreas de Atención": None,
         "Conclusiones Finales": None
     }
+
+    SECTION_MAP = {
+        "Introduccion": introduction,
+        "1. Pulso Nacional": A1,
+        "2. Mosaico de Saberes": A2,
+        "3. Carreras Bajo la Lupa": A3,
+        "4. Perspectiva de Género": A4,
+        "5. Universidades: Fortalezas y Focos": A5,
+        "6. Mirando al Mañana (Proyecciones)": A6,
+        "7. Áreas de Atención": A7,
+        "Conclusiones Finales": conclusion
+    }
+    PLAYGROUND_MAP = {
+        "Perfil Detallado de Carrera": B1,
+        "Guía de Instituciones": B2
+    }
     
     nav: HierarchicalSidebarNavigation = HierarchicalSidebarNavigation(navigation_structure)
 
@@ -41,30 +57,14 @@ else:
     st.sidebar.info("Análisis basado en datos de matrícula del período 2015-16 a 2024-25.\n\n -- ⚠️ No incluye el curso 2018-2019 por falta de datos en dicho curso, los análisis se realizan obviando este curso.")
 
     # --- Contenido por Sección ---
-    
-    if seccion_actual == "Introduccion": introduction()
-
-    elif seccion_actual == "B1. Perfil Detallado de Carrera": B1(df_main)
-
-    elif seccion_actual == "1. Pulso Nacional": A1(df_main)
-
-    elif seccion_actual == "2. Mosaico de Saberes": A2(df_main)
-
-    elif seccion_actual == "3. Carreras Bajo la Lupa": A3(df_main)
-
-    elif seccion_actual == "4. Perspectiva de Género": A4(df_main)
-
-    elif seccion_actual == "5. Universidades: Fortalezas y Focos": A5(df_main)
-    
-    elif seccion_actual == "6. Mirando al Mañana (Proyecciones)": A6(df_main)
-
+    if seccion_actual in SECTION_MAP:
+        SECTION_MAP[seccion_actual](df_main)
     elif seccion_actual == "Playground!":
-        if active_sub == "Perfil Detallado de Carrera": B1(df_main)
-        elif active_sub == "Guía de Instituciones": B2(df_main, df_ins)
-
-    elif seccion_actual == "7. Áreas de Atención": A7(df_main)
-
-    elif seccion_actual == "Conclusiones Finales": conclusion()
+        if active_sub in PLAYGROUND_MAP:
+            kwargs = {"df": df_main,"df_ins": df_ins}
+            PLAYGROUND_MAP[active_sub](**kwargs)
+        else:
+            st.error("Subsección no válida en Playground!")
 
     nav.create_navigation_buttons(prev_text='Anterior: ', next_text='Siguiente: ')
 

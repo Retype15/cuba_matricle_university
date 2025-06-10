@@ -494,7 +494,7 @@ def analisis_A2(df, incluir_proyeccion=False):
     if 'Curso_Academico' not in rama_evolucion_historica.columns:
         rama_evolucion_historica['Curso_Academico'] = rama_evolucion_historica['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
 
-    df_proyecciones_ramas_concat = pd.DataFrame()
+    df_proj_concat = pd.DataFrame()
     ramas_unicas = rama_evolucion_historica['rama_ciencias'].unique()
     max_y_value_for_annotation = 0
     proyeccion_realizada_alguna_rama = False
@@ -525,7 +525,7 @@ def analisis_A2(df, incluir_proyeccion=False):
                 'rama_ciencias': rama, 'Tipo': 'Proyectada' })
             if 'Curso_Academico' not in df_proy_rama_graf.columns:
                 df_proy_rama_graf['Curso_Academico'] = df_proy_rama_graf['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
-            df_proyecciones_ramas_concat = pd.concat([df_proyecciones_ramas_concat, df_proy_rama_graf], ignore_index=True)
+            df_proj_concat = pd.concat([df_proj_concat, df_proy_rama_graf], ignore_index=True)
             proyeccion_realizada_alguna_rama = True
             if df_proy_rama_graf['Matricula_Total'].max() > max_y_value_for_annotation:
                 max_y_value_for_annotation = df_proy_rama_graf['Matricula_Total'].max()
@@ -543,7 +543,7 @@ def analisis_A2(df, incluir_proyeccion=False):
                 mode='lines+markers', name=rama, legendgroup=rama,
                 line=dict(color=color_actual, dash='solid'), showlegend=True ))
         if incluir_proyeccion:
-            df_proy_rama_actual = df_proyecciones_ramas_concat[df_proyecciones_ramas_concat['rama_ciencias'] == rama]
+            df_proy_rama_actual = df_proj_concat[df_proj_concat['rama_ciencias'] == rama]
             if not df_proy_rama_actual.empty:
                 fig_abs.add_trace(go.Scatter(
                     x=df_proy_rama_actual['Curso_Academico'], y=df_proy_rama_actual['Matricula_Total'],
@@ -820,19 +820,19 @@ def analisis_A7(df, carreras_seleccionadas=None): # Nuevo parámetro
         model_c = LinearRegression().fit(X_c, y_c)
             
         ultimo_ano_hist_c_val = data_carrera_hist['Ano_Inicio_Curso'].max()
-        # Asegurarse de que ultima_mat_hist_c_val es un escalar
-        ultima_mat_hist_c_val_series = data_carrera_hist[data_carrera_hist['Ano_Inicio_Curso'] == ultimo_ano_hist_c_val]['Matricula_Total']
-        if ultima_mat_hist_c_val_series.empty:
+        # Asegurarse de que last_hist_enrollment es un escalar
+        last_hist_enrollment_series = data_carrera_hist[data_carrera_hist['Ano_Inicio_Curso'] == ultimo_ano_hist_c_val]['Matricula_Total']
+        if last_hist_enrollment_series.empty:
              msg_detalle_proy.append(f"{carrera_nombre} (no se encontró matrícula para el último año histórico)")
              continue
-        ultima_mat_hist_c_val = ultima_mat_hist_c_val_series.iloc[0]
+        last_hist_enrollment = last_hist_enrollment_series.iloc[0]
 
         anos_proy_c = np.array([ultimo_ano_hist_c_val + 1, ultimo_ano_hist_c_val + 2])
         matricula_proyectada_carrera_final = model_c.predict(anos_proy_c.reshape(-1,1))
 
         df_proy_carrera_graf = pd.DataFrame({
             'Ano_Inicio_Curso': np.concatenate(([ultimo_ano_hist_c_val], anos_proy_c)),
-            'Matricula_Total': np.concatenate(([ultima_mat_hist_c_val], matricula_proyectada_carrera_final.round(0).clip(min=0))),
+            'Matricula_Total': np.concatenate(([last_hist_enrollment], matricula_proyectada_carrera_final.round(0).clip(min=0))),
             'carrera': carrera_nombre, 'Tipo': 'Proyectada'})
         df_proy_carrera_graf['Curso_Academico'] = df_proy_carrera_graf['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
         

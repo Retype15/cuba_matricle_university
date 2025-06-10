@@ -797,7 +797,7 @@ def A7(df_main):
     del país y asegurar la vitalidad y pertinencia de la oferta académica universitaria.
     """)
 
-def B1(df):
+def B1(df, **kwargs):
     st.header("🔬 Playground: Perfil Detallado de Carrera: Una Radiografía Completa")
     st.markdown("""
     Sumérgete en los detalles de la carrera que elijas. Descubre su evolución histórica de matrícula,
@@ -947,7 +947,7 @@ def B1(df):
         extra_data=datos_para_ia
     )
 
-def B2(df_main, df_ins):
+def B2(df_main, df_ins, **kwargs):
     st.header("🗺️ B2. Guía de Instituciones: Explora la Oferta Académica por Localidad")
     st.markdown("""
     Descubre las instituciones de educación superior en Cuba, filtrando por provincia y municipio.
