@@ -6,7 +6,7 @@ from .general_functions import to_csv_string
 def show_info(msg):
     if msg: st.caption(f"ℹ️ {msg}")
 
-def introduction():
+def introduction(*args,**kwargs):
     st.header("🎯 Bienvenidos al Corazón de la Educación Superior Cubana")
     st.markdown("""
         La universidad no es solo un edificio; es un crisol de sueños, un motor de progreso y un reflejo
@@ -23,7 +23,7 @@ def introduction():
     """)
     st.success("¡Tu viaje comienza aquí! Selecciona una sección en el menú lateral o usa el botón 'Siguiente'.")
 
-def A1(df_main):
+def A1(df_main,*args,**kwargs):
     st.header("🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?")
     st.markdown("""
     Imagina que podemos tomarle el pulso a todo el sistema universitario cubano a lo largo de una década.
@@ -85,7 +85,7 @@ def A1(df_main):
     else:
         st.warning(msg_a1 if msg_a1 else "No se pudo generar el gráfico del panorama nacional (A1).")
 
-def A2(df_main):
+def A2(df_main,*args,**kwargs):
     st.header("📚 Un Mosaico de Saberes: ¿Hacia Dónde se Inclinan los Futuros Profesionales?")
     st.markdown("""
     La universidad es un vasto jardín donde florecen diversas disciplinas. Cada rama del conocimiento,
@@ -219,7 +219,7 @@ def A2(df_main):
     else:
         st.warning(msg_corr_ramas if msg_corr_ramas else "No se pudo generar el mapa de correlación entre ramas.")
 
-def A3(df_main):
+def A3(df_main,*args,**kwargs):
     st.header("🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo")
     st.markdown("""
     Tras explorar las grandes ramas del saber, es momento de enfocar nuestra lente en las unidades
@@ -340,7 +340,7 @@ def A3(df_main):
     )
     st.markdown("---")
 
-def A4(df_main):
+def A4(df_main,*args,**kwargs):
     st.header("♀️♂️ Equilibrando la Balanza: Una Mirada a la Perspectiva de Género")
     st.markdown("""
     La universidad no solo forma profesionales, sino que también moldea una sociedad más justa y equitativa.
@@ -419,7 +419,7 @@ def A4(df_main):
     *   Estos datos son una invitación a profundizar: ¿Cuáles son las causas de estos desbalances? ¿Cómo podemos inspirar a las nuevas generaciones a explorar todas las áreas del conocimiento sin sesgos de género?
     """)
 
-def A5(df_main):
+def A5(df_main,*args,**kwargs):
     st.header("🏛️ Universidades en Perspectiva: Descubriendo Fortalezas y Focos de Especialización")
     st.markdown("""
     Cada universidad es un ecosistema único con su propia historia, vocación y áreas de excelencia.
@@ -450,11 +450,12 @@ def A5(df_main):
         if msg_a5:
              contexto_treemap_ia += f"\nNota del análisis: {msg_a5}"
 
-        ask_ai_component(
-            analysis_context=contexto_treemap_ia,
-            key="a5_treemap_unis",
-            extra_data=datos_treemap_ia
-        )
+        #Demasiados datos para enviar a la IA, mejor solo el treemap
+        #ask_ai_component(
+        #    analysis_context=contexto_treemap_ia,
+        #    key="a5_treemap_unis",
+        #    extra_data=datos_treemap_ia
+        #)
     else:
         st.warning("No se pudo generar el treemap de distribución.")
         show_info(msg_a5)
@@ -545,7 +546,7 @@ def A5(df_main):
     *   **Colaboración Interinstitucional:** Conocer las fortalezas de cada una puede fomentar sinergias, programas conjuntos y movilidad estudiantil y profesoral.
     """)
 
-def A6(df_main):
+def A6(df_main,*args,**kwargs):
     st.header("🔭 Mirando al Mañana: ¿Qué Podríamos Esperar? (Proyecciones Futuras)")
     st.markdown("""
     Anticipar el futuro es un desafío, pero analizar las tendencias recientes nos permite trazar
@@ -682,7 +683,7 @@ def A6(df_main):
     *   Fomentar un diálogo informado sobre el **futuro de la oferta académica** en Cuba.
     """)
 
-def A7(df_main):
+def A7(df_main,*args,**kwargs):
     st.header("💡 Áreas de Atención: Identificando Desafíos y Oportunidades Específicas")
     st.markdown("""
     Más allá de las grandes tendencias, existen situaciones particulares en carreras y universidades
@@ -797,7 +798,7 @@ def A7(df_main):
     del país y asegurar la vitalidad y pertinencia de la oferta académica universitaria.
     """)
 
-def B1(df, **kwargs):
+def B1(df_main,*args,**kwargs):
     st.header("🔬 Playground: Perfil Detallado de Carrera: Una Radiografía Completa")
     st.markdown("""
     Sumérgete en los detalles de la carrera que elijas. Descubre su evolución histórica de matrícula,
@@ -805,7 +806,7 @@ def B1(df, **kwargs):
     y un panorama de las universidades que la imparten actualmente. ¡Una visión 360º a tu alcance!
     """)
 
-    todas_carreras_unicas = sorted(df['carrera'].unique())
+    todas_carreras_unicas = sorted(df_main['carrera'].unique())
     carrera_sel_b1 = st.selectbox(
         "Selecciona una Carrera para analizar su perfil:",
         options=todas_carreras_unicas,
@@ -820,6 +821,7 @@ def B1(df, **kwargs):
     fig_pie_genero = None
     fig_bar_unis = None
     cagr_b1_info = {}
+    datos_para_ia = []
     contexto_texto_ia = ""
     msg_b1 = ""
 
@@ -828,7 +830,7 @@ def B1(df, **kwargs):
         
         with st.spinner(f"Generando perfil para {carrera_sel_b1}..."):
             fig_b1_evol_gen, df_evol_para_cagr_b1, df_unis_b1, datos_genero_ultimo_ano_b1, rama_b1, msg_b1 = analisis_perfil_carrera(
-                df.copy(),
+                df_main.copy(),
                 carrera_sel_b1
             )
         
@@ -873,7 +875,7 @@ def B1(df, **kwargs):
         col_b1_genero_metric, col_b1_genero_pie = st.columns([1,1])
 
         with col_b1_genero_metric:
-            st.markdown(f"**Composición de Género (Curso {df['Ano_Inicio_Curso'].max()}-{df['Ano_Inicio_Curso'].max()+1}):**")
+            st.markdown(f"**Composición de Género (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}):**")
             if datos_genero_ultimo_ano_b1 and datos_genero_ultimo_ano_b1.get('Total', 0) > 0:
                 st.metric(label="Total Mujeres", value=f"{int(datos_genero_ultimo_ano_b1['Mujeres']):,}")
                 st.metric(label="Total Hombres", value=f"{int(datos_genero_ultimo_ano_b1['Hombres']):,}")
@@ -896,10 +898,10 @@ def B1(df, **kwargs):
 
         if df_unis_b1 is not None and not df_unis_b1.empty:
             st.markdown(f"**Universidades que imparten '{carrera_sel_b1}' (Matrícula en último curso):**")
-            df_unis_b1_sorted = df_unis_b1.sort_values(by=f'Matrícula {df["Ano_Inicio_Curso"].max()}-{df["Ano_Inicio_Curso"].max()+1}', ascending=True)
+            df_unis_b1_sorted = df_unis_b1.sort_values(by=f'Matrícula {df_main["Ano_Inicio_Curso"].max()}-{df_main["Ano_Inicio_Curso"].max()+1}', ascending=True)
             fig_bar_unis = px.bar(
                 df_unis_b1_sorted,
-                x=f'Matrícula {df["Ano_Inicio_Curso"].max()}-{df["Ano_Inicio_Curso"].max()+1}',
+                x=f'Matrícula {df_main["Ano_Inicio_Curso"].max()}-{df_main["Ano_Inicio_Curso"].max()+1}',
                 y='Universidad',
                 orientation='h',
                 title=f"Distribución por Universidad: {carrera_sel_b1}",
@@ -926,16 +928,12 @@ def B1(df, **kwargs):
         if msg_b1:
              contexto_texto_ia += f"\nMensaje adicional del análisis: {msg_b1}"
              
-        ### 2. Consolidar todos los datos en una lista para 'extra_data'.
-        #    Usamos las figuras porque ya contienen los datos de forma optimizada.
-        #    Se añaden solo los objetos que realmente existen.
-        datos_para_ia = []
         if fig_b1_evol_gen:
-            datos_para_ia.append(fig_b1_evol_gen) # Este gráfico contiene la evolución histórica y de género.
+            datos_para_ia.append(fig_b1_evol_gen)
         if fig_pie_genero:
-            datos_para_ia.append(fig_pie_genero) # Contiene la distribución de género del último año.
+            datos_para_ia.append(fig_pie_genero)
         if fig_bar_unis:
-            datos_para_ia.append(fig_bar_unis) # Contiene el desglose por universidades.
+            datos_para_ia.append(fig_bar_unis)
 
     else:
         st.info("Por favor, selecciona una Carrera para continuar.")
@@ -947,7 +945,7 @@ def B1(df, **kwargs):
         extra_data=datos_para_ia
     )
 
-def B2(df_main, df_ins, **kwargs):
+def B2(df_main, df_ins,*args,**kwargs):
     st.header("🗺️ B2. Guía de Instituciones: Explora la Oferta Académica por Localidad")
     st.markdown("""
     Descubre las instituciones de educación superior en Cuba, filtrando por provincia y municipio.
@@ -1097,7 +1095,7 @@ def B2(df_main, df_ins, **kwargs):
         extra_data=datos_para_ia
     )
 
-def conclusion():
+def conclusion(*args,**kwargs):
     st.header("🏁 Conclusiones y Horizontes Futuros: Forjando la Universidad del Mañana")
     st.markdown("""
     Hemos viajado a través de una década de datos, explorando el complejo ecosistema

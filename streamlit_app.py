@@ -61,7 +61,7 @@ else:
         SECTION_MAP[seccion_actual](df_main)
     elif seccion_actual == "Playground!":
         if active_sub in PLAYGROUND_MAP:
-            kwargs = {"df": df_main,"df_ins": df_ins}
+            kwargs = {"df_main": df_main,"df_ins": df_ins}
             PLAYGROUND_MAP[active_sub](**kwargs)
         else:
             st.error("Subsección no válida en Playground!")
