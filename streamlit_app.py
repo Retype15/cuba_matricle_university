@@ -3,12 +3,12 @@ from libraries.streamlit_extended import HierarchicalSidebarNavigation
 from libraries.st_options import *
 from libraries.general_functions import translation, _load_translations
 
-st.set_page_config(layout="wide", page_title=translation('config_page_title', 'en'), page_icon="🎓")
+st.set_page_config(layout="wide", page_title="Cuban University Enrollment Analysis", page_icon="🎓")
 
 df_main = cargar_datos_matricula('data/db.parquet') 
 df_ins = cargar_datos_instituciones('data/db_uni.parquet')
 
-idiomas = {"English": "en", "Español": "es"}
+idiomas = {"English": "en", "Español": "es", "Français": "fr", "Português": "pt", "Deutsch": "de"}
 st.session_state.setdefault("lang_sel", "en")
 lang_selected = st.sidebar.selectbox("Select your language:", list(idiomas.keys()))
 if idiomas[lang_selected] != st.session_state.get("lang_sel", None):
