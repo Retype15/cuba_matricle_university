@@ -1,0 +1,39 @@
+{
+    "es": {
+        "greeting": "Hello, world!",
+        "description": "Welcome to our app",
+        "select_your_lang": "Selecciona tu idioma",
+        "config_page_title": "Análisis Matrícula Universitaria Cuba",
+        "load_df_error": "Error crítico: No se pudieron cargar los datos ('db_long.csv'). La aplicación no puede continuar.",
+        "main_image_caption": "Universidad de La Habana. Un símbolo de la educación superior en Cuba.",
+        "main_markdown_1": "Un viaje para iluminar el camino de la Educación Superior.",
+        "load_screen_title": "🎓 Análisis Estratégico de la Matrícula Universitaria en Cuba",
+        "sidebar_title": "🧭 Explorador de secciones",
+        "sidebar_radio_title_main": "Elige una sección:",
+        "sidebar_radio_title_sub_prefix": "Subseccion: ",
+        "sidebar_info": "Análisis basado en datos de matrícula del período 2015-16 a 2024-25.\n\n -- ⚠️ No incluye el curso 2018-2019 por falta de datos en dicho curso, los análisis se realizan obviando este curso.",
+        "subseccion_not_valid_in": "Subsección no válida en ",
+        "back: ": "Anterior: ",
+        "next: ": "Siguiente: ",
+        "authors:": "Autores:",
+
+        "section_introduction": "Introducción",
+        "section_national_pulse": "1. Pulso Nacional",
+        "section_knowledge_mosaic": "2. Mosaico de Saberes",
+        "section_careers_under_microscope": "3. Carreras Bajo la Lupa",
+        "section_gender_perspective": "4. Perspectiva de Género",
+        "section_universities_strengths": "5. Universidades: Fortalezas y Focos",
+        "section_looking_ahead": "6. Mirando al Mañana (Proyecciones)",
+        "section_detailed_career_profile": "Perfil Detallado de Carrera",
+        "section_institution_guide": "Guía de Instituciones",
+        "section_areas_of_focus": "7. Áreas de Atención",
+        "section_final_conclusions": "Conclusiones Finales",
+
+        "":""
+    },
+    "en": {
+        "greeting": "¡Hola, mundo!",
+        "description": "Bienvenido a nuestra aplicación",
+        "load_screen_title": "🎓 TESTING"
+    }
+}

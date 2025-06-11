@@ -33,8 +33,6 @@ class HierarchicalSidebarNavigation:
         if self.last_subs_key not in st.session_state:
             st.session_state[self.last_subs_key] = {}
 
-        # Ensure the current main section has an entry in last_subs_key if it has subsections
-        # and if one isn't already set (e.g., by user interaction).
         current_main = st.session_state[self.section_key]
         current_main_subsections = self.structure.get(current_main)
         if current_main_subsections and current_main not in st.session_state[self.last_subs_key]:
@@ -85,10 +83,8 @@ class HierarchicalSidebarNavigation:
             st.session_state[self.section_key] = selected_main_section
             subsections_for_new_main = self.structure.get(selected_main_section)
             if subsections_for_new_main:
-                # If a last active subsection is not remembered for this new main section, default to the first.
                 if selected_main_section not in st.session_state[self.last_subs_key]:
                     self._set_active_subsection_for_main(selected_main_section, subsections_for_new_main[0])
-            # If the new main section has no subsections, its entry in last_subs_key will be naturally absent or removed.
             rerun_needed = True
 
         active_main_for_sub_selector = st.session_state[self.section_key]
@@ -101,7 +97,7 @@ class HierarchicalSidebarNavigation:
             idx_sub = 0
             if current_active_sub and current_active_sub in available_subsections:
                 idx_sub = available_subsections.index(current_active_sub)
-            elif available_subsections: # If no active sub or invalid one, default to first.
+            elif available_subsections:
                 self._set_active_subsection_for_main(active_main_for_sub_selector, available_subsections[0])
                 idx_sub = 0 
             
@@ -115,9 +111,7 @@ class HierarchicalSidebarNavigation:
                 rerun_needed = True
         
         elif st.session_state[self.last_subs_key].get(active_main_for_sub_selector) is not None:
-             # Clean up if current main section no longer has subsections but one was remembered.
              del st.session_state[self.last_subs_key][active_main_for_sub_selector]
-             # rerun_needed = True # Consider if UI needs to react to sub becoming None.
 
         if rerun_needed:
             st.rerun()
@@ -131,7 +125,7 @@ class HierarchicalSidebarNavigation:
         """
         active_main = st.session_state.get(self.section_key)
         active_sub = None
-        if active_main and self.structure.get(active_main): # Check if main section is supposed to have subs
+        if active_main and self.structure.get(active_main):
             active_sub = self._get_current_active_subsection_for_main(active_main)
         return active_main, active_sub
 
@@ -152,13 +146,10 @@ class HierarchicalSidebarNavigation:
             if available_subs:
                 if sub_section_name and sub_section_name in available_subs:
                     self._set_active_subsection_for_main(main_section_name, sub_section_name)
-                else: # Default to the first (or last remembered if logic was to prefer that)
-                    # For simplicity, if sub_section_name is None or invalid, default to first.
-                    # If it was already set for this main_section, it will be preserved unless explicitly changed.
+                else:
                     if main_section_name not in st.session_state[self.last_subs_key] or \
                        st.session_state[self.last_subs_key][main_section_name] not in available_subs:
                         self._set_active_subsection_for_main(main_section_name, available_subs[0])
-            # If main section has no subsections, ensure no "ghost" subsection is remembered for it.
             elif main_section_name in st.session_state[self.last_subs_key]:
                  del st.session_state[self.last_subs_key][main_section_name]
             st.rerun()
@@ -192,7 +183,7 @@ class HierarchicalSidebarNavigation:
         for _, sub_sections_list in self.structure.items():
             if sub_sections_list:
                 count += len(sub_sections_list)
-            else: # Main section without subsections counts as one step
+            else:
                 count += 1
         return count
 
@@ -210,8 +201,8 @@ class HierarchicalSidebarNavigation:
                     current_idx += 1
                     if main_s == current_main and sub_s_item == current_sub:
                         return current_idx
-        return 0 # Should not happen if state is valid
-
+        return 0
+    
     def create_navigation_buttons(self, 
                                   prev_text="⬅️ Previous Step",
                                   next_text="Next Step ➡️",
@@ -245,16 +236,14 @@ class HierarchicalSidebarNavigation:
         prev_main, prev_sub = self._get_previous_step(current_main_section, current_sub_section)
         next_main, next_sub = self._get_next_step(current_main_section, current_sub_section)
 
-        # For step count display
         if show_step_count:
             total_steps = self._get_total_steps()
             current_step_num = self._get_current_step_index()
         
-        # Use 3 columns for alignment, middle one can be for step count or Home
         st.markdown("---")
-        col1, col_mid, col3 = st.columns([2,1,2]) # Give more space to prev/next buttons
+        col1, col_mid, col3 = st.columns([2,1,2])
 
-        with col1: # Previous Buttoncurrent_main_section
+        with col1:
             if prev_main is not None:
                 btn_prev_text = f"{default_prev_prefix}{prev_text}"
                 if use_dynamic_names:
@@ -267,24 +256,24 @@ class HierarchicalSidebarNavigation:
                 if st.button(btn_prev_text, key=f"{self.section_key}_btn_prev_dyn", help=f"{prev_text}{prev_main}/{prev_sub}" if prev_sub else f"{prev_text}{prev_main}"):
                     self.navigate_to(prev_main, prev_sub)
             else:
-                st.container() # Placeholder to maintain layout
+                st.container()
 
-        with col_mid: # Home Button or Step Count
-            is_on_very_first_step = (prev_main is None) # Simpler check: if there's no previous, it's the first step.
+        with col_mid:
+            is_on_very_first_step = (prev_main is None)
             
             if not is_on_very_first_step:
                 if st.button(title_home, key=f"{self.section_key}_btn_home_dyn", help='Go to the first section.'):
                     self.navigate_to(self.main_sections[0])
-            elif show_step_count : # If on first step, but want to show step count
+            elif show_step_count :
                  st.markdown(f"<div style='text-align: center; margin-top: 8px;'>Step {current_step_num} of {total_steps}</div>", unsafe_allow_html=True)
             else:
                 st.container()
         
-        if not is_on_very_first_step and show_step_count: # Show step count below home if not on first step
+        if not is_on_very_first_step and show_step_count:
              st.caption(f"Step {current_step_num} of {total_steps}")
 
 
-        with col3: # Next Button
+        with col3:
             if next_main is not None:
                 btn_next_text = next_text 
                 if use_dynamic_names:
@@ -308,13 +297,13 @@ class HierarchicalSidebarNavigation:
                 current_sub_idx = subsections_of_current_main.index(current_sub)
                 if current_sub_idx < len(subsections_of_current_main) - 1:
                     return current_main, subsections_of_current_main[current_sub_idx + 1]
-            except ValueError: pass # Should not happen if state is consistent
+            except ValueError: pass
         
         if current_main_idx < len(self.main_sections) - 1:
             next_main_section = self.main_sections[current_main_idx + 1]
             subsections_of_next_main = self.structure.get(next_main_section)
             return next_main_section, subsections_of_next_main[0] if subsections_of_next_main else None
-        return None, None # End of navigation
+        return None, None
 
     def _get_previous_step(self, current_main, current_sub):
         """Calculates the previous step (main_section, sub_section) in the navigation sequence."""
@@ -332,7 +321,7 @@ class HierarchicalSidebarNavigation:
             prev_main_section = self.main_sections[current_main_idx - 1]
             subsections_of_prev_main = self.structure.get(prev_main_section)
             return prev_main_section, subsections_of_prev_main[-1] if subsections_of_prev_main else None
-        return None, None # Start of navigation
+        return None, None
 
 # --- Example of Usage ---
 if __name__ == "__main__":

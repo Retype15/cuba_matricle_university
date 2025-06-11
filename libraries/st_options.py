@@ -35,12 +35,10 @@ def A1(df_main,*args,**kwargs):
     que exploraremos a continuación.
     """)
 
-    # Llamamos a la función de análisis A1, solicitando solo la evolución histórica
     with st.spinner("Construyendo la gráfica A1, por favor espere..."):
         fig_a1, msg_a1 = analisis_A1(df_main, incluir_proyeccion=False)
 
     if fig_a1:
-        # --- RENDERIZADO PARA EL USUARIO (sin cambios) ---
         st.plotly_chart(fig_a1, use_container_width=True, key="fig_a1_pulso_nacional")
         if msg_a1:
             show_info(msg_a1)
@@ -62,19 +60,14 @@ def A1(df_main,*args,**kwargs):
         """
         st.markdown(descripcion_analisis_a1)
 
-        # --- PREPARACIÓN DEL CONTEXTO PARA LA IA (OPTIMIZADO) ---
         
-        # 1. Creamos un contexto textual breve y directo.
         contexto_texto_ia = (
             "El análisis actual es sobre la evolución de la matrícula nacional total en Cuba. "
             "Los datos brutos se proporcionan en el objeto de gráfico adjunto."
         )
         if msg_a1:
-            # Si hay un mensaje importante del análisis (ej. datos faltantes), lo añadimos.
             contexto_texto_ia += f"\nNota importante del análisis: {msg_a1}"
 
-        # 2. Los datos extra son ÚNICAMENTE el gráfico.
-        # Nuestra función de limpieza extraerá los datos eficientemente de él.
         datos_para_ia = [fig_a1]
 
         ask_ai_component(
@@ -96,7 +89,6 @@ def A2(df_main,*args,**kwargs):
     - ¿Cómo ha danzado el interés estudiantil a lo largo de la última década?
     """)
 
-    # --- Análisis y renderizado de la evolución absoluta ---
     with st.spinner("Analizando la evolución de las ramas de ciencias..."):
         fig_a2_abs, fig_a2_pct, msg_a2 = analisis_A2(df_main, incluir_proyeccion=False)
 
@@ -130,7 +122,6 @@ def A2(df_main,*args,**kwargs):
     else:
         st.warning("No se pudo generar el gráfico de evolución absoluta por rama (A2).")
 
-    # --- Análisis y renderizado de la evolución porcentual ---
     if fig_a2_pct:
         st.subheader("El Reparto del Pastel Académico: Distribución Porcentual Histórica")
         st.plotly_chart(fig_a2_pct, use_container_width=True, key="fig_a2_pct_mosaico")
@@ -161,7 +152,6 @@ def A2(df_main,*args,**kwargs):
     
     show_info(msg_a2)
     
-    # --- Análisis y renderizado del mapa de correlación ---
     st.subheader("🔗 Interconexiones en el Crecimiento: ¿Cómo se Relacionan las Ramas?")
     st.markdown("""
         No todas las ramas de ciencias crecen o decrecen de forma aislada. Algunas pueden mostrar
@@ -228,7 +218,6 @@ def A3(df_main,*args,**kwargs):
     acelerado y cuáles parecen estar perdiendo impulso?
     """)
 
-    # --- Subsección 1: El Podio de las Carreras ---
     st.subheader("🏆 El Podio de las Carreras: ¿Cuáles Lideran la Matrícula Actual?")
     st.markdown(f"""
     A la izquierda observamos el ranking de todas las carreras según su matrícula total en el curso más reciente
@@ -278,7 +267,6 @@ def A3(df_main,*args,**kwargs):
     )
     st.markdown("---")
 
-    # --- Subsección 2: El Ritmo del Cambio (CAGR) ---
     st.subheader("🚀 El Ritmo del Cambio: ¿Qué Carreras Despegan o Aterrizan?")
     st.markdown("""
     La **Tasa de Crecimiento Anual Compuesto (CAGR)** nos ofrece una perspectiva del dinamismo.
@@ -352,7 +340,6 @@ def A4(df_main,*args,**kwargs):
     with st.spinner("Analizando la perspectiva de género..."):
         fig_a4_ramas, fig_a4_carreras, msg_a4 = analisis_A4(df_main)
 
-    # --- Análisis y renderizado de género por ramas ---
     if fig_a4_ramas:
         st.subheader(f"Participación Femenina por Rama de Ciencias (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1})")
         st.plotly_chart(fig_a4_ramas, use_container_width=True, key="fig_a4_ramas_genero")
@@ -380,7 +367,6 @@ def A4(df_main,*args,**kwargs):
         st.warning("No se pudo generar el gráfico de género por ramas.")
         show_info(msg_a4)
 
-    # --- Análisis y renderizado de género por carreras ---
     if fig_a4_carreras:
         st.subheader(f"Zoom a las Carreras: Extremos del Espectro de Género (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}, Matrícula >= 20)")
         st.plotly_chart(fig_a4_carreras, use_container_width=True, key="fig_a4_carreras_genero")
@@ -407,10 +393,9 @@ def A4(df_main,*args,**kwargs):
         )
     else:
         st.warning("No se pudo generar el gráfico de género por carreras.")
-        if not fig_a4_ramas: # Mostrar mensaje solo si el primer gráfico tampoco se mostró
+        if not fig_a4_ramas:
             show_info(msg_a4)
 
-    # --- Texto de reflexión final para el usuario ---
     st.markdown("""
     ---
     **Reflexiones para la Acción:**
@@ -431,7 +416,6 @@ def A5(df_main,*args,**kwargs):
     with st.spinner("Preparando el análisis institucional..."):
         fig_a5_treemap, df_treemap_data, df_carreras_unicas_a5, msg_a5 = analisis_A5(df_main)
 
-    # --- Subsección 1: Treemap de Matrícula ---
     if fig_a5_treemap:
         st.subheader(f"Mapa Interactivo de la Matrícula Universitaria (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1})")
         st.plotly_chart(fig_a5_treemap, use_container_width=True, key="fig_a5_treemap_unis")
@@ -450,7 +434,7 @@ def A5(df_main,*args,**kwargs):
         if msg_a5:
              contexto_treemap_ia += f"\nNota del análisis: {msg_a5}"
 
-        #Demasiados datos para enviar a la IA, mejor solo el treemap
+        #Nota para el que revise esta kk: demasiados datos para enviar a la IA, mejor no incluir la ia aqui, si ve este mensaje es que se me olvidó encontrarle una mejor solucion...
         #ask_ai_component(
         #    analysis_context=contexto_treemap_ia,
         #    key="a5_treemap_unis",
@@ -460,7 +444,6 @@ def A5(df_main,*args,**kwargs):
         st.warning("No se pudo generar el treemap de distribución.")
         show_info(msg_a5)
 
-    # --- Subsección 2: Carreras con Oferta Limitada ---
     if df_carreras_unicas_a5 is not None and not df_carreras_unicas_a5.empty:
         st.subheader("Joyas Académicas: Carreras con Oferta Limitada")
         st.markdown(f"Listado de carreras y el número de universidades que las impartieron con matrícula en el curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}, ordenadas de menor a mayor número de oferentes.")
@@ -485,7 +468,6 @@ def A5(df_main,*args,**kwargs):
     
     st.markdown("---")
     
-    # --- Subsección 3: Comparativa de Carreras por Universidad ---
     st.subheader("Lupa en Carreras Clave: ¿Quién es Quién en la Formación Específica?")
     st.markdown("""
     Selecciona hasta 3 carreras de tu interés. El gráfico mostrará la evolución histórica de la matrícula
@@ -525,7 +507,6 @@ def A5(df_main,*args,**kwargs):
             if msg_a9:
                  contexto_comparativa_ia += f"\nNota del análisis: {msg_a9}"
 
-            # Clave dinámica para mantener el contexto de cada selección de carreras
             dynamic_key = "a5_comparativa_unis_" + "_".join(sorted([c.replace(' ','_') for c in carreras_seleccionadas_a9]))
 
             ask_ai_component(
@@ -563,7 +544,6 @@ def A6(df_main,*args,**kwargs):
     st.info("Las líneas discontinuas y los puntos más allá del curso 2024-2025 representan las proyecciones.")
     st.markdown("---")
 
-    # --- Proyección Nacional ---
     st.subheader(" Horizonte Nacional: Proyección de la Matrícula Total")
     with st.spinner("Calculando la proyección de matrícula nacional..."):
         fig_a1_proy, msg_a1_proy = analisis_A1(df_main, incluir_proyeccion=True)
@@ -592,7 +572,6 @@ def A6(df_main,*args,**kwargs):
         st.warning(msg_a1_proy if msg_a1_proy else "No se pudo generar la proyección nacional.")
     st.markdown("---")
 
-    # --- Proyección por Rama de Ciencias ---
     st.subheader(" Mosaico de Saberes del Mañana: Proyección por Rama de Ciencias")
     with st.spinner("Calculando la proyección por ramas de ciencias..."):
         fig_a2_abs_proy, _, msg_a2_proy = analisis_A2(df_main, incluir_proyeccion=True)
@@ -623,7 +602,6 @@ def A6(df_main,*args,**kwargs):
         st.warning(msg_a2_proy if msg_a2_proy else "No se pudo generar la proyección por ramas.")
     st.markdown("---")
 
-    # --- Proyección por Carreras Seleccionadas ---
     st.subheader(" Carreras Clave en el Horizonte: Proyección Interactiva")
     st.markdown("Selecciona hasta 3 carreras de tu interés para visualizar su proyección de matrícula individual.")
 
@@ -698,7 +676,6 @@ def A7(df_main,*args,**kwargs):
     show_info(msg_a8)
 
     if resultados_a8:
-        # --- Subsección 1: Nuevas Ofertas o Reactivaciones ---
         st.subheader("🌱 Sembrando el Futuro: Posibles Nuevas Ofertas o Reactivaciones")
         st.markdown("""
         Aquí listamos carreras que no registraban matrícula en los primeros años del período analizado (2015-16),
@@ -724,7 +701,6 @@ def A7(df_main,*args,**kwargs):
             st.info("No se identificaron carreras que cumplan claramente con el criterio de 'nueva oferta reciente' en el período analizado.")
         st.markdown("---")
 
-        # --- Subsección 2: Posibles Ceses de Oferta ---
         st.subheader("🍂 Ciclos que Concluyen: Posibles Ceses de Oferta")
         st.markdown("""
         Presentamos carreras que contaban con matrícula al inicio del período de análisis pero que
@@ -750,7 +726,6 @@ def A7(df_main,*args,**kwargs):
             st.info("No se identificaron carreras que cumplan claramente con el criterio de 'cese de oferta reciente'.")
         st.markdown("---")
             
-        # --- Subsección 3: Matrícula Reducida ---
         df_baja = resultados_a8.get("baja_matricula")
         umbral = resultados_a8.get("umbral_bajo", 10)
         st.subheader(f"📉 Focos de Atención: Carreras con Matrícula Reducida (Inferior a {umbral} Estudiantes)")
@@ -814,8 +789,6 @@ def B1(df_main,*args,**kwargs):
         key="sel_carrera_b1_perfil_final"
     )
 
-    # --- INICIALIZACIÓN DE VARIABLES ---
-    # Para evitar errores "not defined" si la carrera no tiene datos
     fig_b1_evol_gen = None
     df_unis_b1 = None
     fig_pie_genero = None
@@ -914,8 +887,6 @@ def B1(df_main,*args,**kwargs):
         else:
             st.info("No se encontraron datos de universidades para esta carrera en el último año.")
 
-        # --- PREPARACIÓN DEL CONTEXTO PARA LA IA (LA PARTE CLAVE) ---
-        ### 1. Contexto Textual: Resumimos la información clave y dinámica.
         contexto_texto_ia = (
             f"Se está analizando el perfil de la carrera: **{carrera_sel_b1}**.\n"
             f"Esta carrera pertenece a la rama de ciencias: **{rama_b1}**.\n"
@@ -937,7 +908,7 @@ def B1(df_main,*args,**kwargs):
 
     else:
         st.info("Por favor, selecciona una Carrera para continuar.")
-        datos_para_ia = [] # Si no hay carrera, no hay datos para la IA
+        datos_para_ia = []
 
     ask_ai_component(
         analysis_context=contexto_texto_ia,
@@ -953,7 +924,6 @@ def B2(df_main, df_ins,*args,**kwargs):
     que ofrece y las carreras disponibles con su matrícula en el último año académico registrado.
     """)
 
-    # --- Pre-declaración de variables para la IA ---
     contexto_texto_ia = ""
     datos_para_ia = []
 
@@ -1000,7 +970,6 @@ def B2(df_main, df_ins,*args,**kwargs):
             
             fichas_tecnicas_unis = []
             
-            # Filtramos primero los datos que se mostrarán en la UI
             filtered_guia_data = {}
             if pattern_sel_b2:
                 for nombre, data in guia_data_b2.items():
@@ -1013,7 +982,6 @@ def B2(df_main, df_ins,*args,**kwargs):
 
             for nombre_uni, data_uni in filtered_guia_data.items():
                 
-                # --- PREPARACIÓN DE LA FICHA TÉCNICA PARA LA IA (se hace para todas las unis, no solo las mostradas) ---
                 ficha_actual = {
                     "Institución": nombre_uni,
                     "Sigla": data_uni.get('sigla', 'N/D'),
@@ -1037,7 +1005,6 @@ def B2(df_main, df_ins,*args,**kwargs):
                 ficha_actual["Oferta Académica (CSV)"] = to_csv_string(lista_carreras_consolidada)
                 fichas_tecnicas_unis.append(ficha_actual)
 
-                # --- RENDERIZADO DE LA UI ---
                 titulo_expander = f"🏛️ {nombre_uni} ({data_uni['sigla']})"
                 detalles_loc_exp = [d for d in [data_uni.get('municipio'), data_uni.get('provincia')] if d and d != 'N/D']
                 if detalles_loc_exp: titulo_expander += f" | {', '.join(detalles_loc_exp)}"
@@ -1079,7 +1046,6 @@ def B2(df_main, df_ins,*args,**kwargs):
                     else:
                         st.info("Esta institución no tiene ramas de ciencias con oferta activa o carreras con matrícula reportada.")
 
-            # Convertir la lista de fichas en un único DataFrame para la IA.
             if fichas_tecnicas_unis:
                 df_consolidado_ia = pd.DataFrame(fichas_tecnicas_unis)
                 datos_para_ia.append(df_consolidado_ia)
@@ -1171,12 +1137,11 @@ def conclusion(*args,**kwargs):
     superior que no solo responda a las necesidades del presente, sino que activamente modele
     un mañana más próspero, justo y lleno de conocimiento para todos los jóvenes Cubanos.
     """)
-    #Limitar a los balloons a una sola vez para evitar sobrecarga visual
+
     if 'balloons_shown' not in st.session_state:
         st.session_state.balloons_shown = True
         st.balloons()
     
-    # --- Preparación del contexto para la IA ---
     contexto_conclusion_ia = (
         "Esta es la sección de conclusiones y recomendaciones finales del análisis sobre la educación superior en Cuba. "
         "A continuación se presentan los principales hallazgos y las recomendaciones estratégicas derivadas de los datos. "

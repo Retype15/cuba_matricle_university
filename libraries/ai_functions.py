@@ -1,5 +1,3 @@
-# --- START OF FILE ai_functions.py ---
-
 import os
 import io
 import re
@@ -14,7 +12,6 @@ import time
 import numpy as np
 from .general_functions import parse_blocks
 
-# --- Configuración de la API de Gemini ---
 @st.cache_resource(show_spinner=False, ttl=3600)
 def configure_gemini_client():
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -29,7 +26,6 @@ def configure_gemini_client():
 gemini_client = configure_gemini_client()
 PATTERN_BLOCKS  = re.compile(r"```(?P<tipo>\S+)\n(?P<contenido>.*?)```(?:\n|$)", re.DOTALL)
 
-# --- Funciones Auxiliares ---
 def _clean_plotly_dict_for_ai(d):
     KEY_WHITELISTS = { 'root': {'data', 'layout'}, 'data': {'type', 'name', 'x', 'y', 'z', 'labels', 'values', 'text', 'marker', 'line'}, 'layout': {'title', 'xaxis', 'yaxis', 'barmode', 'legend'}, 'axis': {'title', 'type'}, 'title': {'text'}, 'legend': {'title'}, 'style_object': {'color'} }
     CONTEXT_MAP = { 'data': 'data', 'layout': 'layout', 'xaxis': 'axis', 'yaxis': 'axis', 'title': 'title', 'legend': 'legend', 'marker': 'style_object', 'line': 'style_object' }
@@ -80,7 +76,6 @@ def _try_parse_string_to_df(text_output: str) -> pd.DataFrame | None:
         return df
     except (ValueError, pd.errors.ParserError, pd.errors.EmptyDataError): return None
 
-# --- Función Principal para Interactuar con Gemini ---
 def stream_ai_chat_response(chat_session: ChatSession, prompt: str):
     if not gemini_client:
         yield ("error", "El asistente de IA no está configurado correctamente.", None)
@@ -105,9 +100,8 @@ def stream_ai_chat_response(chat_session: ChatSession, prompt: str):
         yield ("error", f"Error al comunicarse con el asistente de IA: {e}.", None)
 
 
-# --- El Componente de Chat para Streamlit ---
 def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data: list | None = None):
-    ###ip = requests.get("https://api64.ipify.org?format=json").json()["ip"] NO USAR EN PRODUCCIÓN
+    ###ip = requests.get("https://api64.ipify.org?format=json").json()["ip"] #Paara implement a futuro
     ai_initial_response_text = "🤖 ¿Preguntas sobre este análisis? ¡Pregúntale al Asistente de IA!"
     with st.expander(ai_initial_response_text, expanded=False):
         
@@ -125,7 +119,7 @@ def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data:
                 if isinstance(content, dict) and content.get("type") == "image":
                     st.image(content["data"], caption=f"Imagen generada ({content.get('mime_type', 'image/png')})")
                 elif isinstance(content, dict) and content.get("type") == "dataframe":
-                    st.dataframe(pd.read_json(io.StringIO(content["data"]), orient='split'))
+                    st.dataframe(content["data"], use_container_width=True)
                 elif isinstance(content, dict) and content.get("type") == "code_result":
                     st.code(content["data"], language=None)
                 elif isinstance(content, dict) and content.get("type") == "code_download":
@@ -145,7 +139,7 @@ def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data:
             **Generación de Código y gráficos:**
             - Solo escribe el código necesario para completar la solicitud del usuario, sin comentarios ni datos innecesarios.
             - Puedes usar la ejecución de código para generar gráficos, tablas o realizar cálculos complejos para una respuesta más precisa y personalizada. (solo puedes usar las bibliotecas disponibles).
-
+            - Si el usuario NO entiende el gráfico o datos actuales, proporcionarle otras formas de mostrarselos para que los comprenda bien, toma siempre la iniciativa!
             **Estructura de la Respuesta:**
             - Da un resumen claro y conciso de los resultados en texto.
             - **Mostrando Tablas al Usuario (IMPORTANTE):** Para mostrar una tabla o DataFrame al usuario, **DEBES** imprimirla entre delimitadores especiales.
@@ -155,7 +149,6 @@ def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data:
             print(mi_dataframe)
             print("```")
             ```
-            - Si no necesitas código, responde directamente con texto.
             - El usuario ve NO ve el contenido que generas como respuesta del codigo ejecutado, solo lo que expresas dentro de print("```(tipo)") y print("```"). Por ejemplo, si generas un DataFrame, debes imprimirlo entre esos delimitadores para que el usuario lo vea, y para mostrarle texto directamente desde el resultado del código usar print('```text') o print('```markdown'), dependiendo de lo que le quieras mostrar explícitamente, aunque lo mejor es no hacerlo y explicarle de forma personalizada el resultado al usuario.
             - Si generas un gráfico, el usuario lo verá como una imagen, así que no es necesario imprimirlo entre delimitadores, simplemente usa `plt.show()` para mostrarlo.
             **Crítico - Seguridad de la Información:**
@@ -179,12 +172,20 @@ def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data:
                 st.session_state[display_history_key].append({"role": "user", "content": prompt})
                 chat_session = st.session_state.get(gemini_chat_key)
                 if chat_session is None:
-                    tools = [types.Tool(code_execution=types.ToolCodeExecution)]; config = types.GenerateContentConfig(response_mime_type="text/plain", thinking_config=types.ThinkingConfig(include_thoughts=False), system_instruction=system_instruction_for_ai, tools=tools, candidate_count=1)
                     initial_context_data = [analysis_context] + (extra_data if extra_data else [])
                     string_list_for_history = _convert_context_to_string_list(initial_context_data)
                     full_context_string = "\n\n---\n\n".join(string_list_for_history)
-                    initial_history = [types.Content(role="user", parts=[types.Part.from_text(text=full_context_string)]), types.Content(role="model", parts=[types.Part.from_text(text="Contexto y datos recibidos. Estoy listo para tus preguntas.")])]
-                    chat_session = gemini_client.chats.create(model="gemini-2.5-flash-preview-05-20", config=config, history=initial_history)
+                    tools = [types.Tool(code_execution=types.ToolCodeExecution)]; 
+                    config = types.GenerateContentConfig(
+                        response_mime_type="text/plain", 
+                        thinking_config=types.ThinkingConfig(include_thoughts=False), 
+                        system_instruction=system_instruction_for_ai + 'datos de contexto:\n'+ full_context_string, 
+                        tools=tools, 
+                        candidate_count=1
+                    )
+
+                    #initial_history = [types.Content(role="user", parts=[types.Part.from_text(text=full_context_string)]), types.Content(role="model", parts=[types.Part.from_text(text="Contexto y datos recibidos. Estoy listo para tus preguntas.")])]
+                    chat_session = gemini_client.chats.create(model="gemini-2.5-flash-preview-05-20", config=config)#, history=initial_history)
                     st.session_state[gemini_chat_key] = chat_session
                 st.session_state['last_prompt'] = prompt; st.session_state[processing_key] = True; st.rerun()
         else:
@@ -231,7 +232,7 @@ def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data:
                                 df_from_result = _try_parse_string_to_df(data_str)
                                 if df_from_result is not None:
                                     with response_container.container(): st.dataframe(df_from_result)
-                                    display_messages_to_add.append({"role": "assistant", "content": {"type": "dataframe", "data": df_from_result.to_json(orient='split')}})
+                                    display_messages_to_add.append({"role": "assistant", "content": {"type": "dataframe", "data": df_from_result}})
                                 else:
                                     with response_container.container(): st.code(f"Error al parsear tabla:\n{data_str}", language=None)
                                     display_messages_to_add.append({"role": "assistant", "content": {"type": "code_result", "data": f"Error al parsear tabla:\n{data_str}"}})

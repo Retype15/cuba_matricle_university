@@ -1,5 +1,7 @@
 import io
 import re
+import json
+import streamlit as st
 
 def to_csv_string(list_of_dicts):
     """
@@ -9,18 +11,14 @@ def to_csv_string(list_of_dicts):
     if not list_of_dicts:
         return ""
     
-    # Usamos io.StringIO para construir el CSV en memoria, es muy eficiente.
     output = io.StringIO()
-    # Los encabezados se toman del primer diccionario
     headers = list_of_dicts[0].keys()
     output.write(','.join(headers) + '\n')
     
-    # Escribir las filas
     for row_dict in list_of_dicts:
         row = [str(row_dict.get(h, '')) for h in headers]
         output.write(','.join(row) + '\n')
         
-    # Devolver el contenido de la cadena, eliminando el último '\n'
     return output.getvalue().strip()
 
 
@@ -35,5 +33,39 @@ def parse_blocks(pattern, texto):
     Yields:
         tuple: Una tupla (tipo, contenido) para cada bloque encontrado.
     """
-    for match in re.finditer(pattern, texto): #DEBE SER  re.DOTALL el pattern
+    for match in re.finditer(pattern, texto): #DEBE SEr  re.DOTALL el pattern!
         yield match.group("tipo"), match.group("contenido")
+
+@st.cache_data
+def _load_translations() -> dict:
+    """
+    Carga las traducciones desde un archivo JSON.
+    
+    Args:
+        path (str): Ruta al archivo JSON con las traducciones.
+        
+    Returns:
+        dict: Diccionario con las traducciones.
+    """
+    path = 'translation.json'
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"Error: El archivo {path} no se encontró.")
+        return {}
+    except json.JSONDecodeError:
+        print(f"Error: El archivo {path} no es un JSON válido.")
+        return {}
+
+def translation(key:str, lang:str|None = None):
+    """
+    Obtiene la traducción para una clave específica.
+    
+    Args:
+        key (str): Clave de la traducción.
+        
+    Returns:
+        str: Traducción correspondiente a la clave.
+    """
+    return _load_translations()[lang if lang else st.session_state.get('lang_sel', 'en')].get(key, key)

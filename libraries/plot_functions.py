@@ -29,7 +29,6 @@ def category_order(df: pd.DataFrame, * , y_col: str, color_col: str, top_n: Opti
     
     return orden_categorias
 
-# --- FUNCIONES PARA CARGAR DATOS ---
 @st.cache_resource
 def cargar_datos_matricula(rute:str):
     try:
@@ -63,7 +62,7 @@ def calcular_cagr_dinamico(df_evolucion_total_carrera, ano_inicio_cagr, ano_fin_
     anos_disponibles_carrera = sorted(df_evolucion_total_carrera['Ano_Inicio_Curso'].unique())
     
     if len(anos_disponibles_carrera) < 2 or ano_inicio_cagr is None or ano_fin_cagr is None:
-        return cagr_info # No hay suficientes datos o no se seleccionó período
+        return cagr_info
 
     if ano_inicio_cagr < ano_fin_cagr:
         datos_cagr_periodo = df_evolucion_total_carrera[
@@ -79,9 +78,9 @@ def calcular_cagr_dinamico(df_evolucion_total_carrera, ano_inicio_cagr, ano_fin_
                     cagr_val_c = ((matricula_fin_c / matricula_inicio_c)**(1 / (n_anos_efectivos_cagr - 1)) - 1) * 100
                     cagr_info["valor"] = f"{cagr_val_c:.2f}%"
                     cagr_info["periodo"] = f"({datos_cagr_periodo['Ano_Inicio_Curso'].min()}-{datos_cagr_periodo['Ano_Inicio_Curso'].max()})"
-                else: cagr_info["valor"] = "Período corto" # Muy corto
+                else: cagr_info["valor"] = "Período corto"
             else: cagr_info["valor"] = "Matrícula cero"
-        else: cagr_info["valor"] = "Datos insuficientes" # Insuficientes en período
+        else: cagr_info["valor"] = "Datos insuficientes"
     else: cagr_info["valor"] = "Rango inválido"
     return cagr_info
 
@@ -98,7 +97,6 @@ def analisis_guia_universidades(df_instituciones, df_matricula, provincia_selecc
         df_unis_filtradas = df_unis_filtradas[df_unis_filtradas['municipio'] == municipio_seleccionado]
     
     if df_unis_filtradas.empty:
-        # ... (mensaje de error como antes) ...
         msg = "No se encontraron instituciones"
         if provincia_seleccionada and provincia_seleccionada != "TODAS LAS PROVINCIAS":
             msg += f" en la provincia de '{provincia_seleccionada}'"
@@ -109,17 +107,15 @@ def analisis_guia_universidades(df_instituciones, df_matricula, provincia_selecc
 
     ano_mas_reciente_matricula = 0
     df_matricula_ultimo_ano_carreras = pd.DataFrame()
-    df_matricula_ultimo_ano_general_uni = pd.DataFrame() # Para totales de género por universidad
+    df_matricula_ultimo_ano_general_uni = pd.DataFrame()
 
     if not df_matricula.empty:
         ano_mas_reciente_matricula = df_matricula['Ano_Inicio_Curso'].max()
         
-        # Matrícula por carrera para la guía
         df_matricula_ultimo_ano_carreras = df_matricula[df_matricula['Ano_Inicio_Curso'] == ano_mas_reciente_matricula]\
                                     .groupby(['entidad', 'rama_ciencias', 'carrera'])['Matricula_Total'].sum().reset_index()
         df_matricula_ultimo_ano_carreras = df_matricula_ultimo_ano_carreras[df_matricula_ultimo_ano_carreras['Matricula_Total'] > 0]
 
-        # Totales de género por universidad para el último año
         df_matricula_ultimo_ano_general_uni = df_matricula[df_matricula['Ano_Inicio_Curso'] == ano_mas_reciente_matricula]\
                                     .groupby('entidad').agg(
                                         Total_General_Uni=('Matricula_Total', 'sum'),
@@ -129,7 +125,7 @@ def analisis_guia_universidades(df_instituciones, df_matricula, provincia_selecc
 
     guia_data = {}
     columnas_oferta_ramas = [col for col in df_instituciones.columns if col.startswith('oferta_')]
-    mapa_oferta_a_rama = { # Asegúrate que estas claves coincidan con tus columnas
+    mapa_oferta_a_rama = { 
         'oferta_tecnicas': 'Ciencias Técnicas',
         'oferta_naturales_mat': 'Ciencias Naturales y Matemáticas',
         'oferta_agropecuarias': 'Ciencias Agropecuarias',
@@ -148,7 +144,6 @@ def analisis_guia_universidades(df_instituciones, df_matricula, provincia_selecc
         sigla_uni = uni_row['sigla_institucion']
         nombre_uni = uni_row['nombre_institucion']
         
-        # Obtener datos de género para esta universidad
         datos_genero_uni = df_matricula_ultimo_ano_general_uni[
             df_matricula_ultimo_ano_general_uni['entidad'] == sigla_uni
         ]
@@ -160,8 +155,8 @@ def analisis_guia_universidades(df_instituciones, df_matricula, provincia_selecc
             "direccion": uni_row.get('direccion_fisica', 'N/D'),
             "provincia": uni_row.get('provincia', 'N/D'),
             "municipio": uni_row.get('municipio', 'N/D'),
-            "modalidad_estudio": uni_row.get('modalidad_estudio', 'N/D'), # Nueva info
-            "datos_genero_uni": { # Para el gráfico de pastel
+            "modalidad_estudio": uni_row.get('modalidad_estudio', 'N/D'),
+            "datos_genero_uni": {
                 'Mujeres': datos_genero_uni['Total_Mujeres_Uni'].iloc[0] if not datos_genero_uni.empty else 0,
                 'Hombres': datos_genero_uni['Total_Hombres_Uni'].iloc[0] if not datos_genero_uni.empty else 0,
                 'Total': datos_genero_uni['Total_General_Uni'].iloc[0] if not datos_genero_uni.empty else 0,
@@ -195,9 +190,10 @@ def analisis_guia_universidades(df_instituciones, df_matricula, provincia_selecc
                        "Guía generada (datos de matrícula del último año no disponibles).")
 
 @st.cache_data
-def analisis_perfil_carrera(df, carrera_seleccionada): # Eliminados parámetros de CAGR
+def analisis_perfil_carrera(df, carrera_seleccionada):
     if df.empty:
-        return None, None, None, None, None, "DataFrame vacío." # fig_evol_gen, df_evol_para_cagr, df_unis, porc_mujeres, rama, msg
+        # fig_evol_gen, df_evol_para_cagr, df_unis, porc_mujeres, rama, msg
+        return None, None, None, None, None, "DataFrame vacío." 
     if not carrera_seleccionada:
         return None, None, None, None, None, "Carrera no seleccionada."
 
@@ -207,7 +203,6 @@ def analisis_perfil_carrera(df, carrera_seleccionada): # Eliminados parámetros 
 
     rama_identificada = df_carrera_completa['rama_ciencias'].iloc[0] if not df_carrera_completa.empty else "No identificada"
 
-    # 1. Evolución histórica de matrícula (Total, Mujeres, Hombres) para ESA CARRERA
     evolucion_genero_carrera = df_carrera_completa.groupby('Ano_Inicio_Curso').agg(
         Matricula_Total=('Matricula_Total', 'sum'),
         Matricula_Mujeres=('Matricula_Mujeres', 'sum'),
@@ -225,7 +220,6 @@ def analisis_perfil_carrera(df, carrera_seleccionada): # Eliminados parámetros 
             var_name='Tipo_Matricula', 
             value_name='Cantidad'
         )
-        # Mapeo de nombres para la leyenda del gráfico de evolución
         mapa_nombres_leyenda = {
             'Matricula_Total': 'Total Estudiantes',
             'Matricula_Mujeres': 'Mujeres',
@@ -237,25 +231,21 @@ def analisis_perfil_carrera(df, carrera_seleccionada): # Eliminados parámetros 
             df_melted_evolucion, 
             x='Curso_Academico', 
             y='Cantidad', 
-            color='Tipo_Matricula_Display', # Usar la columna con nombres amigables
+            color='Tipo_Matricula_Display',
             title=f"Evolución Histórica Matrícula y Género: {carrera_seleccionada}",
             markers=True,
             labels={'Cantidad': 'Número de Estudiantes', 'Tipo_Matricula_Display': 'Desglose Matrícula'}
         )
         fig_evolucion_genero.update_layout(xaxis_title='Curso Académico', yaxis_title='Número de Estudiantes')
 
-    # 2. Devolver DataFrame para cálculo de CAGR (evolucion_genero_carrera contiene Matricula_Total y Ano_Inicio_Curso)
     df_evolucion_para_cagr = evolucion_genero_carrera[['Ano_Inicio_Curso', 'Matricula_Total']].copy()
 
-    # 3. Universidades que la imparten y matrícula en último año
     ano_mas_reciente_global = df['Ano_Inicio_Curso'].max()
     df_unis_carrera = df_carrera_completa[df_carrera_completa['Ano_Inicio_Curso'] == ano_mas_reciente_global]\
                         .groupby('entidad')['Matricula_Total'].sum().sort_values(ascending=False).reset_index()
     df_unis_carrera = df_unis_carrera[df_unis_carrera['Matricula_Total'] > 0]
     df_unis_carrera.rename(columns={'entidad':'Universidad', 'Matricula_Total':f'Matrícula {ano_mas_reciente_global}-{ano_mas_reciente_global+1}'}, inplace=True)
 
-    # 4. Datos de género para el último año (para gráfico de pastel y métrica)
-    # (Matricula_Mujeres y Matricula_Hombres ya están en evolucion_genero_carrera para el último año)
     datos_genero_ultimo_ano = None
     if not evolucion_genero_carrera.empty:
         ultimo_ano_data = evolucion_genero_carrera[evolucion_genero_carrera['Ano_Inicio_Curso'] == ano_mas_reciente_global]
@@ -270,19 +260,17 @@ def analisis_perfil_carrera(df, carrera_seleccionada): # Eliminados parámetros 
 
 
 # A1: Evolución Histórica y Proyectada de la Matrícula Nacional
-#@st.cache_data
+@st.cache_data
 def analisis_A1(df, incluir_proyeccion=False, showlegend=False):
     if df.empty:
         return None, "DataFrame vacío."
 
-    # 1. Agrupar datos históricos incluyendo género (asegurando que sean enteros)
     datos_agrupados = df.groupby('Ano_Inicio_Curso').agg(
         Matricula_Total=('Matricula_Total', 'sum'),
         Matricula_Hombres=('Matricula_Hombres', 'sum'),
         Matricula_Mujeres=('Matricula_Mujeres', 'sum')
     ).reset_index()
     
-    # Asegurar que los datos agrupados sean enteros
     for col in ['Matricula_Total', 'Matricula_Hombres', 'Matricula_Mujeres']:
         datos_agrupados[col] = datos_agrupados[col].astype(int)
 
@@ -292,12 +280,12 @@ def analisis_A1(df, incluir_proyeccion=False, showlegend=False):
     datos_agrupados['Tipo'] = 'Histórica'
     datos_agrupados['Curso_Academico'] = datos_agrupados['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
     
-    df_para_graficar_barras = datos_agrupados.copy() # Para las barras, se actualizará con proyección
+    df_para_graficar_barras = datos_agrupados.copy()
     titulo_info = "Evolución Histórica"
     
     ultimo_ano_historico_num = -1
     n_puntos_historicos = len(datos_agrupados)
-    df_proyeccion_para_linea = pd.DataFrame() # Para la línea de proyección
+    df_proyeccion_para_linea = pd.DataFrame()
 
 
     if incluir_proyeccion:
@@ -329,30 +317,26 @@ def analisis_A1(df, incluir_proyeccion=False, showlegend=False):
         if ultima_matricula_total_historica > 0:
             ratio_hombres = ultima_matricula_hombres_historica / ultima_matricula_total_historica
             ratio_mujeres = ultima_matricula_mujeres_historica / ultima_matricula_total_historica
-            # Asegurar que la suma de ratios sea 1
-            if abs(ratio_hombres + ratio_mujeres - 1.0) > 1e-9: # Si no suman 1
+            if abs(ratio_hombres + ratio_mujeres - 1.0) > 1e-9:
                  ratio_mujeres = 1.0 - ratio_hombres
-        else: # Si el último total histórico es 0, no hay base para ratios o se asume 50/50
             ratio_hombres = 0.5 
             ratio_mujeres = 0.5
 
         anos_proyeccion_puros = np.array([ultimo_ano_historico_num + 1, ultimo_ano_historico_num + 2])
         matricula_proyectada_total_pura = model_total.predict(anos_proyeccion_puros.reshape(-1,1)).round(0).astype(int).clip(min=0)
          
-        df_proyeccion_para_linea = pd.DataFrame({ # También usado para las barras proyectadas
+        df_proyeccion_para_linea = pd.DataFrame({
             'Ano_Inicio_Curso': np.concatenate(([ultimo_ano_historico_num], anos_proyeccion_puros)),
             'Matricula_Total': np.concatenate(([ultima_matricula_total_historica], matricula_proyectada_total_pura)).astype(int),
-            'Tipo': 'Proyectada' # Todos estos puntos son para la línea/barras "proyectadas"
+            'Tipo': 'Proyectada'
         })
         
         df_proyeccion_para_linea['Matricula_Hombres'] = 0
         df_proyeccion_para_linea['Matricula_Mujeres'] = 0
 
-        # El primer punto (último histórico) usa los valores históricos reales
         df_proyeccion_para_linea.loc[0, 'Matricula_Hombres'] = ultima_matricula_hombres_historica
         df_proyeccion_para_linea.loc[0, 'Matricula_Mujeres'] = ultima_matricula_mujeres_historica
         
-        # Calcular H/M para los puntos puramente proyectados
         for i in range(1, len(df_proyeccion_para_linea)):
             total_proy = df_proyeccion_para_linea.loc[i, 'Matricula_Total']
             hombres_proy = np.round(total_proy * ratio_hombres).astype(int).clip(min=0)
@@ -363,15 +347,13 @@ def analisis_A1(df, incluir_proyeccion=False, showlegend=False):
         
         df_proyeccion_para_linea['Curso_Academico'] = df_proyeccion_para_linea['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
         
-        # df_para_graficar_barras: históricos (todos menos el último) + datos de proyección (que incluye el último histórico)
         df_para_graficar_barras = pd.concat([
             datos_agrupados[datos_agrupados['Ano_Inicio_Curso'] < ultimo_ano_historico_num], 
-            df_proyeccion_para_linea # Este ya contiene el último histórico como su primer punto
+            df_proyeccion_para_linea
         ], ignore_index=True)
         
         titulo_info = f"Evolución y Proyección (Reg. Lin. {msg_regresion})"
 
-    # Calcular porcentajes y texto para las barras en el DF final de barras
     df_para_graficar_barras['Pct_Hombres'] = df_para_graficar_barras.apply(
         lambda row: (row['Matricula_Hombres'] / row['Matricula_Total'] * 100) if row['Matricula_Total'] > 0 else 0, axis=1
     )
@@ -388,59 +370,53 @@ def analisis_A1(df, incluir_proyeccion=False, showlegend=False):
     
     fig = go.Figure()
 
-    # Colores
     color_mujeres_barra = 'hotpink'
     color_hombres_barra = 'skyblue'
-    color_linea_hist = 'mediumpurple' # Morado para histórica
-    color_linea_proy = 'royalblue'         # Morado claro para proyectada
+    color_linea_hist = 'mediumpurple'
+    color_linea_proy = 'royalblue'
 
-    # Añadir traza de barras para Mujeres (primero para que esté abajo en el stack)
     fig.add_trace(go.Bar(
         x=df_para_graficar_barras['Curso_Academico'],
         y=df_para_graficar_barras['Matricula_Mujeres'],
         name='Mujeres',
         marker_color=color_mujeres_barra,
-        marker_line=dict(color='rgba(255,100,155,0.9)', width=2), # Borde sutil
+        marker_line=dict(color='rgba(255,100,155,0.9)', width=2),
         text=df_para_graficar_barras['Texto_Mujeres'],
         textposition='outside',
         textfont=dict(color='white', size=16)
     ))
 
-    # Añadir traza de barras para Hombres
     fig.add_trace(go.Bar(
         x=df_para_graficar_barras['Curso_Academico'],
         y=df_para_graficar_barras['Matricula_Hombres'],
         name='Hombres',
         marker_color=color_hombres_barra,
-        marker_line=dict(color='rgba(200,200,255,0.9)', width=2), # Borde sutil
+        marker_line=dict(color='rgba(200,200,255,0.9)', width=2),
         text=df_para_graficar_barras['Texto_Hombres'],
         textposition='inside',
         textfont=dict(color='white', size=16)
     ))
     
-    # Añadir traza de línea para Matrícula Total
     if incluir_proyeccion:
-        # Línea proyectada (desde el último histórico hacia adelante)
         fig.add_trace(go.Scatter(
-            x=df_proyeccion_para_linea['Curso_Academico'], # Usa el df de proyección que empieza en el último histórico
+            x=df_proyeccion_para_linea['Curso_Academico'],
             y=df_proyeccion_para_linea['Matricula_Total'],
             name='Matrícula Total (Proyectada)',
             mode='lines+markers',
             line=dict(color=color_linea_proy, width=3, dash='dash'),
             marker=dict(size=10, symbol='diamond', color=color_linea_proy)
         ))
-        # Línea histórica (todos los puntos históricos originales)
         fig.add_trace(go.Scatter(
-            x=datos_agrupados['Curso_Academico'], # Usa el df original de datos históricos
+            x=datos_agrupados['Curso_Academico'],
             y=datos_agrupados['Matricula_Total'],
             name='Matrícula Total (Histórica)',
             mode='lines+markers',
-            line=dict(color=color_linea_hist, width=3), # Línea un poco más gruesa
+            line=dict(color=color_linea_hist, width=3),
             marker=dict(size=11, color=color_linea_hist)
         ))
         
 
-    else: # Solo línea histórica
+    else:
         fig.add_trace(go.Scatter(
             x=datos_agrupados['Curso_Academico'],
             y=datos_agrupados['Matricula_Total'],
@@ -450,9 +426,8 @@ def analisis_A1(df, incluir_proyeccion=False, showlegend=False):
             marker=dict(size=10, color=color_linea_hist)
         ))
 
-    # Actualizar layout
     fig.update_layout(
-        template='plotly_dark', # Aplicar tema oscuro
+        template='plotly_dark',
         barmode='stack',
         title=f'Matrícula Nacional: {titulo_info}',
         xaxis_title='Curso Académico',
@@ -531,7 +506,6 @@ def analisis_A2(df, incluir_proyeccion=False):
                 max_y_value_for_annotation = df_proy_rama_graf['Matricula_Total'].max()
         titulo_abs = f"Evolución y Proyección por Rama (Reg. Lin. {N_ULTIMOS_ANOS_REGRESION} últimos años o menos)"
     
-    # Gráfico Absoluto
     fig_abs = go.Figure()
     colores_plotly = px.colors.qualitative.Plotly 
     for i, rama in enumerate(ramas_unicas):
@@ -559,7 +533,6 @@ def analisis_A2(df, incluir_proyeccion=False):
                           annotation_text="Inicio Proyección", annotation_position="top right",
                           annotation_font_size=10, annotation_font_color="grey")
 
-    # Gráfico Porcentual (siempre histórico)
     fig_pct = None
     if not rama_evolucion_historica.empty:
         total_anual_hist = rama_evolucion_historica.groupby('Ano_Inicio_Curso')['Matricula_Total'].sum().rename('Total_Anual_Rama')
@@ -568,7 +541,7 @@ def analisis_A2(df, incluir_proyeccion=False):
             rama_evolucion_pct_hist['Porcentaje'] = np.where(
                 rama_evolucion_pct_hist['Total_Anual_Rama'] > 0,
                 (rama_evolucion_pct_hist['Matricula_Total'] / rama_evolucion_pct_hist['Total_Anual_Rama']) * 100, 0 )
-            if 'Curso_Academico' not in rama_evolucion_pct_hist.columns: # Asegurar columna
+            if 'Curso_Academico' not in rama_evolucion_pct_hist.columns:
                 rama_evolucion_pct_hist['Curso_Academico'] = rama_evolucion_pct_hist['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
             fig_pct = px.area(rama_evolucion_pct_hist, x='Curso_Academico', y='Porcentaje', color='rama_ciencias',
                         title='Distribución Porcentual Histórica de la Matrícula por Rama de Ciencias',
@@ -576,7 +549,7 @@ def analisis_A2(df, incluir_proyeccion=False):
             fig_pct.update_layout(xaxis_title='Curso Académico', yaxis_title='Porcentaje de Matrícula (%)')
     return fig_abs, fig_pct, None
 
-#A2 extra
+
 def analisis_A2_correlacion_crecimiento_ramas(df: pd.DataFrame):
     if df.empty:
         return None, None, "DataFrame de entrada vacío para análisis de correlación."
@@ -626,7 +599,7 @@ def analisis_A2_correlacion_crecimiento_ramas(df: pd.DataFrame):
     
     fig.update_xaxes(
         tickangle=45, 
-        side="bottom", # Asegurar que las etiquetas estén abajo
+        side="bottom", 
     )
     
     return fig, df_correlacion, None
@@ -646,7 +619,6 @@ def analisis_A3(df):
 
     df_todas_carreras_ranking = carreras_demanda_reciente.reset_index()
     
-    # Para el gráfico de evolución, tomaremos las N más demandadas actualmente
     top_n_grafico = 10
     carreras_para_grafico = df_todas_carreras_ranking.head(top_n_grafico)['carrera'].tolist()
     
@@ -699,7 +671,7 @@ def analisis_A4(df):
     genero_carrera_reciente['Porcentaje_Mujeres'] = np.where(
         genero_carrera_reciente['Total_General'] > 0,
         (genero_carrera_reciente['Total_Mujeres'] / genero_carrera_reciente['Total_General']) * 100, np.nan )
-    genero_carrera_reciente_filtrado = genero_carrera_reciente[genero_carrera_reciente['Total_General'] >= 20].dropna(subset=['Porcentaje_Mujeres']) # Matrícula >=20
+    genero_carrera_reciente_filtrado = genero_carrera_reciente[genero_carrera_reciente['Total_General'] >= 30].dropna(subset=['Porcentaje_Mujeres'])
     
     top_fem = genero_carrera_reciente_filtrado.sort_values('Porcentaje_Mujeres', ascending=False).head(10)
     top_masc = genero_carrera_reciente_filtrado.sort_values('Porcentaje_Mujeres', ascending=True).head(10)
@@ -709,7 +681,7 @@ def analisis_A4(df):
         fig2.add_trace(go.Bar(x=top_fem['carrera'], y=top_fem['Porcentaje_Mujeres'], name='Mayoría Mujeres'), row=1, col=1)
     if not top_masc.empty:
         fig2.add_trace(go.Bar(x=top_masc['carrera'], y=top_masc['Porcentaje_Mujeres'], name='Minoría Mujeres'), row=1, col=2)
-    fig2.update_layout(title_text=f'Desbalance de Género en Carreras ({curso_mas_reciente}, Matrícula >= 20)',
+    fig2.update_layout(title_text=f'Desbalance de Género en Carreras ({curso_mas_reciente}, Matrícula >= 30)',
                        showlegend=False, height=500)
     min_y_fem = top_fem['Porcentaje_Mujeres'].min() if not top_fem.empty else 50
     max_y_masc = top_masc['Porcentaje_Mujeres'].max() if not top_masc.empty else 50
@@ -775,13 +747,13 @@ def analisis_A6(df):
 
 # A7: Proyecciones de Matrícula para Carreras Seleccionadas
 @st.cache_data
-def analisis_A7(df, carreras_seleccionadas=None): # Nuevo parámetro
+def analisis_A7(df, carreras_seleccionadas=None):
     if df.empty: return None, "DataFrame vacío."
         
     ano_mas_reciente_global = df['Ano_Inicio_Curso'].max()
     if pd.isna(ano_mas_reciente_global): return None, "No se pudo determinar el año más reciente."
 
-    if not carreras_seleccionadas: # Si no se pasan carreras, tomar las top 3 por defecto
+    if not carreras_seleccionadas: 
         carreras_recientes_data = df[df['Ano_Inicio_Curso'] == ano_mas_reciente_global]
         if carreras_recientes_data.empty: return None, f"No hay datos del año {int(ano_mas_reciente_global)} para seleccionar carreras top por defecto."
         carreras_a_analizar = carreras_recientes_data.groupby('carrera')['Matricula_Total'].sum().nlargest(3).index.tolist()
@@ -806,7 +778,7 @@ def analisis_A7(df, carreras_seleccionadas=None): # Nuevo parámetro
     for carrera_nombre in carreras_a_analizar:
         data_carrera_hist = df_historico_general[
             (df_historico_general['carrera'] == carrera_nombre) & 
-            (df_historico_general['Tipo'] == 'Histórica') # Asegurar que tomamos solo la data histórica para la regresión
+            (df_historico_general['Tipo'] == 'Histórica')
         ]
         
         if len(data_carrera_hist) < 2: 
@@ -820,7 +792,6 @@ def analisis_A7(df, carreras_seleccionadas=None): # Nuevo parámetro
         model_c = LinearRegression().fit(X_c, y_c)
             
         ultimo_ano_hist_c_val = data_carrera_hist['Ano_Inicio_Curso'].max()
-        # Asegurarse de que last_hist_enrollment es un escalar
         last_hist_enrollment_series = data_carrera_hist[data_carrera_hist['Ano_Inicio_Curso'] == ultimo_ano_hist_c_val]['Matricula_Total']
         if last_hist_enrollment_series.empty:
              msg_detalle_proy.append(f"{carrera_nombre} (no se encontró matrícula para el último año histórico)")
@@ -836,8 +807,6 @@ def analisis_A7(df, carreras_seleccionadas=None): # Nuevo parámetro
             'carrera': carrera_nombre, 'Tipo': 'Proyectada'})
         df_proy_carrera_graf['Curso_Academico'] = df_proy_carrera_graf['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
         
-        # Para evitar duplicar los datos históricos que ya están en df_graficar_final_carreras
-        # Solo concatenamos la parte proyectada (incluyendo el punto de anclaje)
         df_graficar_final_carreras = pd.concat([df_graficar_final_carreras, df_proy_carrera_graf], ignore_index=True)
         proyeccion_hecha_alguna_carrera = True
         msg_detalle_proy.append(f"{carrera_nombre} (Reg. Lin. {len(datos_reg_carrera)} años)")
@@ -855,7 +824,6 @@ def analisis_A7(df, carreras_seleccionadas=None): # Nuevo parámetro
     fig.update_layout(xaxis_title='Curso Académico', yaxis_title='Matrícula')
     
     if proyeccion_hecha_alguna_carrera and not df_historico_general.empty:
-        # Vline general para el inicio de proyección
         maxx = df_historico_general['Ano_Inicio_Curso'].max()
         minn = df_historico_general['Ano_Inicio_Curso'].min()
         punto_transicion_x_str_global = maxx-minn-1
@@ -871,7 +839,6 @@ def analisis_A8(df):
     if df.empty:
         return {}, "DataFrame vacío."
     
-    # El primer año real de datos en el dataset.
     primer_ano_datos = df['Ano_Inicio_Curso'].min()
     max_year = df['Ano_Inicio_Curso'].max()
     resultados = {}
@@ -879,14 +846,9 @@ def analisis_A8(df):
 
     carreras_nuevas_ofertas = []
     for (entidad, carrera), group in df.groupby(['entidad', 'carrera']):
-        # Primera aparición de matrícula > 0 para esta carrera/entidad
         primera_aparicion_ano = group[group['Matricula_Total'] > 0]['Ano_Inicio_Curso'].min()
-        # Última matrícula registrada
         mat_ultimo_ano = group[group['Ano_Inicio_Curso'] == max_year]['Matricula_Total'].sum()
 
-        # Si la primera aparición no es NaN (es decir, existe la carrera con matrícula)
-        # Y si esta primera aparición es DESPUÉS del primer año del dataset
-        # Y si tiene matrícula en el último año (para asegurar que sigue activa)
         if pd.notna(primera_aparicion_ano) and primera_aparicion_ano > primer_ano_datos and mat_ultimo_ano > 0:
             carreras_nuevas_ofertas.append({
                 'Entidad': entidad, 'Carrera': carrera, 
@@ -898,10 +860,8 @@ def analisis_A8(df):
     for (entidad, carrera), group in df.groupby(['entidad', 'carrera']):
         mat_primer_ano_dataset = group[group['Ano_Inicio_Curso'] == primer_ano_datos]['Matricula_Total'].sum()
         mat_ultimo_ano_dataset = group[group['Ano_Inicio_Curso'] == max_year]['Matricula_Total'].sum()
-        if mat_primer_ano_dataset > 0 and mat_ultimo_ano_dataset == 0: # Tenía matrícula al inicio, ya no tiene
-            # Último año en que SÍ tuvo matrícula
+        if mat_primer_ano_dataset > 0 and mat_ultimo_ano_dataset == 0:
             ultimo_ano_con_matricula = group[group['Matricula_Total'] > 0]['Ano_Inicio_Curso'].max()
-            # Si el último año con matrícula es antes del último año del dataset, se considera cesada
             if pd.notna(ultimo_ano_con_matricula) and ultimo_ano_con_matricula < max_year:
                 carreras_cesadas_ofertas.append({
                     'Entidad': entidad, 'Carrera': carrera, 
