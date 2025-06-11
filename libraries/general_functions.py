@@ -68,4 +68,8 @@ def translation(key:str, lang:str|None = None):
     Returns:
         str: Traducción correspondiente a la clave.
     """
-    return _load_translations()[lang if lang else st.session_state.get('lang_sel', 'en')].get(key, key)
+    try:
+        return _load_translations()[lang if lang else st.session_state.get('lang_sel', 'en')].get(key, key)
+    except Exception as e:
+        print(f"Error al obtener la traducción para la clave '{key}': {e}")
+        return 'CRITICAL_'+key

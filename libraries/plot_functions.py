@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from sklearn.linear_model import LinearRegression
 import streamlit as st
+from .general_functions import translation
 
 import pandas as pd
 from typing import Optional, List
