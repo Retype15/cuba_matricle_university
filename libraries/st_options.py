@@ -7,15 +7,35 @@ def show_info(msg):
     if msg: st.caption(f"ℹ️ {msg}")
 
 def introduction(*args,**kwargs):
-    st.header(translation('introduction_header'))
-    st.markdown(translation('introduction_markdown_1'))
-    st.success(translation('introduction_success'))
+    st.header(translation('introduction_header', "🎯 Bienvenidos al Corazón de la Educación Superior Cubana"))
+    st.markdown(translation('introduction_markdown_1',""" WARN
+        La universidad no es solo un edificio; es un crisol de sueños, un motor de progreso y un reflejo
+        de las aspiraciones de una sociedad. En este espacio, nos embarcaremos en un viaje analítico,
+        explorando las corrientes que moldean la matrícula universitaria en Cuba.
+        
+        Desde las tendencias generales hasta el detalle de cada carrera y universidad, desentrañaremos
+        las historias ocultas detrás de las distintas universidades del país. ¿El objetivo? Proveer una brújula basada en evidencia para
+        la toma de decisiones estratégicas, fomentando un sistema de educación superior más fuerte,
+        equitativo y alineado con el futuro de la nación.
+
+        **Utiliza el explorador en el panel lateral para navegar por las distintas secciones.** 
+        ¡Que comience el descubrimiento!
+    """))
+    st.success(translation('introduction_sucess',"¡Tu viaje comienza aquí! Selecciona una sección en el menú lateral o usa el botón 'Siguiente'."))
 
 def A1(df_main,*args,**kwargs):
-    st.header(translation('A1_header'))
-    st.markdown(translation('A1_markdown_1'))
+    st.header(translation('A1_header',"🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?"))
+    st.markdown(translation('A1_markdown_1'"""
+    Imagina que podemos tomarle el pulso a todo el sistema universitario cubano a lo largo de una década.
+    ¿Cómo ha sido su ritmo? ¿Ha experimentado momentos de vigoroso crecimiento, períodos de estabilidad,
+    o quizás fases donde el latido se ha vuelto más pausado?
 
-    with st.spinner(translation('A1_spinner_1')):
+    Este primer vistazo nos ofrece la perspectiva más amplia, el electrocardiograma de la matrícula total
+    en nuestras universidades. Es el punto de partida esencial para comprender las dinámicas más profundas
+    que exploraremos a continuación.
+    """))
+
+    with st.spinner(translation('A1_spinner_1',"Construyendo la gráfica A1, por favor espere...")):
         fig_a1, msg_a1 = analisis_A1(df_main, incluir_proyeccion=False)
 
     if fig_a1:
@@ -23,13 +43,26 @@ def A1(df_main,*args,**kwargs):
         if msg_a1:
             show_info(msg_a1)
         
-        st.subheader(translation('A1_fig_1_subheader'))
-        st.markdown(translation('A1_fig_1_markdown_1'))
+        st.subheader(translation('A1_fig_1_subheader',"Descifrando el Ritmo de la Década (2015-2025):"))
+        st.markdown(translation('A1_fig_1_markdown_1'"""
+        Observando la trayectoria de la matrícula nacional total en el gráfico superior, podemos identificar varias fases clave:
+
+        *   **Impulso Inicial (2015-16 a 2016-17):** El viaje comienza en el curso 2015-2016 con una cifra que ronda los **165,000 estudiantes**. Inmediatamente, en el siguiente curso (2016-2017), se aprecia un **salto significativo y vigoroso**, elevando la matrícula hasta aproximadamente **220,000 estudiantes**. Este fue el mayor incremento interanual del período.
+
+        *   **Crecimiento Sostenido hacia la Cima (2017-18 a 2020-21):** Tras una ligera consolidación en 2017-2018 (alrededor de **225,000**), la tendencia ascendente se retoma con fuerza. La matrícula crece de forma constante, pasando por los **258,000** en 2019-2020, hasta alcanzar su **punto más álgido en el curso 2020-2021, superando los 285,000 estudiantes**. Este representa el pico de matrícula en la década analizada.
+
+        *   **Meseta y Comienzo del Declive (2021-22 a 2022-23):** El curso 2021-2022 muestra una ligera contracción, manteniendo la matrícula aún por encima de los **280,000**. Sin embargo, es en el curso 2022-2023 donde se evidencia un cambio de tendencia más claro, con una **disminución más notable** que sitúa la cifra en torno a los **263,000 estudiantes**.
+
+        *   **Ajuste Reciente (2023-24 a 2024-25):** Los dos últimos cursos registrados muestran una **continuación de la tendencia descendente**, siendo la caída más pronunciada entre 2022-23 y 2023-24 (llegando a unos **218,000**). El curso 2024-2025 cierra con una matrícula cercana a los **205,000 estudiantes**, indicando que, si bien la disminución persiste, su ritmo parece haberse moderado en comparación con el salto anterior.
+
+        Esta panorámica general nos invita a preguntarnos: ¿Qué factores podrían haber impulsado el crecimiento inicial? ¿Qué circunstancias podrían explicar el cambio de tendencia y el declive posterior?
+        Estas son preguntas que, aunque no podemos responder completamente solo con estos datos de matrícula, nos preparan para los análisis más detallados que siguen.
+        """))
 
         
-        contexto = translation('A1_fig_1_context')
+        contexto = translation('A1_fig_1_context',"El análisis actual es sobre la evolución de la matrícula nacional total, hombres y mujeres en Cuba.")
         if msg_a1:
-            contexto += f"\n{translation('important_note_for_analysis')} {msg_a1}"
+            contexto += f"\n{translation('important_note_for_analysis',"Nota importante del análisis:")} {msg_a1}"
 
         datos_para_ia = [fig_a1]
 
@@ -39,61 +72,126 @@ def A1(df_main,*args,**kwargs):
             extra_data=datos_para_ia
         )
     else:
-        st.warning(msg_a1 if msg_a1 else translation('A1_fig_1_warn_1'))
+        st.warning(msg_a1 if msg_a1 else translation('A1_fig_1_warn_1',"No se pudo generar el gráfico del panorama nacional (A1)."))
 
 def A2(df_main,*args,**kwargs):
-    st.header(translation('A2_header'))
-    st.markdown(translation('A2_markdown_1'))
+    st.header(translation('A2_header',"📚 Un Mosaico de Saberes: ¿Hacia Dónde se Inclinan los Futuros Profesionales?"))
+    st.markdown(translation('A2_markdown_1',"""
+    La universidad es un vasto jardín donde florecen diversas disciplinas. Cada rama del conocimiento,
+    desde las Ciencias Médicas o Matemáticas hasta las Artes, representa un camino único de formación y contribución
+    a la sociedad. En esta sección, desglosamos la matrícula total para ver cómo se distribuyen
+    los estudiantes entre estas grandes áreas, con el objetivo de responder preguntascomo:
+    - ¿Hay protagonistas claros?
+    - ¿Cómo ha danzado el interés estudiantil a lo largo de la última década?
+    """))
 
-    with st.spinner(translation('A2_spinner_1')):
+    with st.spinner(translation('A2_spinner_1',"Analizando la evolución de las ramas de ciencias...")):
         fig_a2_abs, fig_a2_pct, msg_a2 = analisis_A2(df_main, incluir_proyeccion=False)
 
     if fig_a2_abs:
-        st.subheader(translation('A2_fig_a2_abs_subheader'))
+        st.subheader(translation('A2_fig_a2_abs_subheader',"La Fuerza de Cada Rama: Evolución Histórica de la Matrícula"))
         st.plotly_chart(fig_a2_abs, use_container_width=True, key="fig_a2_abs_mosaico")
         
-        st.markdown(translation('A2_fig_a2_abs_markdown_1'))
+        st.markdown(translation('A2_fig_a2_abs_markdown_1',"""
+        **Cada Línea, una Corriente del Conocimiento:**
+        Este gráfico traza el viaje de la matrícula absoluta (número total de estudiantes) para cada rama de ciencias a lo largo de los años.
+
+        *   **Liderazgo Destacado:** Las **Ciencias Médicas** (línea verde agua) se erigen como la rama con la matrícula más numerosa de forma consistente durante todo el período, partiendo de unos 70,000 estudiantes en 2015-16, alcanzando un pico impresionante cercano a los **95,000 estudiantes en 2020-2021**, y aunque experimentan un descenso posterior, se mantienen como la principal fuerza, cerrando en 2024-2025 con más de 70,000 estudiantes.
+
+        *   **Persecución y Dinamismo:** Las **Ciencias Pedagógicas** (línea naranja) muestran una trayectoria muy dinámica. Comienzan con una matrícula significativa (alrededor de 30,000), experimentan un crecimiento notable hasta superar los **65,000 estudiantes en 2020-2021 y 2021-2022**, convirtiéndose en la segunda rama más grande durante esos años. Sin embargo, sufren un declive pronunciado en los últimos cursos, finalizando cerca de los 40,000 estudiantes.
+
+        *   **Bloque Intermedio Consistente:** Un grupo de ramas mantiene una presencia estable aunque con fluctuaciones:
+            *   Las **Ciencias Técnicas** (línea rosa) y las **Ciencias Sociales y Humanísticas** (línea celeste) muestran trayectorias paralelas, creciendo desde aproximadamente 20,000 estudiantes hasta un pico alrededor de los **30,000-32,000** entre 2020-21 y 2021-22, para luego descender y situarse en torno a los 23,000-25,000 estudiantes al final del período.
+            *   Las **Ciencias Económicas** (línea roja) presentan un crecimiento más moderado pero constante hasta 2021-22 (alcanzando unos 24,000 estudiantes), seguido de un descenso similar a otras ramas, terminando cerca de los 15,000.
+            *   Las **Ciencias Agropecuarias** (línea azul oscuro) y las **Ciencias de la Cultura Física y el Deporte** (línea verde oscuro/marrón) se mantienen en un rango más bajo, generalmente entre 5,000 y 15,000 estudiantes, con picos alrededor de 2020-2021 y descensos posteriores.
+
+        *   **Nicho Especializado:** Las **Ciencias Naturales y Matemáticas** (línea morada) y las **Ciencias de las Artes** (línea violeta) representan las ramas con menor volumen de matrícula, manteniéndose consistentemente por debajo de los 5,000 estudiantes a lo largo de toda la década. Esto sugiere una alta especialización o una demanda más acotada.
+        """))
         
         ask_ai_component(
-            analysis_context=translation('A2_fig_a2_abs_context'),
+            analysis_context=translation('A2_fig_a2_abs_context',"El análisis actual es sobre la evolución de la matrícula absoluta (número de estudiantes) por rama de ciencias en Cuba. Los datos están en el gráfico adjunto."),
             key="a2_mosaico_abs",
             extra_data=[fig_a2_abs]
         )
     else:
-        st.warning(f"{translation('generic_warn_figs')} (A2).")
+        st.warning(f"{translation('generic_warn_figs',"No se pudo generar el gráfico de evolución absoluta por rama")} (A2).")
 
     if fig_a2_pct:
-        st.subheader(translation('A2_fig_a2_pct_subheader'))
+        st.subheader(translation('A2_fig_a2_pct_subheader',"El Reparto del Pastel Académico: Distribución Porcentual Histórica"))
         st.plotly_chart(fig_a2_pct, use_container_width=True, key="fig_a2_pct_mosaico")
-        st.markdown(translation('A2_fig_a2_pct_markdown_1'))
+        st.markdown(translation('A2_fig_a2_pct_markdown_1',"""
+        **Proporciones en el Lienzo Universitario:**
+        Este gráfico de área apilada nos muestra qué "porción del pastel" ha representado cada rama de ciencias dentro del total de la matrícula universitaria en cada curso académico.
+
+        *   **Dominio Persistente de las Ciencias Médicas:** La ancha banda verde agua en la parte superior confirma que las Ciencias Médicas han representado consistentemente la mayor proporción de estudiantes, ocupando cerca del **40-50% del total** en su punto más alto (alrededor de 2016-17 y nuevamente hacia 2024-2025, tras una ligera reducción porcentual a mediados del período).
+
+        *   **Ascenso y Descenso de las Ciencias Pedagógicas:** La banda naranja de las Ciencias Pedagógicas muestra un interesante cambio en su peso relativo. Comienza siendo una porción importante, se expande significativamente hasta representar la segunda mayor proporción (llegando a casi un **25-30%** del total alrededor de 2019-2021), pero luego reduce su participación porcentual en los últimos años.
+
+        *   **Estabilidad Relativa en el Medio:** Las Ciencias Técnicas (banda marrón/ocre), Sociales y Humanísticas (banda celeste) y Económicas (banda azul oscuro) mantienen proporciones más estables a lo largo del tiempo, aunque con ligeras variaciones. Juntas, suelen conformar una porción significativa del estudiantado. Por ejemplo, las Ciencias Sociales y Humanísticas parecen ocupar consistentemente alrededor del 10-15%.
+
+        *   **Menor Peso Porcentual:** Las demás ramas (Agropecuarias, Cultura Física, Naturales y Matemáticas, Artes) representan individualmente porcentajes menores del total de la matrícula, lo que es coherente con su menor volumen absoluto de estudiantes.
+
+        Este análisis porcentual es crucial porque nos permite entender no solo cuántos estudiantes hay en cada rama, sino también cómo se distribuye el interés o la capacidad de admisión en relación con el conjunto del sistema universitario.
+        """))
         
         ask_ai_component(
-            analysis_context=translation('A2_fig_a2_pct_context'),
+            analysis_context=translation('A2_fig_a2_pct_context',"El análisis actual es sobre la distribución porcentual de la matrícula por rama de ciencias en Cuba. Los datos están en el gráfico de área apilada adjunto."),
             key="a2_mosaico_pct",
             extra_data=[fig_a2_pct]
         )
     else:
-        st.warning(f"{translation('generic_warn_figs')} (A2).")
+        st.warning(f"{translation('generic_warn_figs',"No se pudo generar el gráfico de distribución porcentual por rama")} (A2).")
     
     show_info(msg_a2)
     
-    st.subheader(translation('A2_subheader_2'))
-    st.markdown(translation('A2_markdown_2'))
+    st.subheader(translation('A2_subheader_2',"🔗 Interconexiones en el Crecimiento: ¿Cómo se Relacionan las Ramas?"))
+    st.markdown(translation('A2_markdown_2',"""
+        No todas las ramas de ciencias crecen o decrecen de forma aislada. Algunas pueden mostrar
+        tendencias de matrícula similares a lo largo del tiempo, mientras que otras pueden tener
+        dinámicas más independientes. El siguiente mapa de calor (heatmap) visualiza la
+        **correlación del cambio porcentual anual de la matrícula** entre las diferentes ramas de ciencias.
+        
+        *   Un **valor cercano a 1 (azul oscuro/morado intenso)** indica una fuerte correlación positiva: cuando una rama crece, la otra tiende a crecer también en ese mismo período.
+        *   Un **valor cercano a -1 (no visible en este ejemplo, sería el otro extremo del color)** indicaría una fuerte correlación negativa: cuando una crece, la otra tiende a decrecer.
+        *   Un **valor cercano a 0 (colores más claros/neutros)** sugiere poca o ninguna relación lineal en sus patrones de crecimiento anual.
+    """))
 
     fig_corr_ramas, df_corr_ramas, msg_corr_ramas = analisis_A2_correlacion_crecimiento_ramas(df_main)
 
     if fig_corr_ramas:
         st.plotly_chart(fig_corr_ramas, use_container_width=True, key="fig_a2_corr_heatmap")
         
-        with st.expander(translation('A2_fig_corr_expander'), expanded=True):
-            st.markdown(translation('A2_fig_corr_markdown_1'))
+        with st.expander(translation('A2_fig_corr_expander',"🔍 Análisis Detallado de las Correlaciones Observadas"), expanded=True):
+            st.markdown(translation('A2_fig_corr_markdown_1',"""
+            **Observaciones Clave del Mapa de Correlación:**
 
-        context_corr_ia = translation('A2_fig_corr_context')
+            *   **Sincronización Fuerte:** Se observa una **alta correlación positiva (valores > 0.9)** en las tendencias de crecimiento anual entre:
+                *   **Ciencias Agropecuarias y Ciencias Económicas** (aprox. 0.98)
+                *   **Ciencias Agropecuarias y Ciencias Pedagógicas** (aprox. 0.98)
+                *   **Ciencias Agropecuarias y Ciencias de la Cultura Física y el Deporte** (aprox. 0.96)
+                *   Así como entre **Ciencias Económicas, Pedagógicas y de la Cultura Física**, todas mostrando coeficientes muy elevados entre sí.
+                Esto sugiere que estas ramas a menudo experimentan impulsos de crecimiento (o contracción) de manera muy similar y simultánea, posiblemente debido a factores macroeconómicos, políticas educativas integrales o ciclos de demanda estudiantil que las afectan conjuntamente.
+
+            *   **Correlaciones Positivas Moderadas:**
+                *   Las **Ciencias Médicas** muestran una correlación positiva moderada (generalmente entre 0.5 y 0.7) con varias otras ramas como Económicas, Sociales y Humanísticas, y Técnicas. Esto podría indicar que el sector médico, si bien tiene sus propias dinámicas, también se beneficia o participa de tendencias expansivas más amplias en la educación superior.
+                *   Las **Ciencias Técnicas** también se correlacionan moderadamente con la mayoría de las otras ramas, sugiriendo una conexión con el ciclo general del sistema.
+
+            *   **Independencia Relativa Notoria:**
+                *   Las **Ciencias Naturales y Matemáticas** destacan por tener las **correlaciones más bajas** con casi todas las demás ramas (coeficientes frecuentemente entre 0.2 y 0.4). Esto indica que su patrón de crecimiento de matrícula parece ser bastante independiente de las fluctuaciones que afectan a otras grandes áreas del conocimiento. Esta rama podría estar influenciada por factores muy específicos, como programas de fomento científico particulares o una demanda más especializada y menos sensible a tendencias generales.
+                *   Las **Ciencias de las Artes** también muestran correlaciones más débiles con algunas de las ramas más grandes como Pedagógicas, aunque tiene una correlación moderada interesante con Ciencias Médicas.
+
+            *   **Implicaciones Estratégicas:**
+                *   La fuerte sincronización entre ciertas ramas sugiere que las estrategias de planificación y asignación de recursos podrían considerar estos "clusters" de comportamiento.
+                *   La independencia de Ciencias Naturales y Matemáticas podría requerir un enfoque y monitoreo diferenciado para asegurar su vitalidad y alineación con las necesidades de desarrollo científico-técnico del país.
+                *   La ausencia de correlaciones fuertemente negativas (en este gráfico) sugiere que, a nivel agregado de cambio anual, no hay una "canibalización" evidente donde el crecimiento de una rama sea directamente a costa de otra, aunque no se descartan dinámicas competitivas a niveles más específicos.
+            """))
+
+        context_corr_ia = translation('A2_fig_corr_context',"El análisis actual es sobre la matriz de correlación del crecimiento anual de matrícula entre las diferentes ramas de ciencias. Los datos se proporcionan en la tabla de correlación adjunta.")
         datos_corr_ia = []
         if df_corr_ramas is not None:
             datos_corr_ia.append(df_corr_ramas)
         if msg_corr_ramas:
-            context_corr_ia += f"\n{translation('important_note_for_analysis')} {msg_corr_ramas}"
+            context_corr_ia += f"\n{translation('important_note_for_analysis',"Nota importante del análisis:")} {msg_corr_ramas}"
             
         ask_ai_component(
             analysis_context=context_corr_ia,
@@ -101,7 +199,9 @@ def A2(df_main,*args,**kwargs):
             extra_data=datos_corr_ia
         )
     else:
-        st.warning(msg_corr_ramas if msg_corr_ramas else translation('A2_corr_warn_1'))
+        st.warning(msg_corr_ramas if msg_corr_ramas else translation('A2_corr_warn_1',"No se pudo generar el mapa de correlación entre ramas."))
+
+### REFACTORIZAR CON STRANSLATION A PARTIR DE AQUI!!
 
 def A3(df_main,*args,**kwargs):
     st.header("🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo")

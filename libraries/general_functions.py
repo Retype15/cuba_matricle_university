@@ -58,7 +58,7 @@ def _load_translations() -> dict:
         print(f"Error: El archivo {path} no es un JSON válido.")
         return {}
 
-def translation(key:str, lang:str|None = None):
+def translation(key:str, default:str|None=None, lang:str|None = None):
     """
     Obtiene la traducción para una clave específica.
     
@@ -69,7 +69,7 @@ def translation(key:str, lang:str|None = None):
         str: Traducción correspondiente a la clave.
     """
     try:
-        return _load_translations()[lang if lang else st.session_state.get('lang_sel', 'en')].get(key, key)
+        return _load_translations()[lang if lang else st.session_state.get('lang_sel', 'en')].get(key, default if default else key)
     except Exception as e:
         print(f"Error al obtener la traducción para la clave '{key}': {e}")
-        return 'CRITICAL_'+key
+        return 'CRITICAL: '+key

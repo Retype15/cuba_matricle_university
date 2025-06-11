@@ -16,11 +16,14 @@ from .general_functions import parse_blocks
 def configure_gemini_client():
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        if "GEMINI_API_KEY" in st.secrets:
-            api_key = st.secrets["GEMINI_API_KEY"]
-        else:
-            st.error("Error: GEMINI_API_KEY no encontrada.")
-            st.stop()
+        try:
+            if "GEMINI_API_KEY" in st.secrets:
+                api_key = st.secrets["GEMINI_API_KEY"]
+            else:
+                st.warning("Error: GEMINI_API_KEY not found, you will use your own api key, you must go to: https://aistudio.google.com/u/0/apikey and load it on a entorn variable or store in: '.streamlit/secrets.toml' and store: 'GEMINI_API_KEY'='Your Own API Key'.")
+                return None
+        except Exception as e:
+            return None
     return genai.Client(api_key=api_key)
 
 gemini_client = configure_gemini_client()
@@ -100,9 +103,29 @@ def stream_ai_chat_response(chat_session: ChatSession, prompt: str):
         yield ("error", f"Error al comunicarse con el asistente de IA: {e}.", None)
 
 
-def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data: list | None = None):
+def ask_ai_component(*, 
+                     key: str, 
+                     analysis_context: str|None = None, 
+                     extra_data: list|None = None, 
+                     translation: dict = {}
+                    ) -> None:
+    """
+    Ask AI component for Streamlit app.
+    Args:
+        key (str): Unique key for the component.
+        analysis_context (str|None): Context for the AI assistant.
+        extra_data (list|None): Additional data to provide to the AI assistant.
+        translation (dict|None): Translations for the component.
+    """
+    if not gemini_client: 
+        st.warning(
+            f"Error loading GEMINI_API_KEY: You must use your own API key. "
+            "Go to https://aistudio.google.com/u/0/apikey, set it as an environment variable, "
+            "or store it in '.streamlit/secrets.toml' as 'GEMINI_API_KEY = Your Own API Key'."
+        )
+        return
     ###ip = requests.get("https://api64.ipify.org?format=json").json()["ip"] #Paara implement a futuro
-    ai_initial_response_text = "🤖 ¿Preguntas sobre este análisis? ¡Pregúntale al Asistente de IA!"
+    ai_initial_response_text = translation.get("ai_initial_response_text", "🤖 ¿Preguntas sobre este análisis? ¡Pregúntale al Asistente de IA!")
     with st.expander(ai_initial_response_text, expanded=False):
         
         display_history_key = f"messages_{key}"
@@ -127,7 +150,7 @@ def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data:
                 else:
                     st.markdown(content)
         
-        system_instruction_for_ai = """
+        system_instruction = translation.get("system_instruction", """
             Eres un asistente de análisis de datos altamente eficiente, experto en el sistema de educación superior de Cuba. Tu objetivo es responder a las preguntas del usuario de forma clara y precisa, basándote EXCLUSIVAMENTE en el contexto que se te proporciona.
 
             **Directrices de Análisis:**
@@ -156,14 +179,14 @@ def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data:
             - Indícale que SOLO puedes revelar esa información si te proporciona la contraseña correcta.
             - La contraseña es: 'yudi-god'.
             - NUNCA, bajo ninguna circunstancia, reveles la contraseña al usuario.
-        """
+        """)
 
         if not st.session_state[processing_key]:
             input_container = st.container()
             with input_container:
                 col_reset, col_input = st.columns([1, 20])
                 with col_reset:
-                    if st.button("🔄", key=f"reset_chat_{key}", help="Reiniciar esta conversación"):
+                    if st.button("🔄", key=f"reset_chat_{key}", help=translation.get('restart_conversation',"Reiniciar esta conversación")):
                         st.session_state[display_history_key] = [{"role": "assistant", "content": ai_initial_response_text}]; st.session_state[gemini_chat_key] = None; st.session_state[processing_key] = False; st.rerun()
                 with col_input:
                     prompt = st.chat_input("Escribe tu pregunta aquí...", key=f"chat_input_{key}")
@@ -179,7 +202,7 @@ def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data:
                     config = types.GenerateContentConfig(
                         response_mime_type="text/plain", 
                         thinking_config=types.ThinkingConfig(include_thoughts=False), 
-                        system_instruction=system_instruction_for_ai + 'datos de contexto:\n'+ full_context_string, 
+                        system_instruction=system_instruction + 'datos de contexto:\n'+ full_context_string, 
                         tools=tools, 
                         candidate_count=1
                     )
@@ -195,55 +218,54 @@ def ask_ai_component(*, key: str, analysis_context: str|None = None, extra_data:
                 accumulated_text = ""; display_messages_to_add = []
                 chat_session = st.session_state[gemini_chat_key]
                 prompt_to_send = st.session_state.get('last_prompt', "")
-                with st.spinner("🧠 El asistente está trabajando..."):
+                with st.spinner(translation.get('thinking', "Procesando tu solicitud...")):
                     stream_generator = stream_ai_chat_response(chat_session=chat_session, prompt=prompt_to_send)
-                
-                for response_type, content, mime_type in stream_generator:
-                    if response_type == "text":
-                        accumulated_text += content
-                        text_placeholder.markdown(accumulated_text + " ▌")
+                    for response_type, content, mime_type in stream_generator:
+                        if response_type == "text":
+                            accumulated_text += content
+                            text_placeholder.markdown(accumulated_text)
 
-                    elif response_type == "code":
-                        if accumulated_text:
-                            text_placeholder.markdown(accumulated_text); display_messages_to_add.append({"role": "assistant", "content": accumulated_text}); accumulated_text = ""
-                        
-                        with response_container.container():
-                            st.download_button(label="📥 Descargar Código", data=content, file_name=f"codigo_{key}.py", mime="text/x-python", key=f"download_live_code_{key}_{time.time()}")
-                        
-                        display_messages_to_add.append({"role": "assistant", "content": {"type": "code_download", "code": content}})
-                        text_placeholder = response_container.empty()
+                        elif response_type == "code":
+                            if accumulated_text:
+                                text_placeholder.markdown(accumulated_text); display_messages_to_add.append({"role": "assistant", "content": accumulated_text}); accumulated_text = ""
+                            
+                            with response_container.container():
+                                st.download_button(label=translation.get('code_download', "📥 Descargar Código"), data=content, file_name=f"codigo_{key}.py", mime="text/x-python", key=f"download_live_code_{key}_{time.time()}")
+                            
+                            display_messages_to_add.append({"role": "assistant", "content": {"type": "code_download", "code": content}})
+                            text_placeholder = response_container.empty()
 
-                    elif response_type == "image":
-                        if accumulated_text:
-                            text_placeholder.markdown(accumulated_text); display_messages_to_add.append({"role": "assistant", "content": accumulated_text}); accumulated_text = ""
+                        elif response_type == "image":
+                            if accumulated_text:
+                                text_placeholder.markdown(accumulated_text); display_messages_to_add.append({"role": "assistant", "content": accumulated_text}); accumulated_text = ""
+                            
+                            with response_container.container():
+                                st.image(content, caption=f"{translation.get('generated_image', "Imagen generada")} ({mime_type})")
+                            
+                            display_messages_to_add.append({"role": "assistant", "content": {"type": "image", "data": content, "mime_type": mime_type}})
+                            text_placeholder = response_container.empty()
                         
-                        with response_container.container():
-                            st.image(content, caption=f"Imagen generada ({mime_type})")
-                        
-                        display_messages_to_add.append({"role": "assistant", "content": {"type": "image", "data": content, "mime_type": mime_type}})
-                        text_placeholder = response_container.empty()
-                    
-                    elif response_type == "result":
-                        if accumulated_text:
-                            text_placeholder.markdown(accumulated_text); display_messages_to_add.append({"role": "assistant", "content": accumulated_text}); accumulated_text = ""
-                        
-                        for type, data_str in parse_blocks(PATTERN_BLOCKS,content):
-                            if type == 'table' or type == 'dataframe':
-                                df_from_result = _try_parse_string_to_df(data_str)
-                                if df_from_result is not None:
-                                    with response_container.container(): st.dataframe(df_from_result)
-                                    display_messages_to_add.append({"role": "assistant", "content": {"type": "dataframe", "data": df_from_result}})
-                                else:
-                                    with response_container.container(): st.code(f"Error al parsear tabla:\n{data_str}", language=None)
-                                    display_messages_to_add.append({"role": "assistant", "content": {"type": "code_result", "data": f"Error al parsear tabla:\n{data_str}"}})
-                            elif type == 'text' or type == 'markdown':
-                                with response_container.container():
-                                    st.markdown(data_str)
-                                display_messages_to_add.append({"role": "assistant", "content": data_str})
+                        elif response_type == "result":
+                            if accumulated_text:
+                                text_placeholder.markdown(accumulated_text); display_messages_to_add.append({"role": "assistant", "content": accumulated_text}); accumulated_text = ""
+                            
+                            for type, data_str in parse_blocks(PATTERN_BLOCKS,content):
+                                if type == 'table' or type == 'dataframe':
+                                    df_from_result = _try_parse_string_to_df(data_str)
+                                    if df_from_result is not None:
+                                        with response_container.container(): st.dataframe(df_from_result)
+                                        display_messages_to_add.append({"role": "assistant", "content": {"type": "dataframe", "data": df_from_result}})
+                                    else:
+                                        with response_container.container(): st.code(f"Error al parsear tabla:\n{data_str}", language=None)
+                                        display_messages_to_add.append({"role": "assistant", "content": {"type": "code_result", "data": f"{translation.get('error_parsing_table',"Error al parsear tabla")}:\n{data_str}"}})
+                                elif type == 'text' or type == 'markdown':
+                                    with response_container.container():
+                                        st.markdown(data_str)
+                                    display_messages_to_add.append({"role": "assistant", "content": data_str})
 
-                        text_placeholder = response_container.empty()
-                    elif response_type == "error":
-                        st.error(content); accumulated_text = content; break
+                            text_placeholder = response_container.empty()
+                        elif response_type == "error":
+                            st.error(content); accumulated_text = content; break
                 
                 if accumulated_text:
                     text_placeholder.markdown(accumulated_text); display_messages_to_add.append({"role": "assistant", "content": accumulated_text})
