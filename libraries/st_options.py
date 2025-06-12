@@ -25,7 +25,7 @@ def introduction(*args,**kwargs):
 
 def A1(df_main,*args,**kwargs):
     st.header(translation('A1_header',"🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?"))
-    st.markdown(translation('A1_markdown_1'"""
+    st.markdown(translation('A1_markdown_1', """
     Imagina que podemos tomarle el pulso a todo el sistema universitario cubano a lo largo de una década.
     ¿Cómo ha sido su ritmo? ¿Ha experimentado momentos de vigoroso crecimiento, períodos de estabilidad,
     o quizás fases donde el latido se ha vuelto más pausado?
@@ -43,8 +43,8 @@ def A1(df_main,*args,**kwargs):
         if msg_a1:
             show_info(msg_a1)
         
-        st.subheader(translation('A1_fig_1_subheader',"Descifrando el Ritmo de la Década (2015-2025):"))
-        st.markdown(translation('A1_fig_1_markdown_1'"""
+        st.subheader(translation('A1_fig_1_subheader', "Descifrando el Ritmo de la Década (2015-2025):"))
+        st.markdown(translation('A1_fig_1_markdown_1', """
         Observando la trayectoria de la matrícula nacional total en el gráfico superior, podemos identificar varias fases clave:
 
         *   **Impulso Inicial (2015-16 a 2016-17):** El viaje comienza en el curso 2015-2016 con una cifra que ronda los **165,000 estudiantes**. Inmediatamente, en el siguiente curso (2016-2017), se aprecia un **salto significativo y vigoroso**, elevando la matrícula hasta aproximadamente **220,000 estudiantes**. Este fue el mayor incremento interanual del período.
@@ -65,7 +65,6 @@ def A1(df_main,*args,**kwargs):
             contexto += f"\n{translation('important_note_for_analysis',"Nota importante del análisis:")} {msg_a1}"
 
         datos_para_ia = [fig_a1]
-        st.markdown(translation('ask_ai_component',{}))
 
         ask_ai_component(
             analysis_context=contexto,
@@ -371,7 +370,7 @@ def A4(df_main,*args,**kwargs):
         show_info(msg_a4)
 
     if fig_a4_carreras:
-        st.subheader(translation('A4_fig_carreras_subheader', "Zoom a las Carreras: Extremos del Espectro de Género (Curso {year_range}, Matrícula >= 30)")).format(year_range=year_range)
+        st.subheader(translation('A4_fig_carreras_subheader', "Zoom a las Carreras: Extremos del Espectro de Género (Curso {year_range}, Matrícula >= 30)").format(year_range=year_range))
         st.plotly_chart(fig_a4_carreras, use_container_width=True, key="fig_a4_carreras_genero")
         st.markdown(translation('A4_fig_carreras_markdown_1', """
         **Casos Destacados de Mayoría y Minoría Femenina:**
@@ -453,7 +452,7 @@ def A5(df_main,*args,**kwargs):
 
     if df_carreras_unicas_a5 is not None and not df_carreras_unicas_a5.empty:
         st.subheader(translation('A5_df_carreras_unicas_subheader', "Joyas Académicas: Carreras con Oferta Limitada"))
-        st.markdown(translation('A5_df_carreras_unicas_markdown_1', "Listado de carreras y el número de universidades que las impartieron con matrícula en el curso {years_range}, ordenadas de menor a mayor número de oferentes.")).format(years_range=years_range)
+        st.markdown(translation('A5_df_carreras_unicas_markdown_1', "Listado de carreras y el número de universidades que las impartieron con matrícula en el curso {years_range}, ordenadas de menor a mayor número de oferentes.").format(years_range=years_range))
         st.dataframe(df_carreras_unicas_a5, height=350)
         st.markdown(translation('A5_df_carreras_unicas_markdown_2', """
         *   Las carreras en la parte superior de esta lista son ofrecidas por muy pocas instituciones, lo que puede indicar una alta especialización, una nueva oferta en expansión, o la necesidad de evaluar si su alcance geográfico es adecuado para la demanda potencial.
