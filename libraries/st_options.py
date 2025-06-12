@@ -201,24 +201,25 @@ def A2(df_main,*args,**kwargs):
     else:
         st.warning(msg_corr_ramas if msg_corr_ramas else translation('A2_corr_warn_1',"No se pudo generar el mapa de correlación entre ramas."))
 
-### REFACTORIZAR CON STRANSLATION A PARTIR DE AQUI!!
+### REFACTORIZAR CON STRANSLATION A PARTIR DE AQUI PArA LUEGO!!
 
 def A3(df_main,*args,**kwargs):
-    st.header("🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo")
-    st.markdown("""
+    st.header(translation('A3_header',"🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo"))
+    st.markdown(translation('A3_markdown_1',"""
     Tras explorar las grandes ramas del saber, es momento de enfocar nuestra lente en las unidades
     fundamentales: las carreras universitarias. ¿Cuáles son las que capturan el mayor interés estudiantil?
     ¿Cómo ha sido su evolución individual? Y, muy importante, ¿cuáles muestran un crecimiento
     acelerado y cuáles parecen estar perdiendo impulso?
-    """)
+    """))
 
-    st.subheader("🏆 El Podio de las Carreras: ¿Cuáles Lideran la Matrícula Actual?")
-    st.markdown(f"""
+    st.subheader(translation('A3_subheader_2',"🏆 El Podio de las Carreras: ¿Cuáles Lideran la Matrícula Actual?"))
+    year_range = f"{df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}"
+    st.markdown(translation('A3_markdown_2',"""
     A la izquierda observamos el ranking de todas las carreras según su matrícula total en el curso más reciente
-    ({df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}). A la derecha, vemos la evolución histórica de la matrícula
+    ({year_range}). A la derecha, vemos la evolución histórica de la matrícula
     para las 10 carreras que actualmente se encuentran en la cima de este ranking.
-    """)
-    with st.spinner("Analizando el ranking y evolución de las carreras top..."):
+    """).format(year_range=year_range))
+    with st.spinner(translation('A3_spinner_1',"Analizando el ranking y evolución de las carreras top...")):
         fig_a3_evolucion, df_ranking_completo_a3, msg_a3 = analisis_A3(df_main)
 
     col_ranking, col_evolucion_top = st.columns([1, 2])
@@ -227,32 +228,32 @@ def A3(df_main,*args,**kwargs):
         if df_ranking_completo_a3 is not None and not df_ranking_completo_a3.empty:
             st.dataframe(df_ranking_completo_a3, height=500)
         else:
-            st.info("No hay datos de ranking de carreras para mostrar.")
+            st.info(translation('A3_col_ranking_info',"No hay datos de ranking de carreras para mostrar."))
 
     with col_evolucion_top:
         if fig_a3_evolucion:
             st.plotly_chart(fig_a3_evolucion, use_container_width=True, key="fig_a3_lupa_evolucion")
         else:
-            st.info("No se generó gráfico de evolución para las carreras top actuales.")
+            st.info(translation('A3_col_evo_top_info',"No se generó gráfico de evolución para las carreras top actuales."))
 
     show_info(msg_a3)
 
-    st.markdown("""
+    st.markdown(translation('A3_markdown_3',"""
     **Puntos Clave del Podio:**
     *   **Liderazgo Indiscutible:** **Medicina** se posiciona firmemente como la carrera con la mayor matrícula (35,889 estudiantes), una constante que ya habíamos vislumbrado al analizar las ramas del saber.
     *   **Fuerzas Significativas:** Le siguen **Cultura Física** (14,695) y **Educación Primaria** (12,867), demostrando una demanda considerable en estas áreas.
     *   **Top 5 Robusto:** **Enfermería** (9,999) y **Contabilidad y Finanzas** (9,883) completan el top 5, ambas con una matrícula muy cercana a los 10,000 estudiantes.
     *   **Evolución de las Líderes:** El gráfico de la derecha nos permite ver cómo estas carreras (y otras del top 10) han llegado a su posición actual. Observa cómo algunas han tenido un crecimiento más sostenido, mientras otras muestran picos y valles más pronunciados.
-    """)
+    """))
 
-    contexto_podio_ia = "El análisis actual muestra el ranking de matrícula de carreras en el último año y la evolución histórica de las 10 carreras más populares. Los datos se proporcionan en una tabla de ranking y un gráfico de líneas."
+    contexto_podio_ia = translation('A3_df_ranking_context', "El análisis actual muestra el ranking de matrícula de carreras en el último año y la evolución histórica de las 10 carreras más populares. Los datos se proporcionan en una tabla de ranking y un gráfico de líneas.")
     datos_podio_ia = []
     if df_ranking_completo_a3 is not None:
         datos_podio_ia.append(df_ranking_completo_a3)
     if fig_a3_evolucion:
         datos_podio_ia.append(fig_a3_evolucion)
     if msg_a3:
-        contexto_podio_ia += f"\nNota del análisis: {msg_a3}"
+        contexto_podio_ia += f"\n{translation('analysis_note',"Nota del análisis")}: {msg_a3}"
 
     ask_ai_component(
         analysis_context=contexto_podio_ia,
@@ -261,29 +262,29 @@ def A3(df_main,*args,**kwargs):
     )
     st.markdown("---")
 
-    st.subheader("🚀 El Ritmo del Cambio: ¿Qué Carreras Despegan o Aterrizan?")
-    st.markdown("""
+    st.subheader(translation('A3_subheader_4', "🚀 El Ritmo del Cambio: ¿Qué Carreras Despegan o Aterrizan?"))
+    st.markdown(translation('A3_markdown_4', """
     La **Tasa de Crecimiento Anual Compuesto (CAGR)** nos ofrece una perspectiva del dinamismo.
     Calcula el crecimiento (o decrecimiento) porcentual promedio de la matrícula de una carrera cada año,
     considerando todo el período analizado (2015-2024). Un CAGR alto sugiere una expansión rápida.
-    """)
-    with st.spinner("Calculando el dinamismo de las carreras (CAGR)..."):
+    """))
+    with st.spinner(translation('A3_spinner_4',"Calculando el dinamismo de las carreras (CAGR)...")):
         fig_a6_top_cagr, fig_a6_bottom_cagr, msg_a6 = analisis_A6(df_main)
 
     col_cagr_top, col_cagr_bottom = st.columns(2)
 
     with col_cagr_top:
         if fig_a6_top_cagr:
-            st.markdown("📈 **Top 15 Carreras con Mayor Crecimiento Promedio Anual**")
+            st.markdown(translation('A3_col_cagr_top_markdown_1', "📈 **Top 15 Carreras con Mayor Crecimiento Promedio Anual**"))
             st.plotly_chart(fig_a6_top_cagr, use_container_width=True, key="fig_a6_top_lupa_cagr")
-            st.markdown("""
+            st.markdown(translation('A3_col_cagr_top_markdown_2', """
             Estas carreras han experimentado la expansión más notable en su matrícula promedio anual.
             *   **Sorprendente Despegue:** **Servicios Estomatológicos** lidera con un CAGR superior al 100%, lo que indica una duplicación (o más) de su matrícula promedio año tras año.
             *   **Ingenierías en Auge:** Varias ingenierías como **Artística**, **Procesos Agroindustriales** e **Informática** muestran un crecimiento muy saludable.
             *   **Educación con Impulso:** Ramas de la educación como **Preescolar**, **Agropecuaria** y **Primaria** también figuran con un CAGR positivo y significativo.
-            """)
+            """))
         else:
-            st.info("No se pudo generar el gráfico de carreras con mayor CAGR.")
+            st.info(translation('A3_col_cagr_top_error_info', "No se pudo generar el gráfico de carreras con mayor CAGR."))
 
     with col_cagr_bottom:
         if fig_a6_bottom_cagr:

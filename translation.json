@@ -60,6 +60,28 @@
         "A2_fig_corr_warn_1": "No se pudo generar el mapa de correlación entre ramas.",
 
 
+        "Sin traducir!": "#####################################################",
+
+        "analysis_note:": "Nota del análisis",
+
+        "A3_header": "🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo",
+        "A3_markdown_1": "Tras explorar las grandes ramas del saber, es momento de enfocar nuestra lente en las unidades fundamentales: las carreras universitarias.\n¿Cuáles son las que capturan el mayor interés estudiantil?\n¿Cómo ha sido su evolución individual?\nY, muy importante, ¿cuáles muestran un crecimiento acelerado y cuáles parecen estar perdiendo impulso?",
+        "A3_subheader_2": "🏆 El Podio de las Carreras: ¿Cuáles Lideran la Matrícula Actual?",
+        "A3_markdown_2":"A la izquierda observamos el ranking de todas las carreras según su matrícula total en el curso más reciente ({year_range}).\nA la derecha, vemos la evolución histórica de la matrícula para las 10 carreras que actualmente se encuentran en la cima de este ranking.",
+        "A3_spinner_1": "Analizando el ranking y evolución de las carreras top...",
+        "A3_col_ranking_info":"No hay datos de ranking de carreras para mostrar.",
+        "A3_col_evo_top_info":"No se generó gráfico de evolución para las carreras top actuales.",
+        "A3_markdown_3": "**Puntos Clave del Podio:**\n* **Liderazgo Indiscutible:** **Medicina** se posiciona firmemente como la carrera con la mayor matrícula (35,889 estudiantes), una constante que ya habíamos vislumbrado al analizar las ramas del saber.\n* **Fuerzas Significativas:** Le siguen **Cultura Física** (14,695) y **Educación Primaria** (12,867), demostrando una demanda considerable en estas áreas.\n* **Top 5 Robusto:** **Enfermería** (9,999) y **Contabilidad y Finanzas** (9,883) completan el top 5, ambas con una matrícula muy cercana a los 10,000 estudiantes.\n* **Evolución de las Líderes:** El gráfico de la derecha nos permite ver cómo estas carreras (y otras del top 10) han llegado a su posición actual. Observa cómo algunas han tenido un crecimiento más sostenido, mientras otras muestran picos y valles más pronunciados.",
+        "A3_df_ranking_context": "El análisis actual muestra el ranking de matrícula de carreras en el último año y la evolución histórica de las 10 carreras más populares. Los datos se proporcionan en una tabla de ranking y un gráfico de líneas.",
+        "A3_subheader_4": "🚀 El Ritmo del Cambio: ¿Qué Carreras Despegan o Aterrizan?",
+        "A3_markdown_4": "La **Tasa de Crecimiento Anual Compuesto (CAGR)** nos ofrece una perspectiva del dinamismo.\nCalcula el crecimiento (o decrecimiento) porcentual promedio de la matrícula de una carrera cada año, considerando todo el período analizado (2015-2024).\nUn CAGR alto sugiere una expansión rápida.",
+        "A3_spinner_4": "Calculando el dinamismo de las carreras (CAGR)...",
+        "A3_col_cagr_top_markdown_1": "📈 **Top 15 Carreras con Mayor Crecimiento Promedio Anual**",
+        "A3_col_cagr_top_markdown_2": "Estas carreras han experimentado la expansión más notable en su matrícula promedio anual.\n\n* **Sorprendente Despegue:** **Servicios Estomatológicos** lidera con un CAGR superior al 100%, lo que indica una duplicación (o más) de su matrícula promedio año tras año.\n* **Ingenierías en Auge:** Varias ingenierías como **Artística**, **Procesos Agroindustriales** e **Informática** muestran un crecimiento muy saludable.\n* **Educación con Impulso:** Ramas de la educación como **Preescolar**, **Agropecuaria** y **Primaria** también figuran con un CAGR positivo y significativo.",
+        "A3_col_cagr_top_error_info": "No se pudo generar el gráfico de carreras con mayor CAGR.",
+        "A3": "",
+
+
 
 
         "ask_ai_component": {
