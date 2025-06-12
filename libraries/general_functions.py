@@ -37,7 +37,7 @@ def parse_blocks(pattern, texto):
     for match in re.finditer(pattern, texto): #DEBE SEr  re.DOTALL el pattern!
         yield match.group("tipo"), match.group("contenido")
 
-#@st.cache_data
+@st.cache_data
 def _load_translations() -> dict:
     """
     Carga las traducciones desde un archivo JSON.
