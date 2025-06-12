@@ -9,8 +9,8 @@ st.set_page_config(layout="wide", page_title="Cuban University Enrollment Analys
 df_main = cargar_datos_matricula('data/db.parquet') 
 df_ins = cargar_datos_instituciones('data/db_uni.parquet')
 
-idiomas = {"English": "en", "Español": "es", "Français": "fr", "Português": "pt", "Deutsch": "de"}
-idiomas_index = {"en":0, "es":1, "fr":2, "pt":3, "de":4}
+idiomas = { "Español": "es", "English": "en", "Français": "fr", "Português": "pt", "Deutsch": "de"}
+idiomas_index = {"es":0, "en":1, "fr":2, "pt":3, "de":4}
 st.session_state.setdefault("lang_sel", 'en')
 lang_selected = st.sidebar.selectbox("Select your language:", list(idiomas.keys()), index=idiomas_index.get(get_browser_language(),0), help=translation('lang_select_help', "Select your preferred language for the application."))
 if idiomas[lang_selected] != st.session_state.get("lang_sel", None):
@@ -53,6 +53,8 @@ else:
         "Perfil Detallado de Carrera": B1,
         "Guía de Instituciones": B2
     }
+
+#SI lees esto, revisa que esté activo el wraper en general_functions._load_translations()
     
     nav: HierarchicalSidebarNavigation = HierarchicalSidebarNavigation(navigation_structure)
 

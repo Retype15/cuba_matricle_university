@@ -65,11 +65,13 @@ def A1(df_main,*args,**kwargs):
             contexto += f"\n{translation('important_note_for_analysis',"Nota importante del análisis:")} {msg_a1}"
 
         datos_para_ia = [fig_a1]
+        st.markdown(translation('ask_ai_component',{}))
 
         ask_ai_component(
             analysis_context=contexto,
             key="a1_nacional",
-            extra_data=datos_para_ia
+            extra_data=datos_para_ia,
+            translation=translation('ask_ai_component',{})
         )
     else:
         st.warning(msg_a1 if msg_a1 else translation('A1_fig_1_warn_1',"No se pudo generar el gráfico del panorama nacional (A1)."))
@@ -111,7 +113,8 @@ def A2(df_main,*args,**kwargs):
         ask_ai_component(
             analysis_context=translation('A2_fig_a2_abs_context',"El análisis actual es sobre la evolución de la matrícula absoluta (número de estudiantes) por rama de ciencias en Cuba. Los datos están en el gráfico adjunto."),
             key="a2_mosaico_abs",
-            extra_data=[fig_a2_abs]
+            extra_data=[fig_a2_abs],
+            translation=translation('ask_ai_component',{})
         )
     else:
         st.warning(f"{translation('generic_warn_figs',"No se pudo generar el gráfico de evolución absoluta por rama")} (A2).")
@@ -137,7 +140,8 @@ def A2(df_main,*args,**kwargs):
         ask_ai_component(
             analysis_context=translation('A2_fig_a2_pct_context',"El análisis actual es sobre la distribución porcentual de la matrícula por rama de ciencias en Cuba. Los datos están en el gráfico de área apilada adjunto."),
             key="a2_mosaico_pct",
-            extra_data=[fig_a2_pct]
+            extra_data=[fig_a2_pct],
+            translation=translation('ask_ai_component',{})
         )
     else:
         st.warning(f"{translation('generic_warn_figs',"No se pudo generar el gráfico de distribución porcentual por rama")} (A2).")
@@ -196,7 +200,8 @@ def A2(df_main,*args,**kwargs):
         ask_ai_component(
             analysis_context=context_corr_ia,
             key="a2_corr_ramas",
-            extra_data=datos_corr_ia
+            extra_data=datos_corr_ia,
+            translation=translation('ask_ai_component',{})
         )
     else:
         st.warning(msg_corr_ramas if msg_corr_ramas else translation('A2_corr_warn_1',"No se pudo generar el mapa de correlación entre ramas."))
@@ -258,7 +263,8 @@ def A3(df_main,*args,**kwargs):
     ask_ai_component(
         analysis_context=contexto_podio_ia,
         key="a3_carreras_top",
-        extra_data=datos_podio_ia
+        extra_data=datos_podio_ia,
+        translation=translation('ask_ai_component',{})
     )
     st.markdown("---")
 
@@ -288,24 +294,24 @@ def A3(df_main,*args,**kwargs):
 
     with col_cagr_bottom:
         if fig_a6_bottom_cagr:
-            st.markdown("📉 **Top 15 Carreras con Menor Crecimiento o Mayor Decrecimiento Promedio Anual**")
+            st.markdown(translation('A3_col_cagr_bottom_markdown_1', "📉 **Top 15 Carreras con Menor Crecimiento o Mayor Decrecimiento Promedio Anual**"))
             st.plotly_chart(fig_a6_bottom_cagr, use_container_width=True, key="fig_a6_bottom_lupa_cagr")
-            st.markdown("""
+            st.markdown(translation('A3_col_cagr_bottom_markdown_2', """
             En el otro extremo, estas carreras han visto su matrícula promedio anual disminuir o crecer a un ritmo mucho menor.
             *   **Ajustes Notables:** **Estudios Socioculturales** y **Estomatología** (no confundir con Servicios Estomatológicos) presentan los mayores decrecimientos promedio.
             *   **Desafíos Diversos:** Carreras como **Ingeniería Agrícola**, **Artes Visuales**, **Matemática**, **Música** y varias **Ingenierías** (Hidráulica, Civil, Telecomunicaciones, Industrial) también aparecen en esta lista, sugiriendo una revisión de sus tendencias.
-            """)
+            """))
         else:
-            st.info("No se pudo generar el gráfico de carreras con menor CAGR.")
+            st.info(translation('A3_col_cagr_bottom_error_info', "No se pudo generar el gráfico de carreras con menor CAGR."))
 
     show_info(msg_a6)
 
-    st.markdown("""
+    st.markdown(translation('A3_markdown_5', """
     **Reflexiones Estratégicas a partir de estos Ritmos:**
     *   Un **alto CAGR** no siempre significa una matrícula total masiva (podría ser una carrera pequeña creciendo rápido), pero sí indica una **tendencia positiva fuerte** que merece atención, ya sea para fomentar o para asegurar recursos.
     *   Un **CAGR bajo o negativo** en carreras importantes podría ser una señal para investigar las causas: ¿cambios en el mercado laboral, preferencias estudiantiles, oferta académica?
     *   Es crucial cruzar esta información de CAGR con la matrícula absoluta (del ranking) para obtener una imagen completa.
-    """)
+    """))
 
     contexto_cagr_ia = "El análisis actual muestra las carreras con mayor y menor Tasa de Crecimiento Anual Compuesto (CAGR) de su matrícula. Los datos se presentan en dos gráficos de barras."
     datos_cagr_ia = []
@@ -314,31 +320,32 @@ def A3(df_main,*args,**kwargs):
     if fig_a6_bottom_cagr:
         datos_cagr_ia.append(fig_a6_bottom_cagr)
     if msg_a6:
-        contexto_cagr_ia += f"\nNota del análisis: {msg_a6}"
+        contexto_cagr_ia += f"\n{translation('analysis_note', "Nota del análisis")}: {msg_a6}"
 
     ask_ai_component(
         analysis_context=contexto_cagr_ia,
         key="a3_carreras_cagr",
-        extra_data=datos_cagr_ia
+        extra_data=datos_cagr_ia,
+        translation=translation('ask_ai_component',{})
     )
     st.markdown("---")
 
 def A4(df_main,*args,**kwargs):
-    st.header("♀️♂️ Equilibrando la Balanza: Una Mirada a la Perspectiva de Género")
-    st.markdown("""
+    st.header(translation('A4_header', "♀️♂️ Equilibrando la Balanza: Una Mirada a la Perspectiva de Género"))
+    st.markdown(translation('A4_markdown_1', """
     La universidad no solo forma profesionales, sino que también moldea una sociedad más justa y equitativa.
     En esta sección, nos adentramos en la composición de género de la matrícula universitaria.
     ¿Existe un equilibrio entre hombres y mujeres en las aulas? ¿Hay áreas del conocimiento
     tradicionalmente asociadas a un género que mantienen esos patrones, o estamos presenciando
     una transformación hacia una mayor paridad? Acompáñanos a descubrirlo.
-    """)
-    with st.spinner("Analizando la perspectiva de género..."):
+    """))
+    with st.spinner(translation('A4_spinner_1', "Analizando la perspectiva de género...")):
         fig_a4_ramas, fig_a4_carreras, msg_a4 = analisis_A4(df_main)
-
+    year_range = f"{df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}"
     if fig_a4_ramas:
-        st.subheader(f"Participación Femenina por Rama de Ciencias (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1})")
+        st.subheader(translation('A4_fig_ramas_subheader', "Participación Femenina por Rama de Ciencias (Curso {year_range})").format(year_range=year_range))
         st.plotly_chart(fig_a4_ramas, use_container_width=True, key="fig_a4_ramas_genero")
-        st.markdown("""
+        st.markdown(translation('A4_fig_ramas_markdown_1', """
         **El Panorama General por Áreas del Saber:**
         Este gráfico de barras nos muestra el porcentaje de mujeres matriculadas en cada gran rama de ciencias. La línea roja punteada en el 50% representa la paridad perfecta.
 
@@ -346,116 +353,122 @@ def A4(df_main,*args,**kwargs):
         *   **Mayoría Femenina Sostenida:** Las **Ciencias Económicas**, **Ciencias de las Artes** y **Ciencias Naturales y Matemáticas** también muestran una mayoría de mujeres, con porcentajes que oscilan entre el **55% y el 65%**, situándose por encima de la línea de paridad.
         *   **Cerca de la Paridad o Ligera Mayoría Masculina:** Las **Ciencias Agropecuarias** se encuentran más cerca del equilibrio, aunque aún con una ligera mayoría femenina (casi el 50%).
         *   **Desafíos en Áreas Técnicas y Deportivas:** En contraste, las **Ciencias Técnicas** (aproximadamente 35% mujeres) y, de manera más marcada, las **Ciencias de la Cultura Física y el Deporte** (alrededor del 32% mujeres) son las ramas con la menor representación femenina, indicando una persistente brecha de género en estos campos.
-        """)
+        """))
         
-        contexto_ramas_ia = "El análisis actual muestra el porcentaje de participación femenina por rama de ciencias en Cuba para el último curso académico. Los datos están en el gráfico de barras adjunto."
+        contexto_ramas_ia = translation('A4_fig_ramas_context', "El análisis actual muestra el porcentaje de participación femenina por rama de ciencias en Cuba para el último curso académico. Los datos están en el gráfico de barras adjunto.")
         datos_ramas_ia = [fig_a4_ramas]
         if msg_a4:
-            contexto_ramas_ia += f"\nNota del análisis: {msg_a4}"
+            contexto_ramas_ia += f"\n{translation('analysis_note', "Nota del análisis")}: {msg_a4}"
         
         ask_ai_component(
             analysis_context=contexto_ramas_ia,
             key="a4_ramas_genero",
-            extra_data=datos_ramas_ia
+            extra_data=datos_ramas_ia,
+            translation=translation('ask_ai_component',{})
         )
     else:
-        st.warning("No se pudo generar el gráfico de género por ramas.")
+        st.warning(translation('generic_warn_figs', "No se pudo generar el gráfico, pruebe recargar la página."))
         show_info(msg_a4)
 
     if fig_a4_carreras:
-        st.subheader(f"Zoom a las Carreras: Extremos del Espectro de Género (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}, Matrícula >= 20)")
+        st.subheader(translation('A4_fig_carreras_subheader', "Zoom a las Carreras: Extremos del Espectro de Género (Curso {year_range}, Matrícula >= 30)")).format(year_range=year_range)
         st.plotly_chart(fig_a4_carreras, use_container_width=True, key="fig_a4_carreras_genero")
-        st.markdown("""
+        st.markdown(translation('A4_fig_carreras_markdown_1', """
         **Casos Destacados de Mayoría y Minoría Femenina:**
-        Estos gráficos nos llevan al detalle de las carreras, mostrando las 10 con mayor porcentaje de mujeres y las 10 con menor porcentaje (es decir, mayor presencia masculina), siempre que tengan una matrícula de al menos 20 estudiantes para asegurar la representatividad.
+        Estos gráficos nos llevan al detalle de las carreras, mostrando las 10 con mayor porcentaje de mujeres y las 10 con menor porcentaje (es decir, mayor presencia masculina), siempre que tengan una matrícula de al menos 30 estudiantes para asegurar la representatividad.
 
         *   **Feminización Extrema en Algunas Áreas:** Carreras como **Educación Preescolar** se acercan al 100% de matrícula femenina. Otras, como **Técnico Superior en Logofonoaudiología**, **Educación Logopedia** y **Educación Español-Literatura**, también muestran una abrumadora mayoría de mujeres, superando el 90%. Esto es consistente con la alta feminización de las Ciencias Pedagógicas. **Servicios Estomatológicos** y **Estudios Socioculturales** también destacan en este grupo.
 
         *   **Dominio Masculino en Ingenierías y Áreas Técnicas:** En el otro extremo, carreras como **Ingeniería Informática**, **Ingeniería en Automática**, **Ciencias de la Computación**, **Gestión del Proceso Inversionista** y varias **Ingenierías Mecánica, Eléctrica y en Técnicos Superior en Entrenamiento Deportivo** presentan porcentajes de mujeres muy bajos, algunos por debajo del 10% y la mayoría por debajo del 25%. Esto refleja la brecha observada en las Ciencias Técnicas y deportivas a nivel de rama.
 
         *   **Matices Importantes:** Es crucial observar que incluso dentro de las "Top 10 con Menor % de Mujeres", los porcentajes varían. Mientras algunas ingenierías apenas superan el 5-10% de presencia femenina, otras pueden estar más cerca del 20-25%.
-        """)
+        """))
 
-        contexto_carreras_ia = "El análisis actual muestra las 10 carreras con mayor y menor porcentaje de participación femenina, para el último curso académico. Los datos están en el gráfico de barras adjunto."
+        contexto_carreras_ia = translation('A4_fig_carreras_context', "El análisis actual muestra el porcentaje de participación femenina por carrera en Cuba para el último curso académico, enfocándose en las carreras con matrícula de al menos 30 estudiantes. Los datos están en el gráfico de barras adjunto.")
         datos_carreras_ia = [fig_a4_carreras]
         if msg_a4:
-             contexto_carreras_ia += f"\nNota del análisis: {msg_a4}"
+             contexto_carreras_ia += f"\n{translation('analysis_note')}: {msg_a4}"
         
         ask_ai_component(
             analysis_context=contexto_carreras_ia,
             key="a4_carreras_genero",
-            extra_data=datos_carreras_ia
+            extra_data=datos_carreras_ia,
+            translation=translation('ask_ai_component',{})
         )
     else:
-        st.warning("No se pudo generar el gráfico de género por carreras.")
+        st.warning(translation('generic_warn_figs'))
         if not fig_a4_ramas:
             show_info(msg_a4)
 
-    st.markdown("""
+    st.markdown(translation('A4_markdown_2', """
     ---
     **Reflexiones para la Acción:**
     *   La alta feminización en ciertas ramas y carreras es un fenómeno consolidado. Si bien refleja vocaciones, también es importante asegurar que no existan barreras implícitas o desincentivos para la participación masculina en ellas.
     *   El mayor desafío para la equidad de género se encuentra claramente en las **Ciencias Técnicas** y en varias ingenierías específicas, así como en **Ciencias de la Cultura Física y el Deporte**. Se requieren estrategias continuas y efectivas para atraer y retener a más mujeres en estos campos cruciales para el desarrollo tecnológico y social.
     *   Estos datos son una invitación a profundizar: ¿Cuáles son las causas de estos desbalances? ¿Cómo podemos inspirar a las nuevas generaciones a explorar todas las áreas del conocimiento sin sesgos de género?
-    """)
+    """))
 
 def A5(df_main,*args,**kwargs):
-    st.header("🏛️ Universidades en Perspectiva: Descubriendo Fortalezas y Focos de Especialización")
-    st.markdown("""
+    st.header(translation('A5_header', "🏛️ Universidades en Perspectiva: Descubriendo Fortalezas y Focos de Especialización"))
+    st.markdown(translation('A5_markdown_1', """
     Cada universidad es un ecosistema único con su propia historia, vocación y áreas de excelencia.
     En esta sección, cambiamos nuestra perspectiva para analizar cómo se distribuye el talento estudiantil
     a nivel institucional. ¿Qué universidades concentran la mayor cantidad de estudiantes?
     ¿Existen centros altamente especializados en ciertas ramas o carreras? ¿Y qué carreras
     son joyas raras, ofrecidas solo por unas pocas instituciones?
-    """)
-    with st.spinner("Preparando el análisis institucional..."):
+    """))
+    with st.spinner(translation('A5_spinner_1', "Analizando la distribución institucional de la matrícula...")):
         fig_a5_treemap, df_treemap_data, df_carreras_unicas_a5, msg_a5 = analisis_A5(df_main)
 
+    years_range = f"{df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}"
+
     if fig_a5_treemap:
-        st.subheader(f"Mapa Interactivo de la Matrícula Universitaria (Curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1})")
+        st.subheader(translation('A5_fig_treemap_subheader', "Mapa Interactivo de la Matrícula Universitaria (Curso {years_range})").format(years_range=years_range))
         st.plotly_chart(fig_a5_treemap, use_container_width=True, key="fig_a5_treemap_unis")
-        st.markdown("""
+        st.markdown(translation('A5_fig_treemap_markdown_1', """
         **Navegando el Universo Institucional:**
         Este "mapa de árbol" (treemap) es una representación visual de la matrícula total.
         *   **El Tamaño Importa:** El área de cada rectángulo es proporcional al número de estudiantes. Comienza con "Todas las Universidades"; haz clic en una universidad (ej. `UCLV`, `UO`, `CUJAE`) para ver cómo se desglosa su matrícula por ramas de ciencias. Un nuevo clic en una rama te mostrará las carreras dentro de ella y su peso en esa institución.
         *   **Identifica los Gigantes:** A simple vista, puedes identificar las universidades con mayor volumen de estudiantes. Por ejemplo, la **UCMLH (Universidad de Ciencias Médicas de La Habana)**, **UCM SC (Universidad de Ciencias Médicas de Santiago de Cuba)**, y **UM (Universidad de Matanzas)**, entre otras, muestran rectángulos considerablemente grandes, indicando una matrícula importante.
         *   **Focos de Especialización:** Observa cómo algunas universidades tienen casi toda su "área" concentrada en una o dos ramas (ej. las Universidades de Ciencias Médicas predominantemente en "Ciencias Médicas"), mientras otras muestran una mayor diversificación.
-        """)
+        """))
         
-        contexto_treemap_ia = "El análisis actual es sobre la distribución jerárquica de la matrícula por universidad, rama de ciencias y carrera, para el último curso. Los datos completos están en el DataFrame adjunto."
-        datos_treemap_ia = []
-        if df_treemap_data is not None:
-            datos_treemap_ia.append(df_treemap_data)
-        if msg_a5:
-             contexto_treemap_ia += f"\nNota del análisis: {msg_a5}"
+        #contexto_treemap_ia = translation('A5_fig_treemap_context', "El análisis actual es sobre la distribución jerárquica de la matrícula por universidad, rama de ciencias y carrera, para el último curso. Los datos completos están en el DataFrame adjunto.")
+        #datos_treemap_ia = []
+        #if df_treemap_data is not None:
+        #    datos_treemap_ia.append(df_treemap_data)
+        #if msg_a5:
+        #     contexto_treemap_ia += f"\n{translation('analisys_note')}: {msg_a5}"
 
         #Nota para el que revise esta kk: demasiados datos para enviar a la IA, mejor no incluir la ia aqui, si ve este mensaje es que se me olvidó encontrarle una mejor solucion...
         #ask_ai_component(
         #    analysis_context=contexto_treemap_ia,
         #    key="a5_treemap_unis",
-        #    extra_data=datos_treemap_ia
+        #    extra_data=datos_treemap_ia,
+        #    translation=translation('ask_ai_component',{})
         #)
     else:
-        st.warning("No se pudo generar el treemap de distribución.")
+        st.warning(translation('generic_warn_figs'))
         show_info(msg_a5)
 
     if df_carreras_unicas_a5 is not None and not df_carreras_unicas_a5.empty:
-        st.subheader("Joyas Académicas: Carreras con Oferta Limitada")
-        st.markdown(f"Listado de carreras y el número de universidades que las impartieron con matrícula en el curso {df_main['Ano_Inicio_Curso'].max()}-{df_main['Ano_Inicio_Curso'].max()+1}, ordenadas de menor a mayor número de oferentes.")
+        st.subheader(translation('A5_df_carreras_unicas_subheader', "Joyas Académicas: Carreras con Oferta Limitada"))
+        st.markdown(translation('A5_df_carreras_unicas_markdown_1', "Listado de carreras y el número de universidades que las impartieron con matrícula en el curso {years_range}, ordenadas de menor a mayor número de oferentes.")).format(years_range=years_range)
         st.dataframe(df_carreras_unicas_a5, height=350)
-        st.markdown("""
+        st.markdown(translation('A5_df_carreras_unicas_markdown_2', """
         *   Las carreras en la parte superior de esta lista son ofrecidas por muy pocas instituciones, lo que puede indicar una alta especialización, una nueva oferta en expansión, o la necesidad de evaluar si su alcance geográfico es adecuado para la demanda potencial.
-        """)
+        """))
 
-        contexto_unicas_ia = "El análisis actual muestra un listado de carreras y el número de universidades que las ofrecen, identificando aquellas con oferta más limitada. Los datos se proporcionan en la tabla adjunta."
+        contexto_unicas_ia = translation('A5_df_carreras_unicas_context', "El análisis actual muestra un listado de carreras y el número de universidades que las ofrecen, identificando aquellas con oferta más limitada. Los datos se proporcionan en la tabla adjunta.")
         datos_unicas_ia = [df_carreras_unicas_a5]
         if msg_a5:
-            contexto_unicas_ia += f"\nNota del análisis: {msg_a5}"
+            contexto_unicas_ia += f"\n{translation('analysis_note')}: {msg_a5}"
 
         ask_ai_component(
             analysis_context=contexto_unicas_ia,
             key="a5_carreras_unicas",
-            extra_data=datos_unicas_ia
+            extra_data=datos_unicas_ia,
+            translation=translation('ask_ai_component',{})
         )
     else:
         if msg_a5 and not fig_a5_treemap:
@@ -463,14 +476,14 @@ def A5(df_main,*args,**kwargs):
     
     st.markdown("---")
     
-    st.subheader("Lupa en Carreras Clave: ¿Quién es Quién en la Formación Específica?")
-    st.markdown("""
+    st.subheader(translation('A5_subheader_2', "Lupa en Carreras Clave: ¿Quién es Quién en la Formación Específica?"))
+    st.markdown(translation('A5_markdown_2', """
     Selecciona hasta 3 carreras de tu interés. El gráfico mostrará la evolución histórica de la matrícula
     para esas carreras, desglosada por cada universidad que las imparte. Esto nos permite comparar
     el peso y la trayectoria de diferentes instituciones en la formación de profesionales en campos específicos.
         
     *Si el gráfico parece muy denso, intenta seleccionar menos carreras o concéntrate en las tendencias generales de las universidades más grandes para cada carrera.*
-    """)
+    """))
 
     todas_carreras_sorted = sorted(df_main['carrera'].unique())
     default_carreras_a9 = []
@@ -482,7 +495,7 @@ def A5(df_main,*args,**kwargs):
             default_carreras_a9 = todas_carreras_sorted[:min(2, len(todas_carreras_sorted))]
 
     carreras_seleccionadas_a9 = st.multiselect(
-        "Carreras para comparar evoluciones por universidad:",
+        translation('A5_multiselect_carreras', "Carreras para comparar evoluciones por universidad:"),
         options=todas_carreras_sorted,
         default=default_carreras_a9,
         max_selections=3,
@@ -490,37 +503,65 @@ def A5(df_main,*args,**kwargs):
     )
 
     if carreras_seleccionadas_a9:
-        with st.spinner("Generando gráfico comparativo por universidad..."):
+        with st.spinner(translation('A5_spinner_2', "Generando gráfico comparativo por universidad...")):
             fig_a9, msg_a9 = analisis_A9(df_main, carreras_a_comparar=carreras_seleccionadas_a9)
 
         if fig_a9:
             st.plotly_chart(fig_a9, use_container_width=True, key="fig_a9_comparativa_unis")
             show_info(msg_a9)
-
-            contexto_comparativa_ia = f"El análisis actual muestra la evolución histórica de la matrícula para las carreras seleccionadas ({', '.join(carreras_seleccionadas_a9)}), desglosada por cada universidad que las imparte. Los datos están en el gráfico adjunto."
+            sel_carrers = ', '.join(carreras_seleccionadas_a9)
+            contexto_comparativa_ia = translation('A5_fig_comparativa_context', "El análisis actual muestra la evolución histórica de la matrícula para las carreras seleccionadas ({sel_carrers}), desglosada por cada universidad que las imparte. Los datos están en el gráfico adjunto.").format(sel_carrers=sel_carrers)
             datos_comparativa_ia = [fig_a9]
             if msg_a9:
-                 contexto_comparativa_ia += f"\nNota del análisis: {msg_a9}"
-
-            dynamic_key = "a5_comparativa_unis_" + "_".join(sorted([c.replace(' ','_') for c in carreras_seleccionadas_a9]))
+                 contexto_comparativa_ia += f"\n{translation('analysis_note')}: {msg_a9}"
 
             ask_ai_component(
                 analysis_context=contexto_comparativa_ia,
-                key=dynamic_key,
-                extra_data=datos_comparativa_ia
+                key="a5_comparativa_unis_" + "_".join(sorted([c.replace(' ','_') for c in carreras_seleccionadas_a9])),
+                extra_data=datos_comparativa_ia,
+                translation=translation('ask_ai_component',{})
             )
         else:
-            st.warning(msg_a9 if msg_a9 else f"No se pudo generar el gráfico comparativo para: {', '.join(carreras_seleccionadas_a9)}.")
+            st.warning(msg_a9 if msg_a9 else translation('generic_warn_figs'))
     else:
-        st.info("Selecciona al menos una carrera para ver la comparativa de su evolución por universidad.")
+        st.info(translation('A5_no_carreras_selected', "No se han seleccionado carreras para comparar. Por favor, elige al menos una carrera."))
     
-    st.markdown("""
+    st.markdown(translation('A5_markdown_3', """
     ---
     **Visiones Estratégicas para la Red de Universidades:**
     *   **Potenciar la Excelencia:** Identificar universidades líderes en carreras clave puede guiar la inversión para convertirlas en centros de referencia nacional o internacional.
     *   **Optimizar Recursos:** El treemap y el análisis de ofertas únicas pueden revelar duplicidades innecesarias o, por el contrario, la necesidad de expandir la oferta de ciertas carreras en más regiones.
     *   **Colaboración Interinstitucional:** Conocer las fortalezas de cada una puede fomentar sinergias, programas conjuntos y movilidad estudiantil y profesoral.
-    """)
+    """))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################ ME QUEDÉ por AQUI, ERNESTO SI LEES ESTO, puedes continuar haciendolo o no, igual manana probablemente siga...####################################
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def A6(df_main,*args,**kwargs):
     st.header("🔭 Mirando al Mañana: ¿Qué Podríamos Esperar? (Proyecciones Futuras)")
@@ -561,7 +602,8 @@ def A6(df_main,*args,**kwargs):
         ask_ai_component(
             analysis_context=contexto_proy_nac_ia,
             key="a6_proy_nacional",
-            extra_data=datos_proy_nac_ia
+            extra_data=datos_proy_nac_ia,
+            translation=translation('ask_ai_component',{})
         )
     else:
         st.warning(msg_a1_proy if msg_a1_proy else "No se pudo generar la proyección nacional.")
@@ -591,7 +633,8 @@ def A6(df_main,*args,**kwargs):
         ask_ai_component(
             analysis_context=contexto_proy_ramas_ia,
             key="a6_proy_ramas",
-            extra_data=datos_proy_ramas_ia
+            extra_data=datos_proy_ramas_ia,
+            translation=translation('ask_ai_component',{})
         )
     else:
         st.warning(msg_a2_proy if msg_a2_proy else "No se pudo generar la proyección por ramas.")
@@ -639,7 +682,8 @@ def A6(df_main,*args,**kwargs):
             ask_ai_component(
                 analysis_context=contexto_proy_carreras_ia,
                 key=dynamic_key,
-                extra_data=datos_proy_carreras_ia
+                extra_data=datos_proy_carreras_ia,
+                translation=translation('ask_ai_component',{})
             )
         else:
             st.warning(msg_a7_proy if msg_a7_proy else f"No se pudo generar la proyección para: {', '.join(carreras_seleccionadas_a7)}.")
@@ -690,7 +734,8 @@ def A7(df_main,*args,**kwargs):
             ask_ai_component(
                 analysis_context=contexto_nuevas_ia,
                 key="a7_nuevas_ofertas",
-                extra_data=datos_nuevas_ia
+                extra_data=datos_nuevas_ia,
+                translation=translation('ask_ai_component',{})
             )
         else:
             st.info("No se identificaron carreras que cumplan claramente con el criterio de 'nueva oferta reciente' en el período analizado.")
@@ -715,7 +760,8 @@ def A7(df_main,*args,**kwargs):
             ask_ai_component(
                 analysis_context=contexto_cesadas_ia,
                 key="a7_cese_oferta",
-                extra_data=datos_cesadas_ia
+                extra_data=datos_cesadas_ia,
+                translation=translation('ask_ai_component',{})
             )
         else:
             st.info("No se identificaron carreras que cumplan claramente con el criterio de 'cese de oferta reciente'.")
@@ -742,7 +788,8 @@ def A7(df_main,*args,**kwargs):
             ask_ai_component(
                 analysis_context=contexto_baja_ia,
                 key="a7_baja_matricula",
-                extra_data=datos_baja_ia
+                extra_data=datos_baja_ia,
+                translation=translation('ask_ai_component',{})
             )
         else:
             st.info(f"No se identificaron carreras con matrícula inferior a {umbral} (y >0) en el último año.")
@@ -908,7 +955,8 @@ def B1(df_main,*args,**kwargs):
     ask_ai_component(
         analysis_context=contexto_texto_ia,
         key=f"b1_perfil_carrera{carrera_sel_b1.replace(' ','_')}",
-        extra_data=datos_para_ia
+        extra_data=datos_para_ia,
+        translation=translation('ask_ai_component',{})
     )
 
 def B2(df_main, df_ins,*args,**kwargs):
@@ -1053,7 +1101,8 @@ def B2(df_main, df_ins,*args,**kwargs):
     ask_ai_component(
         analysis_context=contexto_texto_ia,
         key="b2_guia_instituciones",
-        extra_data=datos_para_ia
+        extra_data=datos_para_ia,
+        translation=translation('ask_ai_component',{})
     )
 
 def conclusion(*args,**kwargs):
@@ -1150,4 +1199,5 @@ def conclusion(*args,**kwargs):
     ask_ai_component(
         analysis_context=contexto_conclusion_ia,
         key="conclusiones_finales",
+        translation=translation('ask_ai_component',{})
     )

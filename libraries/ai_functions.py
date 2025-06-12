@@ -117,6 +117,8 @@ def ask_ai_component(*,
         extra_data (list|None): Additional data to provide to the AI assistant.
         translation (dict|None): Translations for the component.
     """
+    #if not isinstance(translation, dict):
+    #    translation = {}
     if not gemini_client: 
         st.warning(
             f"Error loading GEMINI_API_KEY: You must use your own API key. "
@@ -125,6 +127,7 @@ def ask_ai_component(*,
         )
         return
     ###ip = requests.get("https://api64.ipify.org?format=json").json()["ip"] #Paara implement a futuro
+    print(translation)
     ai_initial_response_text = translation.get("ai_initial_response_text", "🤖 ¿Preguntas sobre este análisis? ¡Pregúntale al Asistente de IA!")
     with st.expander(ai_initial_response_text, expanded=False):
         

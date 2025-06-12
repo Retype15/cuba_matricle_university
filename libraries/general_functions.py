@@ -1,6 +1,7 @@
 import io
 import re
 import json
+from typing import Any
 import streamlit as st
 
 def to_csv_string(list_of_dicts):
@@ -36,7 +37,7 @@ def parse_blocks(pattern, texto):
     for match in re.finditer(pattern, texto): #DEBE SEr  re.DOTALL el pattern!
         yield match.group("tipo"), match.group("contenido")
 
-@st.cache_data
+#@st.cache_data
 def _load_translations() -> dict:
     """
     Carga las traducciones desde un archivo JSON.
@@ -58,7 +59,7 @@ def _load_translations() -> dict:
         print(f"Error: El archivo {path} no es un JSON válido.")
         return {}
 
-def translation(key:str, default:str|None=None, lang:str|None = None):
+def translation(key:str, default:Any=None, lang:str|None = None) -> str|dict|list:
     """
     Obtiene la traducción para una clave específica.
     

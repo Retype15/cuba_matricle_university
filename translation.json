@@ -5,7 +5,6 @@
         "select_your_lang": "Selecciona tu idioma",
         "config_page_title": "Análisis Matrícula Universitaria Cuba",
         "load_df_error": "Error crítico: No se pudieron cargar los datos ('db.parquet'). La aplicación no puede continuar.",
-        "generic_warn_figs": "No se pudo generar el gráfico de evolución absoluta por rama",
         "main_image_caption": "Universidad de La Habana. Un símbolo de la educación superior en Cuba.",
         "main_markdown_1": "Un viaje para iluminar el camino de la Educación Superior.",
         "load_screen_title": "🎓 Análisis Estratégico de la Matrícula Universitaria en Cuba",
@@ -63,6 +62,8 @@
         "Sin traducir!": "#####################################################",
 
         "analysis_note:": "Nota del análisis",
+        "generic_warn_figs": "No se pudo generar el gráfico, pruebe recargar la página.",
+
 
         "A3_header": "🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo",
         "A3_markdown_1": "Tras explorar las grandes ramas del saber, es momento de enfocar nuestra lente en las unidades fundamentales: las carreras universitarias.\n¿Cuáles son las que capturan el mayor interés estudiantil?\n¿Cómo ha sido su evolución individual?\nY, muy importante, ¿cuáles muestran un crecimiento acelerado y cuáles parecen estar perdiendo impulso?",
@@ -79,7 +80,57 @@
         "A3_col_cagr_top_markdown_1": "📈 **Top 15 Carreras con Mayor Crecimiento Promedio Anual**",
         "A3_col_cagr_top_markdown_2": "Estas carreras han experimentado la expansión más notable en su matrícula promedio anual.\n\n* **Sorprendente Despegue:** **Servicios Estomatológicos** lidera con un CAGR superior al 100%, lo que indica una duplicación (o más) de su matrícula promedio año tras año.\n* **Ingenierías en Auge:** Varias ingenierías como **Artística**, **Procesos Agroindustriales** e **Informática** muestran un crecimiento muy saludable.\n* **Educación con Impulso:** Ramas de la educación como **Preescolar**, **Agropecuaria** y **Primaria** también figuran con un CAGR positivo y significativo.",
         "A3_col_cagr_top_error_info": "No se pudo generar el gráfico de carreras con mayor CAGR.",
-        "A3": "",
+        "A3_col_cagr_bottom_markdown_1": "📉 **Top 15 Carreras con Menor Crecimiento o Mayor Decrecimiento Promedio Anual**",
+        "A3_col_cagr_bottom_markdown_2": "En el otro extremo, estas carreras han visto su matrícula promedio anual disminuir o crecer a un ritmo mucho menor.\n\n* **Ajustes Notables:** **Estudios Socioculturales** y **Estomatología** (no confundir con Servicios Estomatológicos) presentan los mayores decrecimientos promedio.\n* **Desafíos Diversos:** Carreras como **Ingeniería Agrícola**, **Artes Visuales**, **Matemática**, **Música** y varias **Ingenierías** (Hidráulica, Civil, Telecomunicaciones, Industrial) también aparecen en esta lista, sugiriendo una revisión de sus tendencias.",
+        "A3_col_cagr_bottom_error_info": "No se pudo generar el gráfico de carreras con menor CAGR.",
+        "A3_markdown_5": "**Reflexiones Estratégicas a partir de estos Ritmos:**\n* Un **alto CAGR** no siempre significa una matrícula total masiva (podría ser una carrera pequeña creciendo rápido), pero sí indica una **tendencia positiva fuerte** que merece atención, ya sea para fomentar o para asegurar recursos.\n* Un **CAGR bajo o negativo** en carreras importantes podría ser una señal para investigar las causas: ¿cambios en el mercado laboral, preferencias estudiantiles, oferta académica?\n* Es crucial cruzar esta información de CAGR con la matrícula absoluta (del ranking) para obtener una imagen completa.",
+        "A3_cagr_context": "El análisis actual muestra las carreras con mayor y menor Tasa de Crecimiento Anual Compuesto (CAGR) de su matrícula. Los datos se presentan en dos gráficos de barras.",
+
+        "A4_header": "♀️♂️ Equilibrando la Balanza: Una Mirada a la Perspectiva de Género",
+        "A4_markdown_1": "La universidad no solo forma profesionales, sino que también moldea una sociedad más justa y equitativa.\nEn esta sección, nos adentramos en la composición de género de la matrícula universitaria.\n¿Existe un equilibrio entre hombres y mujeres en las aulas?\n¿Hay áreas del conocimiento tradicionalmente asociadas a un género que mantienen esos patrones, o estamos presenciando una transformación hacia una mayor paridad?\nAcompáñanos a descubrirlo.",
+        "A4_spinner_1": "Analizando la perspectiva de género...",
+        "A4_fig_ramas_subheader": "Participación Femenina por Rama de Ciencias (Curso {year_range})",
+        "A4_fig_ramas_markdown_1": "**El Panorama General por Áreas del Saber:**\nEste gráfico de barras nos muestra el porcentaje de mujeres matriculadas en cada gran rama de ciencias. La línea roja punteada en el 50% representa la paridad perfecta.\n\n* **Liderazgo Femenino Pronunciado:** Las **Ciencias Pedagógicas** destacan con más del **80%** de matrícula femenina, seguidas de cerca por las **Ciencias Sociales y Humanísticas** y las **Ciencias Médicas**, ambas superando el **70%**. Esto indica una fuerte presencia y preferencia femenina en estas importantes áreas.\n* **Mayoría Femenina Sostenida:** Las **Ciencias Económicas**, **Ciencias de las Artes** y **Ciencias Naturales y Matemáticas** también muestran una mayoría de mujeres, con porcentajes que oscilan entre el **55% y el 65%**, situándose por encima de la línea de paridad.\n* **Cerca de la Paridad o Ligera Mayoría Masculina:** Las **Ciencias Agropecuarias** se encuentran más cerca del equilibrio, aunque aún con una ligera mayoría femenina (casi el 50%).\n* **Desafíos en Áreas Técnicas y Deportivas:** En contraste, las **Ciencias Técnicas** (aproximadamente 35% mujeres) y, de manera más marcada, las **Ciencias de la Cultura Física y el Deporte** (alrededor del 32% mujeres) son las ramas con la menor representación femenina, indicando una persistente brecha de género en estos campos.",
+        "A4_fig_ramas_context": "El análisis actual muestra el porcentaje de participación femenina por rama de ciencias en Cuba para el último curso académico. Los datos están en el gráfico de barras adjunto.",
+        "A4_fig_carreras_subheader": "Zoom a las Carreras: Extremos del Espectro de Género (Curso {year_range}, Matrícula >= 30)",
+        "A4_fig_carreras_markdown_1": "**Casos Destacados de Mayoría y Minoría Femenina:**\nEstos gráficos nos llevan al detalle de las carreras, mostrando las 10 con mayor porcentaje de mujeres y las 10 con menor porcentaje (es decir, mayor presencia masculina), siempre que tengan una matrícula de al menos 30 estudiantes para asegurar la representatividad.\n\n* **Feminización Extrema en Algunas Áreas:** Carreras como **Educación Preescolar** se acercan al 100% de matrícula femenina. Otras, como **Técnico Superior en Logofonoaudiología**, **Educación Logopedia** y **Educación Español-Literatura**, también muestran una abrumadora mayoría de mujeres, superando el 90%. Esto es consistente con la alta feminización de las Ciencias Pedagógicas. **Servicios Estomatológicos** y **Estudios Socioculturales** también destacan en este grupo.\n\n* **Dominio Masculino en Ingenierías y Áreas Técnicas:** En el otro extremo, carreras como **Ingeniería Informática**, **Ingeniería en Automática**, **Ciencias de la Computación**, **Gestión del Proceso Inversionista** y varias **Ingenierías Mecánica, Eléctrica y en Técnicos Superior en Entrenamiento Deportivo** presentan porcentajes de mujeres muy bajos, algunos por debajo del 10% y la mayoría por debajo del 25%. Esto refleja la brecha observada en las Ciencias Técnicas y deportivas a nivel de rama.\n\n* **Matices Importantes:** Es crucial observar que incluso dentro de las \"Top 10 con Menor % de Mujeres\", los porcentajes varían. Mientras algunas ingenierías apenas superan el 5-10% de presencia femenina, otras pueden estar más cerca del 20-25%.",
+        "A4_fig_carreras_context": "El análisis actual muestra el porcentaje de participación femenina por carrera en Cuba para el último curso académico, enfocándose en las carreras con matrícula de al menos 30 estudiantes. Los datos están en el gráfico de barras adjunto.",
+        "A4_markdown_2": "---\n**Reflexiones para la Acción:**\n* La alta feminización en ciertas ramas y carreras es un fenómeno consolidado. Si bien refleja vocaciones, también es importante asegurar que no existan barreras implícitas o desincentivos para la participación masculina en ellas.\n* El mayor desafío para la equidad de género se encuentra claramente en las **Ciencias Técnicas** y en varias ingenierías específicas, así como en **Ciencias de la Cultura Física y el Deporte**. Se requieren estrategias continuas y efectivas para atraer y retener a más mujeres en estos campos cruciales para el desarrollo tecnológico y social.\n* Estos datos son una invitación a profundizar: ¿Cuáles son las causas de estos desbalances? ¿Cómo podemos inspirar a las nuevas generaciones a explorar todas las áreas del conocimiento sin sesgos de género?",
+
+        "A5_header": "🏛️ Universidades en Perspectiva: Descubriendo Fortalezas y Focos de Especialización",
+        "A5_markdown_1": "Cada universidad es un ecosistema único con su propia historia, vocación y áreas de excelencia.\nEn esta sección, cambiamos nuestra perspectiva para analizar cómo se distribuye el talento estudiantil a nivel institucional.\n¿Qué universidades concentran la mayor cantidad de estudiantes?\n¿Existen centros altamente especializados en ciertas ramas o carreras?\n¿Y qué carreras son joyas raras, ofrecidas solo por unas pocas instituciones?",
+        "A5_spinner_1": "Analizando la distribución institucional de la matrícula...",
+        "A5_fig_treemap_subheader": "Mapa Interactivo de la Matrícula Universitaria (Curso {years_range})",
+        "A5_fig_treemap_markdown_1": "---\n**Reflexiones para la Acción:**\n* La alta feminización en ciertas ramas y carreras es un fenómeno consolidado. Si bien refleja vocaciones, también es importante asegurar que no existan barreras implícitas o desincentivos para la participación masculina en ellas.\n* El mayor desafío para la equidad de género se encuentra claramente en las **Ciencias Técnicas** y en varias ingenierías específicas, así como en **Ciencias de la Cultura Física y el Deporte**. Se requieren estrategias continuas y efectivas para atraer y retener a más mujeres en estos campos cruciales para el desarrollo tecnológico y social.\n* Estos datos son una invitación a profundizar: ¿Cuáles son las causas de estos desbalances? ¿Cómo podemos inspirar a las nuevas generaciones a explorar todas las áreas del conocimiento sin sesgos de género?",
+        "A5_fig_treemap_context": "El análisis actual es sobre la distribución jerárquica de la matrícula por universidad, rama de ciencias y carrera, para el último curso. Los datos completos están en el DataFrame adjunto.",
+        "A5_df_carreras_unicas_subheader": "Joyas Académicas: Carreras con Oferta Limitada",
+        "A5_df_carreras_unicas_markdown_1": "Listado de carreras y el número de universidades que las impartieron con matrícula en el curso {years_range}, ordenadas de menor a mayor número de oferentes.",
+        "A5_df_carreras_unicas_markdown_2": "* Las carreras en la parte superior de esta lista son ofrecidas por muy pocas instituciones, lo que puede indicar una **alta especialización**, una **nueva oferta en expansión**, o la necesidad de evaluar si su **alcance geográfico** es adecuado para la demanda potencial.",
+        "A5_df_carreras_unicas_context": "El análisis actual muestra un listado de carreras y el número de universidades que las ofrecen, identificando aquellas con oferta más limitada. Los datos se proporcionan en la tabla adjunta.",
+        "A5_subheader_2": "Lupa en Carreras Clave: ¿Quién es Quién en la Formación Específica?",
+        "A5_markdown_2": "Selecciona hasta 3 carreras de tu interés. El gráfico mostrará la evolución histórica de la matrícula para esas carreras, desglosada por cada universidad que las imparte. Esto nos permite comparar el peso y la trayectoria de diferentes instituciones en la formación de profesionales en campos específicos. *Si el gráfico parece muy denso, intenta seleccionar menos carreras o concéntrate en las tendencias generales de las universidades más grandes para cada carrera.*",
+        "A5_multiselect_carreras": "Carreras para comparar evoluciones por universidad:",
+        "A5_spinner_2": "Generando gráfico comparativo por universidad...",
+        "A5_fig_comparativa_context": "El análisis actual muestra la evolución histórica de la matrícula para las carreras seleccionadas ({sel_carrers}), desglosada por cada universidad que las imparte. Los datos están en el gráfico adjunto.",
+        "A5_no_carreras_selected": "No se han seleccionado carreras para comparar. Por favor, elige al menos una carrera.",
+        "A5_markdown_3": "--- **Visiones Estratégicas para la Red de Universidades:** *   **Potenciar la Excelencia:** Identificar universidades líderes en carreras clave puede guiar la inversión para convertirlas en centros de referencia nacional o internacional. *   **Optimizar Recursos:** El treemap y el análisis de ofertas únicas pueden revelar duplicidades innecesarias o, por el contrario, la necesidad de expandir la oferta de ciertas carreras en más regiones. *   **Colaboración Interinstitucional:** Conocer las fortalezas de cada una puede fomentar sinergias, programas conjuntos y movilidad estudiantil y profesoral.",
+        "A5_4": "",
+        "A5_5": "",
+        "A5_6": "",
+        "A5_7": "",
+        "A5_8": "",
+        "A5_9": "",
+        "A5_0": "",
+        "A5_00": "",
+
+
+
+
+
+
+
+
+
 
 
 
