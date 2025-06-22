@@ -3,6 +3,7 @@ import re
 import json
 from typing import Any
 import streamlit as st
+from streamlit_float import float_init, float_parent
 
 def to_csv_string(list_of_dicts):
     """
@@ -74,3 +75,39 @@ def translation(key:str, default:Any=None, lang:str|None = None) -> str|dict|lis
     except Exception as e:
         print(f"Error al obtener la traducción para la clave '{key}': {e}")
         return 'CRITICAL: '+key
+
+@st.fragment
+def chat_button():
+    float_init(theme=True)
+    if "show_chat" not in st.session_state:
+        st.session_state.show_chat = False
+    with st.container():
+        if st.button("💬", key="chat_icon", help="Abrir chat de soporte"):
+            st.session_state.show_chat = not st.session_state.show_chat
+            st.rerun(scope='fragment')
+        float_parent("""
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            z-index: 9999;
+        """)
+    if st.session_state.show_chat:
+        with st.container():
+            st.markdown("**🧑‍💻 Soporte en línea**")
+            
+            msg = st.text_input("Escribe tu mensaje:", key="chat_input", disabled=True)
+            st.warning("Aún no se ha implementado esta función...")
+            #f msg:
+            #    st.success("Mensaje enviado. ¡Gracias por contactarnos!")
+            
+            float_parent("""
+                bottom: 90px;
+                right: 20px;
+                width: 300px;
+                background-color: black;
+                padding: 15px;
+                border: 1px solid #ccc;
+                box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+                z-index: 9998;
+            """)

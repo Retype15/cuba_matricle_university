@@ -1,11 +1,10 @@
-from re import S
 from libraries.streamlit_extended import HierarchicalSidebarNavigation
 from libraries.st_options import *
-from libraries.general_functions import translation
+from libraries.general_functions import translation, chat_button
 from streamlit_js_eval import get_user_agent, get_browser_language
 
 st.set_page_config(layout="wide", page_title="Cuban University Enrollment Analysis", page_icon="🎓")
-
+chat_button()
 df_main = cargar_datos_matricula('data/db.parquet') 
 df_ins = cargar_datos_instituciones('data/db_uni.parquet')
 
@@ -57,6 +56,11 @@ else:
 #SI lees esto, revisa que esté activo el wraper en general_functions._load_translations()
     
     nav: HierarchicalSidebarNavigation = HierarchicalSidebarNavigation(navigation_structure)
+###-----------------------------------------------------------------------------------
+    
+    
+
+###----------------------------------------------------------------------------------------
 
     st.sidebar.title(translation('sidebar_title',"🧭 Explorador de secciones"))
     nav.display_sidebar_navigation(radio_title_main=translation('sidebar_radio_title_main',"Elige una sección:"), radio_title_sub_prefix=translation('sidebar_radio_title_sub_prefix',"Subseccion: "))

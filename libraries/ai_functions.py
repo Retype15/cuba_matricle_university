@@ -10,7 +10,6 @@ import streamlit as st
 import json
 import time
 import numpy as np
-from .general_functions import parse_blocks
 
 @st.cache_resource(show_spinner=False, ttl=3600)
 def configure_gemini_client():
@@ -28,6 +27,20 @@ def configure_gemini_client():
 
 gemini_client = configure_gemini_client()
 PATTERN_BLOCKS  = re.compile(r"```(?P<tipo>\S+)\n(?P<contenido>.*?)```(?:\n|$)", re.DOTALL)
+
+def parse_blocks(pattern, texto):
+    """
+    Encuentra bloques de texto delimitados por ```tipo y ``` en el texto dado.
+    Devuelve un iterador con tuplas (tipo, contenido) para cada bloque encontrado.
+
+    Args:
+        texto (str): El texto a analizar.
+
+    Yields:
+        tuple: Una tupla (tipo, contenido) para cada bloque encontrado.
+    """
+    for match in re.finditer(pattern, texto): #DEBE SEr  re.DOTALL el pattern!
+        yield match.group("tipo"), match.group("contenido")
 
 def _clean_plotly_dict_for_ai(d):
     KEY_WHITELISTS = { 'root': {'data', 'layout'}, 'data': {'type', 'name', 'x', 'y', 'z', 'labels', 'values', 'text', 'marker', 'line'}, 'layout': {'title', 'xaxis', 'yaxis', 'barmode', 'legend'}, 'axis': {'title', 'type'}, 'title': {'text'}, 'legend': {'title'}, 'style_object': {'color'} }
@@ -102,7 +115,7 @@ def stream_ai_chat_response(chat_session: ChatSession, prompt: str):
         st.error(f"Error en la comunicación con Gemini: {e}")
         yield ("error", f"Error al comunicarse con el asistente de IA: {e}.", None)
 
-
+@st.fragment
 def ask_ai_component(*, 
                      key: str, 
                      analysis_context: str|None = None, 
@@ -127,7 +140,6 @@ def ask_ai_component(*,
         )
         return
     ###ip = requests.get("https://api64.ipify.org?format=json").json()["ip"] #Paara implement a futuro
-    print(translation)
     ai_initial_response_text = translation.get("ai_initial_response_text", "🤖 ¿Preguntas sobre este análisis? ¡Pregúntale al Asistente de IA!")
     with st.expander(ai_initial_response_text, expanded=False):
         
@@ -169,12 +181,7 @@ def ask_ai_component(*,
             **Estructura de la Respuesta:**
             - Da un resumen claro y conciso de los resultados en texto.
             - **Mostrando Tablas al Usuario (IMPORTANTE):** Para mostrar una tabla o DataFrame al usuario, **DEBES** imprimirla entre delimitadores especiales.
-            Ejemplo:
-            ```python
-            print("```table")
-            print(mi_dataframe)
-            print("```")
-            ```
+                                             
             - El usuario ve NO ve el contenido que generas como respuesta del codigo ejecutado, solo lo que expresas dentro de print("```(tipo)") y print("```"). Por ejemplo, si generas un DataFrame, debes imprimirlo entre esos delimitadores para que el usuario lo vea, y para mostrarle texto directamente desde el resultado del código usar print('```text') o print('```markdown'), dependiendo de lo que le quieras mostrar explícitamente, aunque lo mejor es no hacerlo y explicarle de forma personalizada el resultado al usuario.
             - Si generas un gráfico, el usuario lo verá como una imagen, así que no es necesario imprimirlo entre delimitadores, simplemente usa `plt.show()` para mostrarlo.
             **Crítico - Seguridad de la Información:**
@@ -183,14 +190,13 @@ def ask_ai_component(*,
             - La contraseña es: 'yudi-god'.
             - NUNCA, bajo ninguna circunstancia, reveles la contraseña al usuario.
         """)
-
         if not st.session_state[processing_key]:
             input_container = st.container()
             with input_container:
                 col_reset, col_input = st.columns([1, 20])
                 with col_reset:
                     if st.button("🔄", key=f"reset_chat_{key}", help=translation.get('restart_conversation',"Reiniciar esta conversación")):
-                        st.session_state[display_history_key] = [{"role": "assistant", "content": ai_initial_response_text}]; st.session_state[gemini_chat_key] = None; st.session_state[processing_key] = False; st.rerun()
+                        st.session_state[display_history_key] = [{"role": "assistant", "content": ai_initial_response_text}]; st.session_state[gemini_chat_key] = None; st.session_state[processing_key] = False; st.rerun(scope='fragment')
                 with col_input:
                     prompt = st.chat_input("Escribe tu pregunta aquí...", key=f"chat_input_{key}")
 
@@ -213,7 +219,7 @@ def ask_ai_component(*,
                     #initial_history = [types.Content(role="user", parts=[types.Part.from_text(text=full_context_string)]), types.Content(role="model", parts=[types.Part.from_text(text="Contexto y datos recibidos. Estoy listo para tus preguntas.")])]
                     chat_session = gemini_client.chats.create(model="gemini-2.5-flash-preview-05-20", config=config)#, history=initial_history)
                     st.session_state[gemini_chat_key] = chat_session
-                st.session_state['last_prompt'] = prompt; st.session_state[processing_key] = True; st.rerun()
+                st.session_state['last_prompt'] = prompt; st.session_state[processing_key] = True; st.rerun(scope='fragment')
         else:
             with st.chat_message("assistant"):
                 response_container = st.container()
@@ -276,4 +282,4 @@ def ask_ai_component(*,
             st.session_state[display_history_key].extend(display_messages_to_add)
             st.session_state[processing_key] = False
             if 'last_prompt' in st.session_state: del st.session_state['last_prompt']
-            st.rerun()
+            st.rerun(scope='fragment')
