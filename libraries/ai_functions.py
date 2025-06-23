@@ -139,7 +139,7 @@ def ask_ai_component(*,
             "or store it in '.streamlit/secrets.toml' as 'GEMINI_API_KEY = Your Own API Key'."
         )
         return
-    ###ip = requests.get("https://api64.ipify.org?format=json").json()["ip"] #Paara implement a futuro
+    ###ip = requests.get("https://api64.ipify.org?format=json").json()["ip"] #Paara implement a futuro IGNORAR!!!
     ai_initial_response_text = translation.get("ai_initial_response_text", "🤖 ¿Preguntas sobre este análisis? ¡Pregúntale al Asistente de IA!")
     with st.expander(ai_initial_response_text, expanded=False):
         
@@ -217,7 +217,7 @@ def ask_ai_component(*,
                     )
 
                     #initial_history = [types.Content(role="user", parts=[types.Part.from_text(text=full_context_string)]), types.Content(role="model", parts=[types.Part.from_text(text="Contexto y datos recibidos. Estoy listo para tus preguntas.")])]
-                    chat_session = gemini_client.chats.create(model="gemini-2.5-flash-preview-05-20", config=config)#, history=initial_history)
+                    chat_session = gemini_client.chats.create(model="gemini-2.5-flash", config=config)#, history=initial_history)
                     st.session_state[gemini_chat_key] = chat_session
                 st.session_state['last_prompt'] = prompt; st.session_state[processing_key] = True; st.rerun(scope='fragment')
         else:

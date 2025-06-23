@@ -8,7 +8,6 @@ from streamlit_float import float_init, float_parent
 def to_csv_string(list_of_dicts):
     """
     Convierte una lista de diccionarios a una cadena de texto en formato CSV.
-    Es mucho más eficiente que JSON para datos tabulares.
     """
     if not list_of_dicts:
         return ""
@@ -35,21 +34,21 @@ def parse_blocks(pattern, texto):
     Yields:
         tuple: Una tupla (tipo, contenido) para cada bloque encontrado.
     """
-    for match in re.finditer(pattern, texto): #DEBE SEr  re.DOTALL el pattern!
+    #DEBE Ser re.DOTALL el pattern!
+    for match in re.finditer(pattern, texto): 
         yield match.group("tipo"), match.group("contenido")
 
 @st.cache_data
-def _load_translations() -> dict:
+def _load_translations(path:str='translation.json') -> dict:
     """
     Carga las traducciones desde un archivo JSON.
     
     Args:
-        path (str): Ruta al archivo JSON con las traducciones.
+        path (str): Ruta al archivo JSON con las traducciones. default path: 'translation.json'
         
     Returns:
         dict: Diccionario con las traducciones.
     """
-    path = 'translation.json'
     try:
         with open(path, 'r', encoding='utf-8') as f:
             return json.load(f)
@@ -71,11 +70,12 @@ def translation(key:str, default:Any=None, lang:str|None = None) -> str|dict|lis
         str: Traducción correspondiente a la clave.
     """
     try:
-        return _load_translations()[lang if lang else st.session_state.get('lang_sel', 'en')].get(key, default)
+        return _load_translations()[lang if lang else st.session_state.get('lang_selected', 'en')].get(key, default)
     except Exception as e:
         print(f"Error al obtener la traducción para la clave '{key}': {e}")
-        return 'CRITICAL: '+key
+        return f'CRITICAL ERROR LOADING {key} KEY' 
 
+#Para testeo solamente, aun sin aplicar en produccion.
 @st.fragment
 def chat_button():
     float_init(theme=True)

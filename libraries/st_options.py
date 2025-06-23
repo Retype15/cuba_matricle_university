@@ -6,6 +6,7 @@ from .general_functions import to_csv_string
 def show_info(msg):
     if msg: st.caption(f"ℹ️ {msg}")
 
+@st.fragment
 def introduction(*args,**kwargs):
     st.header(translation('introduction_header', "🎯 Bienvenidos al Corazón de la Educación Superior Cubana"))
     st.markdown(translation('introduction_markdown_1',""" WARN
@@ -23,6 +24,7 @@ def introduction(*args,**kwargs):
     """))
     st.success(translation('introduction_sucess',"¡Tu viaje comienza aquí! Selecciona una sección en el menú lateral o usa el botón 'Siguiente'."))
 
+@st.fragment
 def A1(df_main,*args,**kwargs):
     st.header(translation('A1_header',"🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?"))
     st.markdown(translation('A1_markdown_1', """
@@ -75,6 +77,7 @@ def A1(df_main,*args,**kwargs):
     else:
         st.warning(msg_a1 if msg_a1 else translation('A1_fig_1_warn_1',"No se pudo generar el gráfico del panorama nacional (A1)."))
 
+@st.fragment
 def A2(df_main,*args,**kwargs):
     st.header(translation('A2_header',"📚 Un Mosaico de Saberes: ¿Hacia Dónde se Inclinan los Futuros Profesionales?"))
     st.markdown(translation('A2_markdown_1',"""
@@ -205,8 +208,9 @@ def A2(df_main,*args,**kwargs):
     else:
         st.warning(msg_corr_ramas if msg_corr_ramas else translation('A2_corr_warn_1',"No se pudo generar el mapa de correlación entre ramas."))
 
-### REFACTORIZAR CON STRANSLATION A PARTIR DE AQUI PArA LUEGO!!
+### REFACTORIZAR CON TRANSLATION A PARTIR DE AQUI PArA LUEGO!!
 
+@st.fragment
 def A3(df_main,*args,**kwargs):
     st.header(translation('A3_header',"🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo"))
     st.markdown(translation('A3_markdown_1',"""
@@ -329,6 +333,7 @@ def A3(df_main,*args,**kwargs):
     )
     st.markdown("---")
 
+@st.fragment
 def A4(df_main,*args,**kwargs):
     st.header(translation('A4_header', "♀️♂️ Equilibrando la Balanza: Una Mirada a la Perspectiva de Género"))
     st.markdown(translation('A4_markdown_1', """
@@ -407,6 +412,7 @@ def A4(df_main,*args,**kwargs):
     *   Estos datos son una invitación a profundizar: ¿Cuáles son las causas de estos desbalances? ¿Cómo podemos inspirar a las nuevas generaciones a explorar todas las áreas del conocimiento sin sesgos de género?
     """))
 
+@st.fragment
 def A5(df_main,*args,**kwargs):
     st.header(translation('A5_header', "🏛️ Universidades en Perspectiva: Descubriendo Fortalezas y Focos de Especialización"))
     st.markdown(translation('A5_markdown_1', """
@@ -541,12 +547,6 @@ def A5(df_main,*args,**kwargs):
 
 
 
-
-
-
-
-
-
 ################################ ME QUEDÉ por AQUI, ERNESTO SI LEES ESTO, puedes continuar haciendolo o no, igual manana probablemente siga...####################################
 
 
@@ -556,12 +556,7 @@ def A5(df_main,*args,**kwargs):
 
 
 
-
-
-
-
-
-
+@st.fragment
 def A6(df_main,*args,**kwargs):
     st.header("🔭 Mirando al Mañana: ¿Qué Podríamos Esperar? (Proyecciones Futuras)")
     st.markdown("""
@@ -699,6 +694,7 @@ def A6(df_main,*args,**kwargs):
     *   Fomentar un diálogo informado sobre el **futuro de la oferta académica** en Cuba.
     """)
 
+@st.fragment
 def A7(df_main,*args,**kwargs):
     st.header("💡 Áreas de Atención: Identificando Desafíos y Oportunidades Específicas")
     st.markdown("""
@@ -814,6 +810,7 @@ def A7(df_main,*args,**kwargs):
     del país y asegurar la vitalidad y pertinencia de la oferta académica universitaria.
     """)
 
+@st.fragment
 def B1(df_main,*args,**kwargs):
     st.header("🔬 Playground: Perfil Detallado de Carrera: Una Radiografía Completa")
     st.markdown("""
@@ -870,12 +867,12 @@ def B1(df_main,*args,**kwargs):
                     min_value=int(anos_disponibles_carrera_b1[0]),
                     max_value=int(anos_disponibles_carrera_b1[-1]),
                     value=(int(anos_disponibles_carrera_b1[0]), int(anos_disponibles_carrera_b1[-1])),
-                    key=f"slider_cagr_dinamico_{carrera_sel_b1.replace(' ','_')}"
+                    key=f"slider_cagr_{carrera_sel_b1.replace(' ','_')}"
                 )
                 ano_inicio_cagr_sel, ano_fin_cagr_sel = selected_years_cagr
 
                 if ano_inicio_cagr_sel < ano_fin_cagr_sel:
-                    cagr_b1_info = calcular_cagr_dinamico(df_evol_para_cagr_b1, ano_inicio_cagr_sel, ano_fin_cagr_sel)
+                    cagr_b1_info = calcular_cagr(df_evol_para_cagr_b1, ano_inicio_cagr_sel, ano_fin_cagr_sel)
                     st.metric(
                         label=f"CAGR {cagr_b1_info.get('periodo', '')}",
                         value=cagr_b1_info.get('valor', 'N/A')
@@ -958,6 +955,7 @@ def B1(df_main,*args,**kwargs):
         translation=translation('ask_ai_component',{})
     )
 
+@st.fragment
 def B2(df_main, df_ins,*args,**kwargs):
     st.header("🗺️ B2. Guía de Instituciones: Explora la Oferta Académica por Localidad")
     st.markdown("""
@@ -1104,6 +1102,7 @@ def B2(df_main, df_ins,*args,**kwargs):
         translation=translation('ask_ai_component',{})
     )
 
+@st.fragment
 def conclusion(*args,**kwargs):
     st.header("🏁 Conclusiones y Horizontes Futuros: Forjando la Universidad del Mañana")
     st.markdown("""

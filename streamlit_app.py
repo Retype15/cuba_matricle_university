@@ -10,10 +10,10 @@ df_ins = cargar_datos_instituciones('data/db_uni.parquet')
 
 idiomas = { "Español": "es", "English": "en", "Français": "fr", "Português": "pt", "Deutsch": "de"}
 idiomas_index = {"es":0, "en":1, "fr":2, "pt":3, "de":4}
-st.session_state.setdefault("lang_sel", 'en')
-lang_selected = st.sidebar.selectbox("Select your language:", list(idiomas.keys()), index=idiomas_index.get(get_browser_language(),0), help=translation('lang_select_help', "Select your preferred language for the application."))
-if idiomas[lang_selected] != st.session_state.get("lang_sel", None):
-    st.session_state["lang_sel"] = idiomas[lang_selected]
+st.session_state.setdefault("lang_selected", 'en')
+lang_selectedected = st.sidebar.selectbox("Select your language:", list(idiomas.keys()), index=idiomas_index.get(get_browser_language(),0), help=translation('lang_selectedect_help', "Select your preferred language for the application."))
+if idiomas[lang_selectedected] != st.session_state.get("lang_selected", None):
+    st.session_state["lang_selected"] = idiomas[lang_selectedected]
     st.rerun(scope='app')
 
 if df_main.empty:

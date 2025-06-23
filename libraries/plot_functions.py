@@ -14,14 +14,14 @@ def category_order(df: pd.DataFrame, * , y_col: str, color_col: str, top_n: Opti
     """
     Filtra y ordena las categorías por la suma de valores numéricos en orden descendente.
 
-    Parámetros:
-    - df (pd.DataFrame): DataFrame con los datos.
-    - y_col (str): Nombre de la columna con valores numéricos (ej. matrícula total).
-    - color_col (str): Nombre de la columna de categorías (ej. carreras).
-    - top_n (Optional[int]): Número máximo de categorías a incluir en el orden. Si es None, se incluirán todas.
+    Args:
+        df (pd.DataFrame): DataFrame con los datos.
+        y_col (str): Nombre de la columna con valores numéricos (ej. matrícula total).
+        color_col (str): Nombre de la columna de categorías (ej. carreras).
+        top_n (Optional[int]): Número máximo de categorías a incluir en el orden. Si es None, se incluirán todas.
 
-    Retorna:
-    - List[str]: Lista ordenada de categorías de mayor a menor según la suma de `y_col`.
+    Returns:
+        List[str]: Lista ordenada de categorías de mayor a menor según la suma de `y_col`.
     """
     orden_categorias = df.groupby(color_col)[y_col].sum().sort_values(ascending=False).index.tolist()
     
@@ -55,7 +55,7 @@ def cargar_datos_instituciones(rute:str):
         return pd.DataFrame()
 #-----------------------------------------------------
 
-def calcular_cagr_dinamico(df_evolucion_total_carrera, ano_inicio_cagr, ano_fin_cagr):
+def calcular_cagr(df_evolucion_total_carrera, ano_inicio_cagr, ano_fin_cagr):
     cagr_info = {"valor": "No calculable", "periodo": ""}
     if df_evolucion_total_carrera is None or df_evolucion_total_carrera.empty:
         return cagr_info
@@ -340,7 +340,7 @@ def analisis_A1(df, incluir_proyeccion=False, showlegend=False):
         
         for i in range(1, len(df_proyeccion_para_linea)):
             total_proy = df_proyeccion_para_linea.loc[i, 'Matricula_Total']
-            hombres_proy = np.round(total_proy * ratio_hombres).astype(int).clip(min=0)
+            hombres_proy = np.round(total_proy * ratio_hombres).astype(int).clip(min=0) #type: ignore
             mujeres_proy = (total_proy - hombres_proy).astype(int).clip(min=0)
             
             df_proyeccion_para_linea.loc[i, 'Matricula_Hombres'] = hombres_proy
@@ -579,7 +579,7 @@ def analisis_A2_correlacion_crecimiento_ramas(df: pd.DataFrame):
 
     fig = px.imshow(
         df_correlacion,
-        text_auto=".2f",
+        text_auto=".2f", #type: ignore
         aspect="auto",
         color_continuous_scale='ice_r',
         zmin=-1, zmax=1,
@@ -605,7 +605,7 @@ def analisis_A2_correlacion_crecimiento_ramas(df: pd.DataFrame):
     
     return fig, df_correlacion, None
 
-# A3: Ranking y Evolución de Carreras por Demanda
+# A3: Ranking y Evolución de Carreras por demanda
 @st.cache_data
 def analisis_A3(df):
     if df.empty:
@@ -637,7 +637,7 @@ def analisis_A3(df):
     
     return fig, df_todas_carreras_ranking, None
 
-# A4: Análisis de la Brecha de Género
+# A4: Analisis de la Brecha de Género
 @st.cache_data
 def analisis_A4(df):
     if df.empty:
@@ -688,15 +688,15 @@ def analisis_A4(df):
     max_y_masc = top_masc['Porcentaje_Mujeres'].max() if not top_masc.empty else 50
     fig2.update_yaxes(title_text="% Mujeres", row=1, col=1, range=[max(0, min_y_fem - 10 if min_y_fem > 10 else 0), 100])
     fig2.update_yaxes(title_text="% Mujeres", row=1, col=2, range=[0, min(100, max_y_masc + 10 if max_y_masc < 90 else 100)])
-    fig2.add_hline(y=50, line_dash="dash", line_color="red", row=1, col=1,annotation_text="50%")
-    fig2.add_hline(y=50, line_dash="dash", line_color="red", row=1, col=2,annotation_text="50%")
+    fig2.add_hline(y=50, line_dash="dash", line_color="red", row=1, col=1,annotation_text="50%")#type: ignore
+    fig2.add_hline(y=50, line_dash="dash", line_color="red", row=1, col=2,annotation_text="50%")#type: ignore
     return fig1, fig2, None
 
 # A5: Análisis de Concentración y Especialización
 @st.cache_data
 def analisis_A5(df):
     if df.empty:
-        return None, None, "DataFrame vacío."
+        return None, None, "DataFrame vacio."
     
     ano_mas_reciente = df['Ano_Inicio_Curso'].max()
     curso_mas_reciente = f"{ano_mas_reciente}-{ano_mas_reciente+1}"
@@ -717,7 +717,7 @@ def analisis_A5(df):
         fig_treemap.update_layout(margin = dict(t=50, l=25, r=25, b=25))
     return fig_treemap, df_treemap_data, df_carreras_pocas_unis, None
 
-# A6: Tasas de Crecimiento Anual Compuesto (CAGR)
+# A6: Tasas de Crecimiento Anual Compuesto (Cagr)
 @st.cache_data
 def analisis_A6(df):
     if df.empty or len(df['Ano_Inicio_Curso'].unique()) < 2:
