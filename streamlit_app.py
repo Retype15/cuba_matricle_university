@@ -11,14 +11,15 @@ df_ins = cargar_datos_instituciones('data/db_uni.parquet')
 idiomas = { "Español": "es", "English": "en", "Français": "fr", "Português": "pt", "Deutsch": "de"}
 idiomas_index = {"es":0, "en":1, "fr":2, "pt":3, "de":4}
 st.session_state.setdefault("lang_selected", 'en')
-lang_selectedected = st.sidebar.selectbox("Select your language:", list(idiomas.keys()), index=idiomas_index.get(get_browser_language(),0), help=translation('lang_selectedect_help', "Select your preferred language for the application."))
-if idiomas[lang_selectedected] != st.session_state.get("lang_selected", None):
-    st.session_state["lang_selected"] = idiomas[lang_selectedected]
+lang_selected = st.sidebar.selectbox("Select your language:", list(idiomas.keys()), index=idiomas_index.get(get_browser_language(),0), help=translation('lang_select_help', "Select your preferred language for the application."))
+if idiomas[lang_selected] != st.session_state.get("lang_selected", None):
+    st.session_state["lang_selected"] = idiomas[lang_selected]
     st.rerun(scope='app')
 
 if df_main.empty:
     st.error(translation('load_df_error', "Error crítico: No se pudieron cargar los datos ('db.parquet'). La aplicación no puede continuar."))
 else:
+    st.markdown('<a name="mi-seccion"></a>', unsafe_allow_html=True)
     st.title(translation('load_screen_title',"🎓 Análisis Estratégico de la Matrícula Universitaria en Cuba"))
     st.image("images/UH.jpg", caption=translation('main_image_caption',"Universidad de La Habana. Un símbolo de la educación superior en Cuba."), use_container_width=True)
     st.markdown(translation('main_markdown_1',"Un viaje para iluminar el camino de la Educación Superior."))
