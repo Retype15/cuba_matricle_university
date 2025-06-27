@@ -38,7 +38,7 @@ def introduction(df_main, game_controller: GameController, **kwargs):
                     directa, sin interrupciones. Perfecto para una exploración rápida y enfocada.
                 """))
                 if st.button(translation('intro_analyst_path_button', "Activar Modo Análisis"), use_container_width=True):
-                    st.session_state.gamification['game_mode'] = False
+                    st.session_state.GameData['game_mode'] = False
                     st.session_state.game_mode_toggle_state = False
                     st.session_state.initial_mode_selected = True
                     st.rerun()
@@ -51,14 +51,14 @@ def introduction(df_main, game_controller: GameController, **kwargs):
                     poner a prueba tu intuición sobre los datos antes de verlos. ¡Gana puntos y compite!
                 """))
                 if st.button(translation('intro_explorer_path_button', "Activar Modo Juego"), use_container_width=True, type="primary"):
-                    st.session_state.gamification['game_mode'] = True
+                    st.session_state.GameData['game_mode'] = True
                     st.session_state.game_mode_toggle_state = True
                     game_controller._full_reset()
                     st.session_state.initial_mode_selected = True
                     st.rerun()
 
     else:
-        if st.session_state.gamification['game_mode']:
+        if st.session_state.GameData['game_mode']:
             st.info(translation('intro_game_mode_active_info', "🕹️ ¡**Modo Juego Activado!** Prepárate para los desafíos. Puedes ver tu progreso en la barra lateral."), icon="🎮")
         else:
             st.info(translation('intro_analysis_mode_active_info', "📊 **Modo Análisis Activado.** Estás listo para una exploración directa de los datos. Puedes cambiar de modo en cualquier momento en la barra lateral."), icon="📈")

@@ -1,244 +1,207 @@
-# --- START OF FILE game_engine.py ---
-
 import streamlit as st
 from abc import ABC, abstractmethod
 from typing import Callable, Any, Dict
 import pandas as pd
-
-# ----------------- Controller de Gamificación -----------------
+from datetime import datetime
 
 class GameController:
     """
-    Gestiona el estado global de la gamificación en la aplicación.
+    Gestiona el estado global de la gamificación.
+    Versión 9.0: Arquitectura de renderizado híbrida (Convención sobre Configuración).
     """
     def __init__(self, translation: Dict[str, str] | None = None):
         self.t = translation or {}
-        if 'gamification' not in st.session_state:
-            st.session_state.gamification = {
-                "global_score": 0,
-                "game_mode": True,
-                "history": [],
-                "registered_games": set()
-            }
+        if 'GameData' not in st.session_state:
+            st.session_state.GameData = {"game_mode": True, "registered_games": {}}
         if 'game_mode_toggle_state' not in st.session_state:
             st.session_state.game_mode_toggle_state = True
         st.session_state.GameController = self
-        self.update_states()
-        
 
+    def get_registered_games(self) -> Dict[str, 'Minigame']:
+        return st.session_state.GameData.get('registered_games', {})
 
     def _full_reset(self):
-        """Resetea la puntuación, el historial y el estado de todos los juegos registrados."""
-        st.session_state.gamification['global_score'] = 0
-        st.session_state.gamification['history'] = []
-        for id in st.session_state.gamification.get('registered_games', set()):
-            state_key = f"game_{id}_state"
-            if state_key in st.session_state:
-                del st.session_state[state_key]
-
-    def _handle_mode_change(self):
-        """Callback para el widget toggle que actualiza el estado del widget."""
-        st.session_state.game_mode_toggle_state = st.session_state.get('game_mode_toggle_widget', True)
-
-    def update_states(self):
-        """
-        Sincroniza el estado lógico del modo juego con el estado del widget,
-        mostrando un diálogo de confirmación si es necesario.
-        """
-        logical_mode = st.session_state.gamification['game_mode']
+        for game in self.get_registered_games().values(): game.reset_game()
+    
+    def manage_state_and_dialogs(self):
+        logical_mode = st.session_state.GameData['game_mode']
         widget_mode = st.session_state.game_mode_toggle_state
-        if logical_mode == widget_mode:
-            return
+        if logical_mode == widget_mode: return
 
-        if widget_mode is True:  # Reactivando el modo juego
-            st.session_state.gamification['game_mode'] = True
+        if widget_mode is True:
+            st.session_state.GameData['game_mode'] = True
             self._full_reset()
             st.rerun()
-        else:  # Desactivando el modo juego
+        else:
             @st.dialog(self.t.get('confirm_deactivation_title', "Confirmar Desactivación"))
             def show_confirmation_dialog():
                 st.warning(self.t.get('confirm_deactivation_warning', "¿Seguro que quieres desactivar el Modo Juego?"), icon="🤔")
                 st.write(self.t.get('confirm_deactivation_text', "Dejarás de ver los minijuegos interactivos y perderás tu progreso actual."))
                 c1, c2 = st.columns(2)
-                if c1.button(self.t.get('confirm_button', "Confirmar"), use_container_width=True, type="primary"):
-                    self._deactivate_game_mode()
+                if c1.button(self.t.get('confirm_button', "Confirmar"), use_container_width=True, type="primary"): self._deactivate_game_mode()
                 if c2.button(self.t.get('cancel_button', "Cancelar"), use_container_width=True):
-                    st.session_state.game_mode_toggle_state = True # Revertir visualmente
+                    st.session_state.game_mode_toggle_state = True
                     st.rerun()
-
             show_confirmation_dialog()
 
     def _deactivate_game_mode(self):
-        """Pone el modo juego en False y fuerza un rerun."""
-        st.session_state.gamification['game_mode'] = False
+        st.session_state.GameData['game_mode'] = False
         st.session_state.game_mode_toggle_state = False
         st.rerun()
+    
+    def _handle_mode_change(self):
+        st.session_state.game_mode_toggle_state = st.session_state.get('game_mode_toggle_widget', True)
+        self.manage_state_and_dialogs()
 
-    def display_mode_toggle(self, *, where: Callable = st.sidebar):
-        """Muestra el toggle para activar/desactivar el modo juego."""
-        where.toggle(
-            self.t.get('game_mode_label', '**Modo Juego**'),
-            key="game_mode_toggle_widget",
-            value=st.session_state.game_mode_toggle_state,
-            on_change=self._handle_mode_change,
-            help=self.t.get('toggle_help', "Activa/desactiva los minijuegos interactivos.")
-        )
+    def display_mode_toggle(self):
+        """Muestra el toggle para activar/desactivar el modo juego. Debe llamarse dentro de un contenedor (ej. st.sidebar)."""
+        st.toggle(self.t.get('game_mode_label', '**Modo Juego**'), key="game_mode_toggle_widget", value=st.session_state.game_mode_toggle_state, on_change=self._handle_mode_change, help=self.t.get('toggle_help', "Activa/desactiva los minijuegos interactivos."))
 
-    def display_score_panel(self, where: Callable = st.sidebar):
-        """Muestra el panel de puntuación y el historial si el modo juego está activo."""
-        if not st.session_state.gamification.get('game_mode', False):
-            return
-        where.header(self.t.get('progress_header', "🏆 Tu Progreso"))
-        if where.button(self.t.get('reset_progress_button', "Reiniciar Progreso"), use_container_width=True, type="secondary"):
+    def display_score_panel(self):
+        """Muestra el panel de puntuación. Debe llamarse dentro de un contenedor (ej. st.sidebar)."""
+        if not st.session_state.GameData.get('game_mode', False): return
+        st.header(self.t.get('progress_header', "🏆 Tu Progreso"))
+        if st.button(self.t.get('reset_progress_button', "Reiniciar Progreso"), use_container_width=True, type="secondary"):
             self._full_reset()
             st.rerun()
-        score = st.session_state.gamification['global_score']
-        games_played = len(st.session_state.gamification['history'])
-        c1, c2 = where.columns(2)
-        c1.metric(self.t.get('points_metric_label', "Puntos"), score)
-        c2.metric(self.t.get('games_metric_label', "Juegos"), games_played)
-        with where.expander(self.t.get('history_expander_label', "Ver Historial de Partidas")):
-            history = st.session_state.gamification['history']
-            if not history:
+        total_score = 0
+        completed_games = [g for g in self.get_registered_games().values() if g.is_completed()]
+        for game in completed_games:
+            points, _ = game.get_final_result()
+            total_score += points
+        c1, c2 = st.columns(2)
+        c1.metric(self.t.get('points_metric_label', "Puntos"), total_score)
+        c2.metric(self.t.get('games_metric_label', "Juegos"), len(completed_games))
+        with st.expander(self.t.get('history_expander_label', "Ver Historial de Partidas")):
+            if not completed_games:
                 st.caption(self.t.get('history_empty', "Aún no has jugado. ¡Anímate!"))
             else:
-                for item in reversed(history):
-                    icon = "✅" if item['was_correct'] else "❌"
-                    text = self.t.get(
-                        'history_item_text',
-                        "{icon} **{game_title}**: *+{points_earned} pts*"
-                    ).format(icon=icon, game_title=item['game_title'], points_earned=item['points_earned'])
+                for game in sorted(completed_games, key=lambda g: g.completion_time, reverse=True):
+                    points_earned, was_correct = game.get_final_result()
+                    icon = "✅" if was_correct else "❌"
+                    text = self.t.get('history_item_text', "{icon} **{game_title}**: *+{points_earned} pts*").format(icon=icon, game_title=game.game_title, points_earned=points_earned)
                     st.markdown(text)
 
-    def register_game(self, id: str):
-        st.session_state.gamification['registered_games'].add(id)
-
-    def record_game_result(self, game_title: str, points_earned: int, was_correct: bool):
-        st.session_state.gamification['global_score'] += points_earned
-        st.session_state.gamification['history'].append({
-            "game_title": game_title,
-            "points_earned": points_earned,
-            "was_correct": was_correct
-        })
-
-# ----------------- Clase Base para Minijuegos -----------------
-
 class Minigame(ABC):
-    """Clase base abstracta para todos los minijuegos."""
-    def __init__(self, id: str, game_title: str, data: pd.DataFrame, content_callback: Callable, num_rounds: int = 1, translation:dict={}):
-        self.id = id
+    def __new__(cls, game_id: str, **kwargs):
+        if 'GameController' not in st.session_state: raise Exception('GameController must be initialized before any Minigame.')
+        controller = st.session_state.GameController
+        registered_games = controller.get_registered_games()
+        if game_id in registered_games: return registered_games[game_id]
+        instance = super().__new__(cls)
+        return instance
+
+    def __init__(self, game_id: str, game_title: str, data: pd.DataFrame, content_callback: Callable | None = None, num_rounds: int = 1, translation:dict={}):
+        if hasattr(self, '_initialized'): return
+        self.game_id = game_id
         self.game_title = game_title
-        if 'GameController' in st.session_state: self.controller = st.session_state.GameController
-        else: raise Exception('Must define GameController first!')
+        self.controller = st.session_state.GameController
         self.t = translation
         self.data = data
         self.content_callback = content_callback
         self.num_rounds = min(num_rounds, len(data)) if num_rounds > 0 else 1
-        self.state_key = f"game_{self.id}_state"
+        self.state_key = f"game_state_{self.game_id}"
+        self.completion_time: datetime | None = None
+        self.controller.get_registered_games()[self.game_id] = self
+        self.reset_game()
+        self._initialized = True
 
-        self.controller.register_game(self.id)
-        if self.state_key not in st.session_state:
-            st.session_state[self.state_key] = {
-                "current_round": 0,
-                "game_over": False,
-                "round_results": [],
-                "total_score": 0,
-                "current_round_context": None
-            }
+    def reset_game(self):
+        st.session_state[self.state_key] = {"current_round": 0, "game_over": False, "round_results": [], "total_score": 0, "current_round_context": None}
+        self.completion_time = None
 
-    @abstractmethod
-    def display_instructions(self):
-        """Muestra las instrucciones del juego."""
-        pass
+    def is_completed(self) -> bool:
+        return st.session_state[self.state_key].get('game_over', False)
 
-    @abstractmethod
-    def display_game_body(self, round_data: Any):
-        """
-        Muestra la interfaz principal del juego para una ronda.
-        Debe devolver la respuesta del usuario.
-        """
-        pass
-
-    @abstractmethod
-    def calculate_score(self, user_answer, round_data: Any) -> tuple[int, bool]:
-        """Calcula la puntuación y si la respuesta fue correcta."""
-        pass
-
-    @abstractmethod
-    def display_round_feedback(self, round_result: dict, round_number: int):
-        """Muestra el feedback para una ronda específica."""
-        pass
-    
-    @abstractmethod
-    def prepare_round_data(self, round_index: int) -> Any:
-        """Prepara los datos necesarios para una ronda específica."""
-        pass
-
-    def display_feedback(self):
-        """Muestra el feedback final cuando el juego termina."""
+    def get_final_result(self) -> tuple[int, bool]:
+        if not self.is_completed(): return 0, False
         state = st.session_state[self.state_key]
-        st.subheader(self.t.get('feedback_game_over_title', "🏁 ¡Desafío Completado!"))
-        st.success(self.t.get('feedback_game_over_text', "Has obtenido un total de **{total_score}** puntos.").format(total_score=state['total_score']), icon="🎉")
-        if self.num_rounds > 1:
-            with st.expander(self.t.get('see_round_summary', "Ver resumen detallado de rondas")):
-                for i, result in enumerate(state['round_results']):
-                    self.display_round_feedback(result, i + 1)
+        total_score = state.get('total_score', 0)
+        was_successful = any(r.get('was_correct', False) for r in state.get('round_results', []))
+        return total_score, was_successful
 
     def _process_submission(self, user_answer, round_data):
-        """Procesa la respuesta del usuario, actualiza el estado y avanza el juego."""
         state = st.session_state[self.state_key]
         score, was_correct = self.calculate_score(user_answer, round_data)
         state['round_results'].append({"score": score, "was_correct": was_correct, "user_answer": user_answer, "round_data": round_data})
         state['total_score'] += score
         state['current_round'] += 1
-        state['current_round_context'] = None # Limpiar para la siguiente ronda
-
+        state['current_round_context'] = None
         if state['current_round'] >= self.num_rounds:
             state['game_over'] = True
-            self.controller.record_game_result(game_title=self.game_title, points_earned=state['total_score'], was_correct=any(r['was_correct'] for r in state['round_results']))
-        
+            self.completion_time = datetime.now()
         st.rerun()
 
+    def _display_post_game_content(self):
+        """Muestra el contenido post-juego. Llamado solo en el 'modo automático' (con callback)."""
+        st.markdown("---")
+        st.subheader(self.t.get('detailed_analysis_revealed', "Análisis Detallado Revelado"))
+        self.content_callback()
+    
+    def render(self) -> bool:
+        """
+        Renderiza el minijuego y gestiona su ciclo de vida.
+        - Si se proporciona `content_callback` (modo automático): gestiona todo el flujo y no devuelve nada útil.
+        - Si `content_callback` es None (modo manual): devuelve `True` si el juego ha terminado, `False` si sigue activo.
+        """
+        if self.content_callback is None:
+            if not st.session_state.GameData.get('game_mode', False):
+                return True # Si no hay modo juego, se considera "terminado" para mostrar el contenido.
+
+            if self.is_completed():
+                self.display_feedback()
+                return True
+            else:
+                self._render_active_game()
+                return False
+        
+        else:
+            if not st.session_state.GameData.get('game_mode', False):
+                self.content_callback()
+                return True # Devuelve True por consistencia, aunque no se use.
+
+            if self.is_completed():
+                self.display_feedback()
+                self._display_post_game_content()
+                return True
+            else:
+                self._render_active_game()
+                return False
+
+    def _render_active_game(self):
+        """Lógica interna para renderizar un juego que está en curso."""
+        self.display_instructions()
+        state = st.session_state[self.state_key]
+        if self.num_rounds > 1:
+            st.info(f"{self.t.get('round', 'Ronda')} {state['current_round'] + 1} / {self.num_rounds}", icon="🚩")
+        if state.get('current_round_context') is None:
+            state['current_round_context'] = self.prepare_round_data(state['current_round'])
+            st.rerun()
+        round_data = state['current_round_context']
+        self._render_submission_ui(round_data)
+
+    @abstractmethod
+    def display_instructions(self): pass
+    @abstractmethod
+    def display_game_body(self, round_data: Any): pass
+    @abstractmethod
+    def calculate_score(self, user_answer, round_data: Any) -> tuple[int, bool]: pass
+    @abstractmethod
+    def display_round_feedback(self, round_result: dict, round_number: int): pass
+    @abstractmethod
+    def prepare_round_data(self, round_index: int) -> Any: pass
+    
+    def display_feedback(self):
+        state = st.session_state[self.state_key]
+        st.success(self.t.get('feedback_game_over_text', "Has obtenido un total de **{total_score}** puntos.").format(total_score=state['total_score']), icon="🎉")
+        if self.num_rounds > 1:
+            with st.expander(self.t.get('see_round_summary', "Ver resumen detallado de rondas")):
+                for i, result in enumerate(state['round_results']):
+                    self.display_round_feedback(result, i + 1)
+                    
     def _render_submission_ui(self, round_data: Any):
-        """
-        Método 'virtual' para renderizar el cuerpo y el mecanismo de envío.
-        La implementación por defecto usa st.form, ideal para widgets como radio o sortables.
-        Las subclases pueden sobrescribirlo para usar otros mecanismos como botones directos.
-        """
-        with st.form(key=f"form_{self.id}_{st.session_state[self.state_key]['current_round']}"):
+        with st.form(key=f"form_{self.game_id}_{st.session_state[self.state_key]['current_round']}"):
             user_answer = self.display_game_body(round_data)
             submit_label = self.t.get('submit_button_label', "¡Comprobar!")
             if st.form_submit_button(submit_label, use_container_width=True):
                 self._process_submission(user_answer, round_data)
-
-    def render(self):
-        """Método principal para renderizar el minijuego completo."""
-        if not st.session_state.gamification.get('game_mode', False):
-            self.content_callback()
-            return
-
-        state = st.session_state[self.state_key]
-        if state["game_over"]:
-            self.display_feedback()
-            st.markdown("---")
-            st.subheader(self.t.get('detailed_analysis_revealed', "Análisis Detallado Revelado"))
-            self.content_callback()
-            return
-
-        self.display_instructions()
-
-        if self.num_rounds > 1:
-            current_round_index = state['current_round']
-            st.info(f"{self.t.get('round', 'Ronda')} {current_round_index + 1} / {self.num_rounds}", icon="🚩")
-
-        # --- REFACTOR: Lógica de caché de ronda centralizada ---
-        # Prepara los datos para la ronda actual y los guarda en el estado para
-        # evitar que cambien si la app se rerenderiza por otra razón.
-        if state.get('current_round_context') is None:
-            state['current_round_context'] = self.prepare_round_data(state['current_round'])
-            st.rerun()
-
-        round_data = state['current_round_context']
-        
-        # --- REFACTOR: Delegación del renderizado de la UI de envío ---
-        self._render_submission_ui(round_data)

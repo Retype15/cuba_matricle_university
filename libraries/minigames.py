@@ -1,5 +1,3 @@
-# --- START OF FILE minigames.py ---
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -7,18 +5,19 @@ from game_engine import Minigame
 from streamlit_sortables import sort_items
 from typing import Callable, Any
 
-# --- Funciones de Ayuda ---
+# --- Complementarias ---
 
 def trend_comparison(y_series: list | pd.Series) -> str:
     """Determina si la tendencia es 'up', 'down', o 'stable'."""
     if len(y_series) < 2: return 'stable'
     change = y_series[-1] - y_series[-2]
+    # Evitar división por cero
     percent_change = (change / y_series[-2]) * 100 if y_series[-2] != 0 else 0
     if percent_change > 2: return 'up'
     if percent_change < -2: return 'down'
     return 'stable'
 
-# --- Implementaciones de Minijuegos ---
+# --- Objetos de Juego ---
 
 class SimpleQuestionMinigame(Minigame):
     """Un minijuego simple de pregunta con opciones."""
@@ -35,7 +34,7 @@ class SimpleQuestionMinigame(Minigame):
         return st.radio(
             self.t.get('choose_your_answer', "Elige tu respuesta:"),
             options=round_data['options'],
-            key=f"radio_{self.id}_{round_data.name}",
+            key=f"radio_{self.game_id}_{round_data.name}",
             label_visibility="collapsed"
         )
 
@@ -47,9 +46,9 @@ class SimpleQuestionMinigame(Minigame):
     def display_round_feedback(self, round_result: dict, round_number: int):
         data = round_result['round_data']
         if round_result['was_correct']:
-            st.success(f"¡Correcto! La respuesta era **{data['correct_answer']}**.", icon="✅")
+            st.success(f"{self.t.get('feedback_correct', '¡Correcto! La respuesta era **{correct_answer}**.').format(correct_answer=data['correct_answer'])}", icon="✅")
         else:
-            st.error(f"Tu respuesta fue **{round_result['user_answer']}**, pero la correcta era **{data['correct_answer']}**.", icon="❌")
+            st.error(f"{self.t.get('feedback_incorrect', 'Tu respuesta fue **{user_answer}**, pero la correcta era **{correct_answer}**.').format(user_answer=round_result['user_answer'], correct_answer=data['correct_answer'])}", icon="❌")
 
 class DataDuelMinigame(Minigame):
     """Compara dos ítems y el jugador debe adivinar cuál es mayor."""
@@ -80,21 +79,21 @@ class DataDuelMinigame(Minigame):
             "question_text": self.t.get('duel_question', "¿Cuál tiene un valor mayor?")
         }
 
-    # REFACTOR: Ya no es necesario, este juego no usa un `st.form`.
-    def display_game_body(self, round_data: dict): pass
+    def display_game_body(self, round_data: dict):
+        pass
 
-    # REFACTOR: Se sobreescribe solo la UI de envío para usar botones.
     def _render_submission_ui(self, round_data: dict):
         st.markdown(f"##### {round_data['question_text']}")
-        
         col1, col2 = st.columns(2)
         user_choice = None
         
+        key_prefix = f"btn_{self.game_id}_{st.session_state[self.state_key]['current_round']}"
+        
         with col1:
-            if st.button(f"**{round_data['option1']}**", key=f"btn_{self.id}_{round_data['option1']}", use_container_width=True):
+            if st.button(f"**{round_data['option1']}**", key=f"{key_prefix}_1", use_container_width=True):
                 user_choice = round_data['option1']
         with col2:
-            if st.button(f"**{round_data['option2']}**", key=f"btn_{self.id}_{round_data['option2']}", use_container_width=True):
+            if st.button(f"**{round_data['option2']}**", key=f"{key_prefix}_2", use_container_width=True):
                 user_choice = round_data['option2']
 
         if user_choice:
@@ -120,7 +119,7 @@ class DataDuelMinigame(Minigame):
             )
 
 class ClassifierMinigame(Minigame):
-    """Ordena una lista de ítems de forma perfecta y gana puntos extra."""
+    """Ordena una lista de ítems. Gana puntos por cada posición correcta y un bono por orden perfecto."""
     POINTS_PER_CORRECT_POSITION = 15
     POINTS_PER_ADJACENT = 5
     PERFECT_BONUS = 25
@@ -201,15 +200,12 @@ class OracleMinigame(Minigame):
         fig = px.line(chart_df, x='x', y='y', markers=True, template="plotly_dark")
         fig.update_layout(
             title=self.t.get('oracle_chart_title', "Evolución... ¿Qué pasará después?"),
-            xaxis_title=self.t.get('year', "Año"),
-            yaxis_title=self.t.get('enrollment', "Matrícula")
+            xaxis_title=self.t.get('year', "Año"), yaxis_title=self.t.get('enrollment', "Matrícula")
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    # REFACTOR: UI de envío con botones en lugar de radio.
     def _render_submission_ui(self, round_data: pd.Series):
-        self.display_game_body(round_data) # Primero muestra el gráfico
-        
+        self.display_game_body(round_data)
         st.write(self.t.get('predict_trend_prompt', "Elige tu predicción:"))
         cols = st.columns(3)
         user_prediction = None
@@ -220,9 +216,12 @@ class OracleMinigame(Minigame):
             'down': {'label': self.t.get('oracle_choice_down', 'Bajará'), 'icon': '📉'}
         }
         
-        if cols[0].button(f"{button_map['up']['label']} {button_map['up']['icon']}", use_container_width=True): user_prediction = 'up'
-        if cols[1].button(f"{button_map['stable']['label']} {button_map['stable']['icon']}", use_container_width=True): user_prediction = 'stable'
-        if cols[2].button(f"{button_map['down']['label']} {button_map['down']['icon']}", use_container_width=True): user_prediction = 'down'
+        # FIX: Usar self.game_id para consistencia
+        key_prefix = f"btn_{self.game_id}_{st.session_state[self.state_key]['current_round']}"
+
+        if cols[0].button(f"{button_map['up']['label']} {button_map['up']['icon']}", key=f"{key_prefix}_up", use_container_width=True): user_prediction = 'up'
+        if cols[1].button(f"{button_map['stable']['label']} {button_map['stable']['icon']}", key=f"{key_prefix}_stable", use_container_width=True): user_prediction = 'stable'
+        if cols[2].button(f"{button_map['down']['label']} {button_map['down']['icon']}", key=f"{key_prefix}_down", use_container_width=True): user_prediction = 'down'
 
         if user_prediction:
             self._process_submission(user_prediction, round_data)
@@ -249,63 +248,49 @@ class OracleMinigame(Minigame):
             st.write(f"{self.t.get('your_prediction', 'Tu predicción')}: **{map_pred_text[user_prediction]}**")
             st.write(f"{self.t.get('actual_result', 'Resultado real')}: **{map_pred_text[actual_trend]}**")
             
-            # Gráfico de feedback mejorado
+            # Gráfico de feedback mejorado que revela el último punto
             chart_df = pd.DataFrame({'x': data['Eje_x'], 'y': data['Eje_y']})
             fig = px.line(chart_df, x='x', y='y', markers=True, template="plotly_dark")
-            fig.add_shape(type="line",
-                x0=chart_df['x'].iloc[-2], y0=chart_df['y'].iloc[-2],
-                x1=chart_df['x'].iloc[-1], y1=chart_df['y'].iloc[-1],
-                line=dict(color="yellow", width=4, dash="dot"))
-            fig.update_layout(
-                title=self.t.get('oracle_feedback_chart_title', "Resultado Completo Revelado"),
-                xaxis_title=self.t.get('year', "Año"),
-                yaxis_title=self.t.get('enrollment', "Matrícula")
-            )
+            fig.add_shape(type="line", x0=chart_df['x'].iloc[-2], y0=chart_df['y'].iloc[-2], x1=chart_df['x'].iloc[-1], y1=chart_df['y'].iloc[-1], line=dict(color="yellow", width=4, dash="dot"))
+            fig.update_layout(title=self.t.get('oracle_feedback_chart_title', "Resultado Completo Revelado"), xaxis_title=self.t.get('year', "Año"), yaxis_title=self.t.get('enrollment', "Matrícula"))
             st.plotly_chart(fig, use_container_width=True)
 
 # Testeo
 if __name__ == "__main__":
     from game_engine import GameController
-    st.set_page_config(layout="wide"); st.title("Test de Minijuegos (Final)")
-    game_controller = GameController(translation={'history_item_text': "{icon} **{game_title}**: *+{points_earned} pts*"})
-    #game_controller.update_states()
-    game_controller.display_mode_toggle()
-    with st.sidebar: game_controller.display_score_panel()
-    def cb(): st.success("Contenido del análisis.")
+    st.set_page_config(layout="wide"); st.title("Test de Minijuegos")
+    
+    #mock_translations = {'history_item_text': "{icon} **{game_title}**: *+{points_earned} pts*"}
+    
+    game_controller = GameController()
+    
+    with st.sidebar:
+        game_controller.display_mode_toggle()
+        game_controller.display_score_panel()
+        
+    def cb():
+        st.success("Contenido del análisis.")
 
     tab1, tab2, tab3 = st.tabs(["Duelo de Datos", "El Clasificador", "El Oráculo"])
 
     with tab1:
         st.header("1. Duelo de Datos")
         duel_df = pd.DataFrame({'Nombre': ['UCLV', 'UO', 'Medicina', 'Derecho'], 'Valor': [20000, 18000, 35000, 8000]})
-        DataDuelMinigame(id="duel_test", game_title="Duelos", data=duel_df, num_rounds=3, content_callback=cb).render()
+        # FIX: usar 'game_id' y pasar 'translation'
+        DataDuelMinigame(game_id="duel_test", game_title="Duelos", data=duel_df, num_rounds=3, content_callback=cb, translation=game_controller.t).render()
 
     with tab2:
-        st.header("2. El Clasificador (Con Aleatoriedad y Dificultad)")
-        # DataFrame con más datos de los que se usarán
-        classifier_data = {
-            'name': ['Medicina', 'Derecho', 'Ing. Informática', 'Psicología', 'Arquitectura', 'Contabilidad', 'Periodismo', 'Biología'],
-            'value': [35889, 8500, 25000, 15000, 7500, 18000, 6000, 9500]
-        }
+        st.header("2. El Clasificador")
+        classifier_data = { 'name': ['Medicina', 'Derecho', 'Ing. Informática', 'Psicología', 'Arquitectura', 'Contabilidad', 'Periodismo', 'Biología'], 'value': [35889, 8500, 25000, 15000, 7500, 18000, 6000, 9500] }
         classifier_df = pd.DataFrame(classifier_data)
-
-        # Ejemplo de función de ordenamiento personalizada (ascendente)
-        custom_sorter = lambda df: df.sort_values(by='value', ascending=True)
-
+        
         ClassifierMinigame(
-            id="classifier_test", 
-            game_title="El Ranking Aleatorio",
-            data=classifier_df, 
-            content_callback=cb,
-            difficulty=3
+            game_id="classifier_test", game_title="El Ranking Aleatorio",
+            data=classifier_df, content_callback=cb, difficulty=5
         ).render()
 
     with tab3:
         st.header("3. El Oráculo")
-        oracle_df = pd.DataFrame({
-            'Nombre': ['Carrera A', 'Carrera B'],
-            'Eje_x': [[20, 21, 22, 23, 24], [20, 21, 22, 23, 24]],
-            'Eje_y': [[100, 150, 130, 110, 90], [50, 55, 65, 80, 110]]
-        })
-        st.dataframe(oracle_df)
-        OracleMinigame(id="oracle_test", game_title="Predicciones", data=oracle_df, num_rounds=2, content_callback=cb).render()
+        oracle_df = pd.DataFrame({ 'Nombre': ['Carrera A', 'Carrera B'], 'Eje_x': [[20, 21, 22, 23, 24], [20, 21, 22, 23, 24]], 'Eje_y': [[100, 150, 130, 110, 90], [50, 55, 65, 80, 110]] })
+        
+        OracleMinigame(game_id="oracle_test", game_title="Predicciones", data=oracle_df, num_rounds=2, content_callback=cb, ).render()
