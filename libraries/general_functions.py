@@ -59,15 +59,17 @@ def _load_translations(path:str='translation.json') -> dict:
         print(f"Error: El archivo {path} no es un JSON válido.")
         return {}
 
-def translation(key:str, default:Any=None, lang:str|None = None) -> str|dict|list:
+def translation(key:str, default:Any=None, lang:str|None = None) -> Any:
     """
     Obtiene la traducción para una clave específica.
     
     Args:
         key (str): Clave de la traducción.
+        default (Optional[Any]): Clave por defecto si no existe la key en el idioma seleccionado.
+        lang (Optional[Str]): fuerza el idioma del que quieres recibir el valor
         
     Returns:
-        str: Traducción correspondiente a la clave.
+        str: Valor correspondiente a la clave.
     """
     try:
         return _load_translations()[lang if lang else st.session_state.get('lang_selected', 'en')].get(key, default)

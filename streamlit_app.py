@@ -1,12 +1,24 @@
+from streamlit_js_eval import get_user_agent, get_browser_language
 from libraries.streamlit_extended import HierarchicalSidebarNavigation
 from libraries.st_options import *
 from libraries.general_functions import translation, chat_button
-from streamlit_js_eval import get_user_agent, get_browser_language
+from libraries.game_engine import GameController
+from streamlit_float import float_init, float_parent
+
+import streamlit.components.v1 as components
 
 st.set_page_config(layout="wide", page_title="Cuban University Enrollment Analysis", page_icon="🎓")
 chat_button()
+
+game_controller = GameController(translation=translation('gamification_controller', {}))
+
+
 df_main = cargar_datos_matricula('data/db.parquet') 
 df_ins = cargar_datos_instituciones('data/db_uni.parquet')
+
+#st.dialog('algo')
+#st.map(df_ins, latitude='utm_x', longitude='utm_y')
+#st.pydeck_chart()
 
 idiomas = { "Español": "es", "English": "en", "Français": "fr", "Português": "pt", "Deutsch": "de"}
 idiomas_index = {"es":0, "en":1, "fr":2, "pt":3, "de":4}
@@ -19,7 +31,6 @@ if idiomas[lang_selected] != st.session_state.get("lang_selected", None):
 if df_main.empty:
     st.error(translation('load_df_error', "Error crítico: No se pudieron cargar los datos ('db.parquet'). La aplicación no puede continuar."))
 else:
-    st.markdown('<a name="mi-seccion"></a>', unsafe_allow_html=True)
     st.title(translation('load_screen_title',"🎓 Análisis Estratégico de la Matrícula Universitaria en Cuba"))
     st.image("images/UH.jpg", caption=translation('main_image_caption',"Universidad de La Habana. Un símbolo de la educación superior en Cuba."), use_container_width=True)
     st.markdown(translation('main_markdown_1',"Un viaje para iluminar el camino de la Educación Superior."))
@@ -57,30 +68,41 @@ else:
 #SI lees esto, revisa que esté activo el wraper en general_functions._load_translations()
     
     nav: HierarchicalSidebarNavigation = HierarchicalSidebarNavigation(navigation_structure)
-###-----------------------------------------------------------------------------------
-    
-    
+    seccion_actual, active_sub = nav.get_active_selection()
 
-###----------------------------------------------------------------------------------------
+    if not seccion_actual == "Introduccion" or ('initial_mode_selected' in st.session_state and st.session_state.initial_mode_selected):
+        #game_controller.manage_state_and_dialogs() #TODO:Deprecated
+        game_controller.display_mode_toggle()
+        game_controller.display_score_panel()
 
     st.sidebar.title(translation('sidebar_title',"🧭 Explorador de secciones"))
     nav.display_sidebar_navigation(radio_title_main=translation('sidebar_radio_title_main',"Elige una sección:"), radio_title_sub_prefix=translation('sidebar_radio_title_sub_prefix',"Subseccion: "))
-    seccion_actual, active_sub = nav.get_active_selection()
+       
 
     st.sidebar.markdown("---")
-    st.sidebar.info(translation(
+    st.sidebar.info(
+        translation(
         'sidebar_info',
-        """Análisis basado en datos de matrícula del período 2015-16 a 2024-25.\n\n -- ⚠️ No incluye el curso 2018-2019 por falta de datos en dicho curso, los análisis se realizan obviando este curso."""))
+        """Análisis basado en datos de matrícula del período 2015-16 a 2024-25.\n\n -- ⚠️ No incluye el curso 2018-2019 por falta de datos en dicho curso, los análisis se realizan obviando este curso."""
+        )
+    )
+    _kwargs = {
+        "df_main": df_main,
+        "df_ins": df_ins, 
+        "game_controller": game_controller
+    }
     if seccion_actual in SECTION_MAP:
-        SECTION_MAP[seccion_actual](df_main)
+        SECTION_MAP[seccion_actual](**_kwargs)
     elif seccion_actual == "Playground!":
         if active_sub in PLAYGROUND_MAP:
-            kwargs = {"df_main": df_main,"df_ins": df_ins}
-            PLAYGROUND_MAP[active_sub](**kwargs)
+            
+            PLAYGROUND_MAP[active_sub](**_kwargs)
         else:
             st.error(translation('subseccion_not_valid_in',"Subsección no válida en ")+"Playground!")
 
     nav.create_navigation_buttons(prev_text=translation('back',"Anterior: "), next_text=translation('next',"Siguiente: "))
+    
+    #game_controller.confirm_deactivation_dialog()
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(f"{translation('authors',"Autores:")}\n- Reynier Ramos González\n- Ernesto Herrera García")

@@ -12,3 +12,4 @@ google-generativeai
 tabulate
 streamlit_js_eval
 streamlit_float
+streamlit_sortables

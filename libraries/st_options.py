@@ -1,84 +1,140 @@
+from sympy import content
 from .plot_functions import *
 from .ai_functions import ask_ai_component
 from .general_functions import to_csv_string
+from .game_engine import GameController
 
 
 def show_info(msg):
     if msg: st.caption(f"ℹ️ {msg}")
 
+### Testeando las funciones del motor de juego, si algo falla es culpa tuya xd
 @st.fragment
-def introduction(*args,**kwargs):
+def introduction(df_main, game_controller: GameController, **kwargs):
+    if 'initial_mode_selected' not in st.session_state:
+        st.session_state.initial_mode_selected = False
+
     st.header(translation('introduction_header', "🎯 Bienvenidos al Corazón de la Educación Superior Cubana"))
-    st.markdown(translation('introduction_markdown_1',""" WARN
-        La universidad no es solo un edificio; es un crisol de sueños, un motor de progreso y un reflejo
-        de las aspiraciones de una sociedad. En este espacio, nos embarcaremos en un viaje analítico,
-        explorando las corrientes que moldean la matrícula universitaria en Cuba.
-        
-        Desde las tendencias generales hasta el detalle de cada carrera y universidad, desentrañaremos
-        las historias ocultas detrás de las distintas universidades del país. ¿El objetivo? Proveer una brújula basada en evidencia para
-        la toma de decisiones estratégicas, fomentando un sistema de educación superior más fuerte,
-        equitativo y alineado con el futuro de la nación.
+    st.markdown(translation('introduction_markdown_1', """
+        La universidad no es solo un edificio; es un crisol de sueños, un motor de progreso y un reflejo de las aspiraciones de una sociedad. En este espacio, nos embarcaremos en un viaje analítico, explorando las corrientes que moldean la matrícula universitaria en Cuba.
 
-        **Utiliza el explorador en el panel lateral para navegar por las distintas secciones.** 
-        ¡Que comience el descubrimiento!
+        Desde las tendencias generales hasta el detalle de cada carrera y universidad, desentrañaremos las historias ocultas detrás de las distintas universidades del país. ¿El objetivo? Proveer una brújula basada en evidencia para la toma de decisiones estratégicas, fomentando un sistema de educación superior más fuerte, equitativo y alineado con el futuro de la nación.
     """))
-    st.success(translation('introduction_sucess',"¡Tu viaje comienza aquí! Selecciona una sección en el menú lateral o usa el botón 'Siguiente'."))
+    st.markdown("---")
 
-@st.fragment
-def A1(df_main,*args,**kwargs):
-    st.header(translation('A1_header',"🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?"))
-    st.markdown(translation('A1_markdown_1', """
-    Imagina que podemos tomarle el pulso a todo el sistema universitario cubano a lo largo de una década.
-    ¿Cómo ha sido su ritmo? ¿Ha experimentado momentos de vigoroso crecimiento, períodos de estabilidad,
-    o quizás fases donde el latido se ha vuelto más pausado?
-
-    Este primer vistazo nos ofrece la perspectiva más amplia, el electrocardiograma de la matrícula total
-    en nuestras universidades. Es el punto de partida esencial para comprender las dinámicas más profundas
-    que exploraremos a continuación.
-    """))
-
-    with st.spinner(translation('A1_spinner_1',"Construyendo la gráfica A1, por favor espere...")):
-        fig_a1, msg_a1 = analisis_A1(df_main, incluir_proyeccion=False)
-
-    if fig_a1:
-        st.plotly_chart(fig_a1, use_container_width=True, key="fig_a1_pulso_nacional")
-        if msg_a1:
-            show_info(msg_a1)
-        
-        st.subheader(translation('A1_fig_1_subheader', "Descifrando el Ritmo de la Década (2015-2025):"))
-        st.markdown(translation('A1_fig_1_markdown_1', """
-        Observando la trayectoria de la matrícula nacional total en el gráfico superior, podemos identificar varias fases clave:
-
-        *   **Impulso Inicial (2015-16 a 2016-17):** El viaje comienza en el curso 2015-2016 con una cifra que ronda los **165,000 estudiantes**. Inmediatamente, en el siguiente curso (2016-2017), se aprecia un **salto significativo y vigoroso**, elevando la matrícula hasta aproximadamente **220,000 estudiantes**. Este fue el mayor incremento interanual del período.
-
-        *   **Crecimiento Sostenido hacia la Cima (2017-18 a 2020-21):** Tras una ligera consolidación en 2017-2018 (alrededor de **225,000**), la tendencia ascendente se retoma con fuerza. La matrícula crece de forma constante, pasando por los **258,000** en 2019-2020, hasta alcanzar su **punto más álgido en el curso 2020-2021, superando los 285,000 estudiantes**. Este representa el pico de matrícula en la década analizada.
-
-        *   **Meseta y Comienzo del Declive (2021-22 a 2022-23):** El curso 2021-2022 muestra una ligera contracción, manteniendo la matrícula aún por encima de los **280,000**. Sin embargo, es en el curso 2022-2023 donde se evidencia un cambio de tendencia más claro, con una **disminución más notable** que sitúa la cifra en torno a los **263,000 estudiantes**.
-
-        *   **Ajuste Reciente (2023-24 a 2024-25):** Los dos últimos cursos registrados muestran una **continuación de la tendencia descendente**, siendo la caída más pronunciada entre 2022-23 y 2023-24 (llegando a unos **218,000**). El curso 2024-2025 cierra con una matrícula cercana a los **205,000 estudiantes**, indicando que, si bien la disminución persiste, su ritmo parece haberse moderado en comparación con el salto anterior.
-
-        Esta panorámica general nos invita a preguntarnos: ¿Qué factores podrían haber impulsado el crecimiento inicial? ¿Qué circunstancias podrían explicar el cambio de tendencia y el declive posterior?
-        Estas son preguntas que, aunque no podemos responder completamente solo con estos datos de matrícula, nos preparan para los análisis más detallados que siguen.
+    if not st.session_state.initial_mode_selected:
+        st.subheader(translation('intro_choose_your_path_header', "🛣️ Elige tu Camino: ¿Cómo Quieres Explorar?"))
+        st.markdown(translation('intro_choose_your_path_text', """
+            Este viaje a través de los datos puede tomar dos rutas. Elige la que mejor se adapte a tu estilo.
         """))
 
-        
-        contexto = translation('A1_fig_1_context',"El análisis actual es sobre la evolución de la matrícula nacional total, hombres y mujeres en Cuba.")
-        if msg_a1:
-            contexto += f"\n{translation('important_note_for_analysis',"Nota importante del análisis:")} {msg_a1}"
+        col1, col2 = st.columns(2, gap="large")
 
-        datos_para_ia = [fig_a1]
+        with col1:
+            with st.container(border=True):
+                st.markdown(f"### {translation('intro_analyst_path_title', '👨‍🏫 La Ruta del Analista')}")
+                st.markdown(translation('intro_analyst_path_desc', """
+                    Ideal si buscas ir directo al grano. Accede a todos los gráficos y análisis de forma
+                    directa, sin interrupciones. Perfecto para una exploración rápida y enfocada.
+                """))
+                if st.button(translation('intro_analyst_path_button', "Activar Modo Análisis"), use_container_width=True):
+                    st.session_state.gamification['game_mode'] = False
+                    st.session_state.game_mode_toggle_state = False
+                    st.session_state.initial_mode_selected = True
+                    st.rerun()
 
-        ask_ai_component(
-            analysis_context=contexto,
-            key="a1_nacional",
-            extra_data=datos_para_ia,
-            translation=translation('ask_ai_component',{})
-        )
+        with col2:
+            with st.container(border=True):
+                st.markdown(f"### {translation('intro_explorer_path_title', '🎮 La Senda del Explorador')}")
+                st.markdown(translation('intro_explorer_path_desc', """
+                    Convierte el análisis en un desafío. En cada sección, te enfrentarás a minijuegos para
+                    poner a prueba tu intuición sobre los datos antes de verlos. ¡Gana puntos y compite!
+                """))
+                if st.button(translation('intro_explorer_path_button', "Activar Modo Juego"), use_container_width=True, type="primary"):
+                    st.session_state.gamification['game_mode'] = True
+                    st.session_state.game_mode_toggle_state = True
+                    game_controller._full_reset()
+                    st.session_state.initial_mode_selected = True
+                    st.rerun()
+
     else:
-        st.warning(msg_a1 if msg_a1 else translation('A1_fig_1_warn_1',"No se pudo generar el gráfico del panorama nacional (A1)."))
+        if st.session_state.gamification['game_mode']:
+            st.info(translation('intro_game_mode_active_info', "🕹️ ¡**Modo Juego Activado!** Prepárate para los desafíos. Puedes ver tu progreso en la barra lateral."), icon="🎮")
+        else:
+            st.info(translation('intro_analysis_mode_active_info', "📊 **Modo Análisis Activado.** Estás listo para una exploración directa de los datos. Puedes cambiar de modo en cualquier momento en la barra lateral."), icon="📈")
+
+    st.markdown("---")
+    st.success(translation('introduction_sucess', "¡Tu viaje comienza aquí! Selecciona una sección en el menú lateral o usa el botón 'Siguiente'."))
 
 @st.fragment
-def A2(df_main,*args,**kwargs):
+def A1(df_main, game_controller: GameController, **kwargs):
+    st.header(translation('A1_header', "🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?"))
+    st.markdown(
+        translation(
+            key='A1_markdown_1',
+            default=
+            """
+            Imagina que podemos tomarle el pulso a todo el sistema universitario cubano a lo largo de una década.
+            ¿Cómo ha sido su ritmo? ¿Ha experimentado momentos de vigoroso crecimiento, períodos de estabilidad,
+            o quizás fases donde el latido se ha vuelto más pausado?
+            """
+        )
+    )
+    #st.markdown("---")
+
+    def render_content():
+        with st.spinner(translation('A1_spinner_1',"Construyendo la gráfica A1, por favor espere...")):
+            fig_a1, msg_a1 = analisis_A1(df_main, incluir_proyeccion=False)
+
+        if fig_a1:
+            st.plotly_chart(fig_a1, use_container_width=True, key="fig_a1_pulso_nacional")
+            if msg_a1:
+                show_info(msg_a1)
+            
+            st.subheader(translation('A1_fig_1_subheader',"Descifrando el Ritmo de la Década (2015-2025):"))
+            st.markdown(translation(
+                key='A1_fig_1_markdown_1',
+                default="""
+            Observando la trayectoria de la matrícula nacional total en el gráfico superior, podemos identificar varias fases clave:
+            *   **Impulso Inicial (2015-16 a 2016-17):** El viaje comienza en el curso 2015-2016 con una cifra que ronda los **165,000 estudiantes**.
+            *   **Crecimiento Sostenido hacia la Cima (2017-18 a 2020-21):** la tendencia ascendente se retoma con fuerza hasta alcanzar su **punto más álgido en el curso 2020-2021, superando los 285,000 estudiantes**.
+            *   **Meseta y Comienzo del Declive (2021-22 a 2022-23):** El curso 2021-2022 muestra una ligera contracción...
+            *   **Ajuste Reciente (2023-24 a 2024-25):** Los dos últimos cursos registrados muestran una **continuación de la tendencia descendente...**
+            """
+            ))
+            
+            # La IA se mantiene dentro del contenido
+            contexto_texto_ia:str = translation('A1_fig_1_context',"El análisis actual es sobre la evolución de la matrícula nacional total, hombres y mujeres en Cuba. ")
+            if msg_a1:
+                contexto_texto_ia += f"\nNota importante del análisis: {msg_a1}"
+
+            ask_ai_component(
+                analysis_context=contexto_texto_ia,
+                key="a1_nacional",
+                extra_data=[fig_a1]
+            )
+        else:
+            st.warning(msg_a1 if msg_a1 else translation('generic_warn_figs', "No se pudo generar el gráfico del panorama nacional (A1)."))
+
+    game_data = {
+        "title": "El Año Dorado",
+        "question": "¿En qué curso académico la matrícula universitaria nacional alcanzó su punto más alto en la última década?",
+        "options": ["2016-2017", "2019-2020", "2020-2021", "2022-2023"],
+        "correct_answer": "2020-2021",
+        "points": 25
+    }
+    
+    #peak_year_game = SimpleQuestionMinigame(
+    #    id="a1_peak_year",
+    #    controller=game_controller,
+    #    data=game_data,
+    #    content_callback=render_content
+    #)
+    render_content( )
+    #peak_year_game.render()
+
+@st.fragment
+def A2(df_main,*args, game_controller:GameController, **kwargs):
     st.header(translation('A2_header',"📚 Un Mosaico de Saberes: ¿Hacia Dónde se Inclinan los Futuros Profesionales?"))
     st.markdown(translation('A2_markdown_1',"""
     La universidad es un vasto jardín donde florecen diversas disciplinas. Cada rama del conocimiento,
@@ -211,7 +267,7 @@ def A2(df_main,*args,**kwargs):
 ### REFACTORIZAR CON TRANSLATION A PARTIR DE AQUI PArA LUEGO!!
 
 @st.fragment
-def A3(df_main,*args,**kwargs):
+def A3(df_main,*args, game_controller:GameController, **kwargs):
     st.header(translation('A3_header',"🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo"))
     st.markdown(translation('A3_markdown_1',"""
     Tras explorar las grandes ramas del saber, es momento de enfocar nuestra lente en las unidades
@@ -334,7 +390,7 @@ def A3(df_main,*args,**kwargs):
     st.markdown("---")
 
 @st.fragment
-def A4(df_main,*args,**kwargs):
+def A4(df_main,*args, game_controller:GameController, **kwargs):
     st.header(translation('A4_header', "♀️♂️ Equilibrando la Balanza: Una Mirada a la Perspectiva de Género"))
     st.markdown(translation('A4_markdown_1', """
     La universidad no solo forma profesionales, sino que también moldea una sociedad más justa y equitativa.
@@ -413,7 +469,7 @@ def A4(df_main,*args,**kwargs):
     """))
 
 @st.fragment
-def A5(df_main,*args,**kwargs):
+def A5(df_main,*args, game_controller:GameController, **kwargs):
     st.header(translation('A5_header', "🏛️ Universidades en Perspectiva: Descubriendo Fortalezas y Focos de Especialización"))
     st.markdown(translation('A5_markdown_1', """
     Cada universidad es un ecosistema único con su propia historia, vocación y áreas de excelencia.
@@ -544,20 +600,14 @@ def A5(df_main,*args,**kwargs):
 
 
 
-
-
-
 ################################ ME QUEDÉ por AQUI, ERNESTO SI LEES ESTO, puedes continuar haciendolo o no, igual manana probablemente siga...####################################
 
 
 
 
 
-
-
-
 @st.fragment
-def A6(df_main,*args,**kwargs):
+def A6(df_main,*args, game_controller:GameController, **kwargs):
     st.header("🔭 Mirando al Mañana: ¿Qué Podríamos Esperar? (Proyecciones Futuras)")
     st.markdown("""
     Anticipar el futuro es un desafío, pero analizar las tendencias recientes nos permite trazar
@@ -695,7 +745,7 @@ def A6(df_main,*args,**kwargs):
     """)
 
 @st.fragment
-def A7(df_main,*args,**kwargs):
+def A7(df_main,*args, game_controller:GameController, **kwargs):
     st.header("💡 Áreas de Atención: Identificando Desafíos y Oportunidades Específicas")
     st.markdown("""
     Más allá de las grandes tendencias, existen situaciones particulares en carreras y universidades
@@ -811,7 +861,7 @@ def A7(df_main,*args,**kwargs):
     """)
 
 @st.fragment
-def B1(df_main,*args,**kwargs):
+def B1(df_main,*args, game_controller:GameController, **kwargs):
     st.header("🔬 Playground: Perfil Detallado de Carrera: Una Radiografía Completa")
     st.markdown("""
     Sumérgete en los detalles de la carrera que elijas. Descubre su evolución histórica de matrícula,
@@ -956,7 +1006,7 @@ def B1(df_main,*args,**kwargs):
     )
 
 @st.fragment
-def B2(df_main, df_ins,*args,**kwargs):
+def B2(df_main, df_ins,*args, game_controller:GameController, **kwargs):
     st.header("🗺️ B2. Guía de Instituciones: Explora la Oferta Académica por Localidad")
     st.markdown("""
     Descubre las instituciones de educación superior en Cuba, filtrando por provincia y municipio.
@@ -1103,7 +1153,7 @@ def B2(df_main, df_ins,*args,**kwargs):
     )
 
 @st.fragment
-def conclusion(*args,**kwargs):
+def conclusion(*args, game_controller:GameController, **kwargs):
     st.header("🏁 Conclusiones y Horizontes Futuros: Forjando la Universidad del Mañana")
     st.markdown("""
     Hemos viajado a través de una década de datos, explorando el complejo ecosistema
