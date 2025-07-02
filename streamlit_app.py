@@ -2,9 +2,8 @@ from typing import Any
 from streamlit_js_eval import get_user_agent, get_browser_language
 from libraries.streamlit_extended import HierarchicalSidebarNavigation
 from libraries.st_options import *
-from libraries.general_functions import translation, chat_button, FloatingPanel
+from libraries.general_functions import translation, FloatingPanel
 from libraries.game_engine import GameController
-from streamlit_float import float_init, float_parent
 
 import streamlit.components.v1 as components
 
