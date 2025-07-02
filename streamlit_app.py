@@ -1,16 +1,10 @@
 from typing import Any
-from streamlit_js_eval import get_user_agent, get_browser_language
 from libraries.streamlit_extended import HierarchicalSidebarNavigation
 from libraries.st_options import *
-from libraries.general_functions import translation, FloatingPanel
+from libraries.general_functions import translation, LanguageSelector, FloatingPanel
 from libraries.game_engine import GameController
 
-import streamlit.components.v1 as components
-
 st.set_page_config(layout="wide", page_title="Cuban University Enrollment Analysis", page_icon="🎓")
-
-game_controller = GameController(translation=translation('gamification_controller', {}))
-
 
 df_main = cargar_datos_matricula('data/db.parquet') 
 df_ins = cargar_datos_instituciones('data/db_uni.parquet')
@@ -18,20 +12,18 @@ df_ins = cargar_datos_instituciones('data/db_uni.parquet')
 #st.map(df_ins, latitude='utm_x', longitude='utm_y')
 #st.pydeck_chart()
 
-idiomas = { "Español": "es", "English": "en", "Français": "fr", "Português": "pt", "Deutsch": "de"}
-idiomas_index = {"es":0, "en":1, "fr":2, "pt":3, "de":4}
-st.session_state.setdefault("lang_selected", 'en')
-lang_selected = st.sidebar.selectbox("Select your language:", list(idiomas.keys()), index=idiomas_index.get(get_browser_language(),0), help=translation('lang_select_help', "Select your preferred language for the application."))
-if idiomas[lang_selected] != st.session_state.get("lang_selected", None):
-    st.session_state["lang_selected"] = idiomas[lang_selected]
-    st.rerun(scope='app')
+languages = { "Español": "es", "English": "en", "Français": "fr", "Português": "pt", "Deutsch": "de"}
+lg = LanguageSelector(languages, 'lang')
+lg.render()
+
+game_controller = GameController(translation=lg.translate('gamification_controller', {}))
 
 if df_main.empty:
-    st.error(translation('load_df_error', "Error crítico: No se pudieron cargar los datos ('db.parquet'). La aplicación no puede continuar."))
+    st.error(lg.translate('load_df_error', "Error crítico: No se pudieron cargar los datos ('db.parquet'). La aplicación no puede continuar."))
 else:
-    st.title(translation('load_screen_title',"🎓 Análisis Estratégico de la Matrícula Universitaria en Cuba"))
-    st.image("images/UH.jpg", caption=translation('main_image_caption',"Universidad de La Habana. Un símbolo de la educación superior en Cuba."), use_container_width=True)
-    st.markdown(translation('main_markdown_1',"Un viaje para iluminar el camino de la Educación Superior."))
+    st.title(lg.translate('load_screen_title',"🎓 Análisis Estratégico de la Matrícula Universitaria en Cuba"))
+    st.image("images/UH.jpg", caption=lg.translate('main_image_caption',"Universidad de La Habana. Un símbolo de la educación superior en Cuba."), use_container_width=True)
+    st.markdown(lg.translate('main_markdown_1',"Un viaje para iluminar el camino de la Educación Superior."))
     st.markdown("---")
 
     navigation_structure = {
@@ -82,13 +74,13 @@ else:
         #if game_controller.game_mode: chat_button(game_controller.display_score_panel) #type:deprecated
             #game_controller.display_mode_toggle()
 
-    st.sidebar.title(translation('sidebar_title',"🧭 Explorador de secciones"))
-    nav.display_sidebar_navigation(radio_title_main=translation('sidebar_radio_title_main',"Elige una sección:"), radio_title_sub_prefix=translation('sidebar_radio_title_sub_prefix',"Subseccion: "))
+    st.sidebar.title(lg.translate('sidebar_title',"🧭 Explorador de secciones"))
+    nav.display_sidebar_navigation(radio_title_main=lg.translate('sidebar_radio_title_main',"Elige una sección:"), radio_title_sub_prefix=lg.translate('sidebar_radio_title_sub_prefix',"Subseccion: "))
        
 
     st.sidebar.markdown("---")
     st.sidebar.info(
-        translation(
+        lg.translate(
         'sidebar_info',
         """Análisis basado en datos de matrícula del período 2015-16 a 2024-25.\n\n -- ⚠️ No incluye el curso 2018-2019 por falta de datos en dicho curso, los análisis se realizan obviando este curso."""
         )
@@ -97,7 +89,8 @@ else:
         "df_main": df_main,
         "df_ins": df_ins, 
         "game_controller": game_controller,
-        "panel_progreso": panel_progreso
+        "panel_progreso": panel_progreso,
+        "lg": lg
     }
     if seccion_actual in SECTION_MAP:
         SECTION_MAP[seccion_actual](**_kwargs)
@@ -106,12 +99,12 @@ else:
             
             PLAYGROUND_MAP[active_sub](**_kwargs)
         else:
-            st.error(translation('subseccion_not_valid_in',"Subsección no válida en ")+"Playground!")
+            st.error(lg.translate('subseccion_not_valid_in',"Subsección no válida en ")+"Playground!")
 
-    nav.create_navigation_buttons(prev_text=translation('back',"Anterior: "), next_text=translation('next',"Siguiente: "))
+    nav.create_navigation_buttons(prev_text=lg.translate('back',"Anterior: "), next_text=lg.translate('next',"Siguiente: "))
     
     #game_controller.confirm_deactivation_dialog() #type:deprecated
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(f"{translation('authors',"Autores:")}\n- Reynier Ramos González\n- Ernesto Herrera García")
+st.sidebar.markdown(f"{lg.translate('authors',"Autores:")}\n- Reynier Ramos González\n- Ernesto Herrera García")
 if panel_progreso: panel_progreso.render()

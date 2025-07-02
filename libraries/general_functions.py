@@ -1,9 +1,8 @@
-from ast import Call
 import io
 import re
 import json
-from typing import Any, Callable, List, Optional
-from numpy import isin
+from typing import Any, Callable, Dict, List, Optional
+from language_detection  import detect_browser_language
 import streamlit as st
 from .streamlit_float_upd import float_init, float_parent
 
@@ -36,12 +35,12 @@ def parse_blocks(pattern, texto):
     Yields:
         tuple: Una tupla (tipo, contenido) para cada bloque encontrado.
     """
-    #DEBE Ser re.DOTALL el pattern!
+    #Acordarse DEBE ser re.DOTALL el pattern!
     for match in re.finditer(pattern, texto): 
         yield match.group("tipo"), match.group("contenido")
 
 @st.cache_data
-def _load_translations(path:str='translation.json') -> dict:
+def _load_translations(path:str='translation.json') -> dict: #TODO:deprecated
     """
     Carga las traducciones desde un archivo JSON.
     
@@ -61,7 +60,8 @@ def _load_translations(path:str='translation.json') -> dict:
         print(f"Error: El archivo {path} no es un JSON válido.")
         return {}
 
-def translation(key:str, default:Any=None, lang:str|None = None) -> Any:
+def translation(key:str, default:Any=None, lang:str|None = None) -> Any: #TODO:deprecated
+    
     """
     Obtiene la traducción para una clave específica.
     
@@ -73,11 +73,112 @@ def translation(key:str, default:Any=None, lang:str|None = None) -> Any:
     Returns:
         str: Valor correspondiente a la clave.
     """
+    return default
     try:
         return _load_translations()[lang if lang else st.session_state.get('lang_selected', 'en')].get(key, default)
     except Exception as e:
         print(f"Error al obtener la traducción para la clave '{key}': {e}")
         return f'CRITICAL ERROR LOADING {key} KEY' 
+
+
+@st.cache_data
+def _get_language_dict(lang_code: str, dir:str='languages') -> dict:
+    """Carga un archivo de traducción desde el disco. Advertencia, Cacheado por Streamlit, por lo que si cambia el archivo de traduccion deberá borrar la chaché."""
+    path = f"{dir}/{lang_code}.json"
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        st.error(f"Archivo de traducción no encontrado: {path}")
+        return {}
+    except json.JSONDecodeError:
+        st.error(f"Error al decodificar el archivo JSON: {path}")
+        return {}
+
+class LanguageSelector:
+    """
+    Un componente singleton para gestionar la selección de idioma y las traducciones
+    en una aplicación Streamlit.
+    
+    Uso:
+        # Al inicio de tu script
+        lang_selector = LanguageSelector(langs={"English": "en", "Español": "es"})
+        t = lang_selector.translate # Alias para facilitar el uso
+
+        # En tu app
+        st.title(t('welcome_title', "Welcome to my App"))
+        lang_selector.render()
+    """
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if 'language_selector_instance' not in st.session_state:
+            st.session_state.language_selector_instance = super().__new__(cls)
+        return st.session_state.language_selector_instance
+
+    def __init__(self, langs: Dict[str, str] = {"English": 'en'}, lang_dir: str = "languages"):
+        """
+        Inicializa el selector de idioma. Solo se ejecuta una vez por sesión.
+        
+        Args:
+            langs (dict): Un diccionario con el nombre legible del idioma como clave
+                          y el código de idioma (ej. 'en') como valor.
+            lang_dir (str): El directorio donde se encuentran los archivos .json de idioma.
+        """
+        if hasattr(self, '_initialized'): return
+        
+        self.langs = langs
+        self.langs_list = list(langs.values())
+        self.langs_readable = list(langs.keys())
+        self.lang_dir = lang_dir
+
+        self.actual_lang = detect_browser_language() or self.langs_list[0]
+        
+        try:
+            self.lang_index = self.langs_list.index(self.actual_lang)
+        except ValueError:
+            self.lang_index = 0
+
+        self._initialized = True
+        
+    def translate(self, key: str, default: Any = None, *, lang: str | None = None) -> Any:
+        """
+        Obtiene una cadena de traducción para una clave dada.
+
+        Args:
+            key (str): La clave de traducción a buscar en el archivo JSON.
+            default (Any, optional): Un valor por defecto si la clave no se encuentra.
+                                     Si no se proporciona, la clave misma será devuelta.
+            lang (str, optional): Un código de idioma para usar en esta traducción específica,
+                                  ignorando el idioma seleccionado actualmente.
+
+        Returns:
+            Any: El valor traducido, el valor por defecto o la clave.
+        """
+        final_lang = lang or self.actual_lang
+        if final_lang not in self.langs_list: raise ValueError(f"Idioma no reconocido: {final_lang}")
+            
+        return _get_language_dict(final_lang, dir=self.lang_dir).get(key, f"warn--{default}" or f"[{final_lang}] Missing translation for '{key}'")
+
+    def render(self):
+        """Renderiza el selectbox en la barra lateral para cambiar de idioma."""
+        
+        lang_readable_selected = st.sidebar.selectbox(
+            label="Language / Idioma", 
+            options=self.langs_readable, 
+            index=self.lang_index,
+            help=self.translate(
+                'lang_select_help', 
+                "Select your preferred language for the application."
+            )
+        )
+        
+        selected_lang_code = self.langs.get(lang_readable_selected)
+
+        if selected_lang_code and selected_lang_code != self.actual_lang:
+            self.lang_index = self.langs_list.index(selected_lang_code)
+            self.actual_lang = selected_lang_code
+            st.rerun(scope='app')
 
 #Para testeo solamente, aun sin aplicar en produccion.
 @st.fragment

@@ -10,5 +10,5 @@ kaleido
 google-genai
 google-generativeai
 tabulate
-streamlit_js_eval
+streamlit-browser-language
 streamlit_sortables
