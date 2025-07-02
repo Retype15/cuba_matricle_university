@@ -1,14 +1,14 @@
+from typing import Any
 from streamlit_js_eval import get_user_agent, get_browser_language
 from libraries.streamlit_extended import HierarchicalSidebarNavigation
 from libraries.st_options import *
-from libraries.general_functions import translation, chat_button
+from libraries.general_functions import translation, chat_button, FloatingPanel
 from libraries.game_engine import GameController
 from streamlit_float import float_init, float_parent
 
 import streamlit.components.v1 as components
 
 st.set_page_config(layout="wide", page_title="Cuban University Enrollment Analysis", page_icon="🎓")
-chat_button()
 
 game_controller = GameController(translation=translation('gamification_controller', {}))
 
@@ -16,7 +16,6 @@ game_controller = GameController(translation=translation('gamification_controlle
 df_main = cargar_datos_matricula('data/db.parquet') 
 df_ins = cargar_datos_instituciones('data/db_uni.parquet')
 
-#st.dialog('algo')
 #st.map(df_ins, latitude='utm_x', longitude='utm_y')
 #st.pydeck_chart()
 
@@ -65,15 +64,24 @@ else:
         "Guía de Instituciones": B2
     }
 
-#SI lees esto, revisa que esté activo el wraper en general_functions._load_translations()
+#Ernesto si lees esto, revisa que esté activo el wraper en general_functions._load_translations()
     
     nav: HierarchicalSidebarNavigation = HierarchicalSidebarNavigation(navigation_structure)
     seccion_actual, active_sub = nav.get_active_selection()
 
+    panel_progreso = None
+
     if not seccion_actual == "Introduccion" or ('initial_mode_selected' in st.session_state and st.session_state.initial_mode_selected):
-        #game_controller.manage_state_and_dialogs() #TODO:Deprecated
-        game_controller.display_mode_toggle()
-        game_controller.display_score_panel()
+        #with st.sidebar:
+        #    game_controller.display_mode_toggle()
+        panel_progreso = FloatingPanel(
+            key="progreso_player",
+            content_funcs=[game_controller.display_mode_toggle, game_controller.display_score_panel],
+            button_icon="🏆",
+            button_tooltip="Ver mi progreso"
+        )
+        #if game_controller.game_mode: chat_button(game_controller.display_score_panel) #type:deprecated
+            #game_controller.display_mode_toggle()
 
     st.sidebar.title(translation('sidebar_title',"🧭 Explorador de secciones"))
     nav.display_sidebar_navigation(radio_title_main=translation('sidebar_radio_title_main',"Elige una sección:"), radio_title_sub_prefix=translation('sidebar_radio_title_sub_prefix',"Subseccion: "))
@@ -89,7 +97,8 @@ else:
     _kwargs = {
         "df_main": df_main,
         "df_ins": df_ins, 
-        "game_controller": game_controller
+        "game_controller": game_controller,
+        "panel_progreso": panel_progreso
     }
     if seccion_actual in SECTION_MAP:
         SECTION_MAP[seccion_actual](**_kwargs)
@@ -102,7 +111,8 @@ else:
 
     nav.create_navigation_buttons(prev_text=translation('back',"Anterior: "), next_text=translation('next',"Siguiente: "))
     
-    #game_controller.confirm_deactivation_dialog()
+    #game_controller.confirm_deactivation_dialog() #type:deprecated
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(f"{translation('authors',"Autores:")}\n- Reynier Ramos González\n- Ernesto Herrera García")
+if panel_progreso: panel_progreso.render()

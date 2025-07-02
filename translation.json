@@ -43,7 +43,7 @@
         "intro_explorer_path_title": "🎮 La Senda del Explorador",
         "intro_explorer_path_desc": "Convierte el análisis en un desafío. En cada sección, te enfrentarás a minijuegos para poner a prueba tu intuición sobre los datos antes de verlos. ¡Gana puntos y compite!",
         "intro_explorer_path_button": "Activar Modo Juego",
-        "intro_game_mode_active_info": "🕹️ ¡**Modo Juego Activado!** Prepárate para los desafíos. Puedes ver tu progreso en la barra lateral.",
+        "intro_game_mode_active_info": "🕹️ ¡**Modo Juego Activado!** Prepárate para los desafíos. Puedes ver tu progreso si presionas el botón '🎮' que aparece en la esquina inferior derecha.",
         "intro_analysis_mode_active_info": "📊 **Modo Análisis Activado.** Estás listo para una exploración directa de los datos. Puedes cambiar de modo en cualquier momento en la barra lateral.",
 
         "A1_header": "🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?",

@@ -1,3 +1,5 @@
 - Incluir en el playground la seccion de poder interactuar directamente con la base de datos y que el usuario pueda pedir lo que sea a esta.
 - investigar todas las funcionalidades de st.map y construir el mapa.
-- Terminar las traducciones
+- Terminar las traducciones:
+    - Reconstruir las traducciones del game_engine y Minijuegos
+    - Traducciones de secciones - OK

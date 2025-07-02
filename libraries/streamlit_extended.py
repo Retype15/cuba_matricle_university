@@ -1,4 +1,139 @@
+from typing import Literal, LiteralString
 import streamlit as st
+import re
+
+class StylableContainer:
+    """
+    A Streamlit container component designed to apply isolated CSS styles.
+
+    This class provides a context manager for `st.container()`, enabling
+    the application of specific CSS rules without affecting other elements
+    on the Streamlit page. It injects a unique HTML marker within its
+    internal container and uses a precise CSS selector for isolation.
+
+    Usage Example:
+        custom_css = '''
+        {selector} h3 {
+            color: purple;
+        }
+        '''
+        with StylableContainer(key="my_custom_container", css=custom_css):
+            st.subheader("This heading is purple and styled.")
+            st.write("Any Streamlit element placed within this block will be subject to the defined CSS.")
+
+    Args:
+        key (str): A unique string identifier for the container instance.
+                   This is crucial for distinct styling when multiple
+                   `StylableContainer` instances are used on the same page.
+        css (str): The CSS string to be applied. It must include the
+                   '{selector}' placeholder, which will be dynamically
+                   replaced with a unique, isolated CSS selector targeting
+                   elements within this specific container.
+    """
+    def __init__(self, key: str, css: str, target: Literal['main','sidebar'] = 'main'):
+        self.key = key
+        self.target = target
+
+        if self.target not in ['main', 'sidebar']:
+            raise ValueError("Target must be either 'main' or 'sidebar'.")
+
+        if self.target == 'sidebar':
+            self._container = st.sidebar
+        else:
+            self._container = st.container()
+
+        self.css = self._validate_css(css)
+
+    def _validate_css(self, css: str) -> str:
+        """
+        Validates the provided CSS string for security and prepares it by
+        inserting the unique container selector.
+
+        Raises:
+            ValueError: If the CSS string contains disallowed '<script>' tags.
+        """
+        if re.search(r"<script", css, re.IGNORECASE):
+            raise ValueError("Provided CSS cannot contain '<script>' tags.")
+        
+        if self.target == 'sidebar':
+            specific_selector = f'section[data-testid="stSidebar"]:has(div#marker-{self.key})'
+        else:
+            specific_selector = (
+                f'div[data-testid="stVerticalBlock"] '
+                f'div[data-testid="stVerticalBlock"]:has(div#marker-{self.key})'
+            )
+
+        return f"<style>{css.format(selector=specific_selector)}</style>"
+
+    def __enter__(self):
+        """
+        Enters the context manager block.
+        Injects a hidden HTML marker into the internal container and applies
+        the prepared CSS to the Streamlit app. It then activates the context
+        of the internal `st.container`.
+        """
+        container_to_mark = self._container if self.target == 'main' else st.sidebar
+        container_to_mark.markdown(f'<div id="marker-{self.key}" style="display: none;"></div>', unsafe_allow_html=True)
+        
+        st.markdown(self.css, unsafe_allow_html=True)
+        
+        self._container.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Exits the context manager block.
+        Deactivates the context of the internal `st.container`.
+        """
+        self._container.__exit__(exc_type, exc_val, exc_tb)
+
+
+# --- CSS DEFINITIONS ---
+RADIO_BUTTON_CSS = """
+{selector} [data-testid="stRadio"] label:not([data-testid="stWidgetLabel"]) > div:first-child {{
+    display: none;
+}}
+{selector} [data-testid="stRadio"] label:not([data-testid="stWidgetLabel"]) {{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #262730;
+    border: 2px solid #262730;
+    border-radius: 0.75rem;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    #margin-right: 0.5rem;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}}
+{selector} [data-testid="stRadio"] label:not([data-testid="stWidgetLabel"]):hover {{
+    background-color: #31333f;
+    border-color: #ff4b4b;
+}}
+{selector} [data-testid="stRadio"] label:not([data-testid="stWidgetLabel"]):has(input[type="radio"]:checked) {{
+    background-color: #ff4b4b;
+    color: white;
+    border-color: #ff4b4b;
+}}
+"""
+
+# CSS for a custom-styled Streamlit button
+CUSTOM_BUTTON_CSS = """
+{selector} [data-testid="stButton"] button {{
+    background-color: #4CAF50; /* Green */
+    color: white;
+    border: 2px solid #4CAF50;
+    border-radius: 12px;
+    padding: 10px 24px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}}
+{selector} [data-testid="stButton"] button:hover {{
+    background-color: white;
+    color: #4CAF50;
+}}
+"""
 
 class HierarchicalSidebarNavigation:
     """
@@ -27,6 +162,8 @@ class HierarchicalSidebarNavigation:
         self.main_sections = list(self.structure.keys())
         self.section_key = section_key_name
         self.last_subs_key = last_subs_key_name
+        
+        self.radio_css = self._get_sidebar_radio_css()
 
         if self.section_key not in st.session_state:
             st.session_state[self.section_key] = self.main_sections[0]
@@ -60,6 +197,46 @@ class HierarchicalSidebarNavigation:
         """
         st.session_state[self.last_subs_key][main_section_name] = sub_section_name
 
+    @staticmethod
+    def _get_sidebar_radio_css():
+        """Returns the CSS string for styling sidebar radio buttons, with escaped braces for formatting."""
+        # Note the double curly braces {{ and }} to escape them for the .format() method.
+        # The {selector} placeholder remains with single braces to be replaced.
+        return """
+            {selector} [data-testid="stRadio"] label:not([data-testid="stWidgetLabel"]) > div:first-child {{
+                display: none;
+            }}
+
+            {selector} [data-testid="stRadio"] label:not([data-testid="stWidgetLabel"]) {{
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                
+                width: 100%;
+                margin-bottom: 0.5rem;
+                
+                background-color: transparent;
+                border: 2px solid transparent;
+                border-radius: 0.5rem;
+                
+                box-sizing: border-box;
+                cursor: pointer;
+                transition: all 0.2s ease-in-out;
+            }}
+
+            {selector} [data-testid="stRadio"] label:not([data-testid="stWidgetLabel"]):hover {{
+                background-color: rgba(255, 75, 75, 0.1);
+                border-color: rgba(255, 75, 75, 0.5);
+            }}
+
+            {selector} [data-testid="stRadio"] label:not([data-testid="stWidgetLabel"]):has(input[type="radio"]:checked) {{
+                background-color: #ff4b4b;
+                color: white;
+                border-color: #ff4b4b;
+                font-weight: 600;
+            }}
+        """
+
     def display_sidebar_navigation(self, radio_title_main="Main Section:", radio_title_sub_prefix="Subsections of"):
         """
         Displays the radio button selectors in the Streamlit sidebar for navigation.
@@ -74,39 +251,38 @@ class HierarchicalSidebarNavigation:
         rerun_needed = False
         current_main_section = st.session_state[self.section_key]
         current_main_section_idx = self.main_sections.index(current_main_section)
-        
-        selected_main_section = st.sidebar.radio(
-            radio_title_main, options=self.main_sections, index=current_main_section_idx,
-            key=f"{self.section_key}_radio_main")
 
+        # Usar el componente con target='sidebar'
+        with StylableContainer(key="main_nav_container", css=self.radio_css, target='sidebar'):
+            selected_main_section = st.radio( # st.sidebar.radio ya no es necesario, el contexto se encarga
+                radio_title_main, options=self.main_sections, index=current_main_section_idx,
+                key=f"{self.section_key}_radio_main")
+
+        # ... (lógica de cambio de sección, sin cambios) ...
         if selected_main_section != current_main_section:
             st.session_state[self.section_key] = selected_main_section
-            subsections_for_new_main = self.structure.get(selected_main_section)
-            if subsections_for_new_main:
-                if selected_main_section not in st.session_state[self.last_subs_key]:
-                    self._set_active_subsection_for_main(selected_main_section, subsections_for_new_main[0])
             rerun_needed = True
 
         active_main_for_sub_selector = st.session_state[self.section_key]
         available_subsections = self.structure.get(active_main_for_sub_selector)
 
         if available_subsections:
-            st.sidebar.markdown("---")
-            current_active_sub = self._get_current_active_subsection_for_main(active_main_for_sub_selector)
+            st.sidebar.markdown("---") # st.sidebar. es correcto aquí
+            current_active_sub = st.session_state[self.last_subs_key].get(active_main_for_sub_selector, available_subsections[0])
             
             idx_sub = 0
-            if current_active_sub and current_active_sub in available_subsections:
+            if current_active_sub in available_subsections:
                 idx_sub = available_subsections.index(current_active_sub)
-            elif available_subsections:
-                self._set_active_subsection_for_main(active_main_for_sub_selector, available_subsections[0])
-                idx_sub = 0 
             
-            selected_sub_section = st.sidebar.radio(
-                f"{radio_title_sub_prefix} '{active_main_for_sub_selector}':",
-                options=available_subsections, index=idx_sub,
-                key=f"sub_radio_{active_main_for_sub_selector.replace(' ','_')}"
-            )
-            if selected_sub_section != self._get_current_active_subsection_for_main(active_main_for_sub_selector):
+            # Aplicar estilo también a las subsecciones
+            with StylableContainer(key="sub_nav_container", css=self.radio_css, target='sidebar'):
+                selected_sub_section = st.radio( # Igual aquí
+                    f"{radio_title_sub_prefix} '{active_main_for_sub_selector}':",
+                    options=available_subsections, index=idx_sub,
+                    key=f"sub_radio_{active_main_for_sub_selector.replace(' ','_')}"
+                )
+            
+            if selected_sub_section != current_active_sub:
                 self._set_active_subsection_for_main(active_main_for_sub_selector, selected_sub_section)
                 rerun_needed = True
         
@@ -325,7 +501,7 @@ class HierarchicalSidebarNavigation:
 
 # --- Example of Usage ---
 if __name__ == "__main__":
-    st.set_page_config(layout="wide", page_title="Advanced Navigator Test")
+    st.set_page_config(layout="wide", page_title="Streamlit Extended Test")
 
     sample_structure = {
         "Home": None,
@@ -369,6 +545,70 @@ if __name__ == "__main__":
         st.write(f"General overview for {active_main}.")
         if active_main == "Home":
             st.success("Welcome to the application!")
+        st.title("StylableContainer Component Example")
+
+    st.divider()
+    st.success("This version uses a clean `with` syntax and includes corrected button styling.")
+    
+    st.subheader("Custom Styled Radio Buttons")
+#   st.markdown(f"""
+#        <style>
+#                
+#            div[data-testid="stRadio"] label > div:first-child {{
+#                display: none;
+#            }}
+#
+#            div[data-testid="stRadio"] label {{
+#                display: flex;
+#                justify-content: center;
+#                align-items: center;
+#                
+#                background-color: #262730;
+#                border: 2px solid #262730;
+#                border-radius: 0.75rem;
+#                margin-bottom: 0.5rem;
+#                width: 100%;
+#                cursor: pointer;
+#                transition: all 0.2s ease-in-out;
+#            }}
+#
+#            /* ESTADO HOVER: Al pasar el ratón por encima */
+#            div[data-testid="stRadio"] label:hover {{
+#                background-color: #31333f;
+#                border-color: #ff4b4b;
+#            }}
+#            
+#            div[data-testid="stRadio"] label:has(input[type="radio"]:checked) {{
+#                background-color: #ff4b4b;
+#                color: white;
+#                border-color: #ff4b4b;
+#            }}
+#        </style>
+#        """, unsafe_allow_html=True)
+    with StylableContainer(key="radio_styled_example", css=RADIO_BUTTON_CSS):
+        chosen_plan = st.radio(
+            "Choose your plan:", ["Basic", "Pro", "Enterprise"],
+            key="plan",
+            horizontal=True,
+            label_visibility="collapsed"
+        )
+    st.write(f"You have selected the plan: **{chosen_plan}**")
+    
+    st.divider()
+
+    st.subheader("Custom Styled Button")
+    with StylableContainer(key="button_styled_example", css=CUSTOM_BUTTON_CSS):
+        if st.button("Click the styled button!", key="btn_styled"):
+            st.balloons()
+
+    st.divider()
+
+    st.subheader("Native Streamlit Elements (unstyled)")
+    chosen_color = st.radio(
+        "Choose a color:", ["Red", "Green", "Blue"], key="color"
+    )
+    if st.button("Normal button", key="btn_normal"):
+        st.toast("Normal button pressed.")
 
     # Display navigation buttons
     st.markdown("---") # Visual separator before buttons
