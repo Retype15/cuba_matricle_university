@@ -92,16 +92,16 @@ def analisis_guia_universidades(df_instituciones, df_matricula, provincia_selecc
         return {}, "Datos de instituciones no disponibles."
 
     df_unis_filtradas = df_instituciones.copy()
-    if provincia_seleccionada and provincia_seleccionada != "TODAS LAS PROVINCIAS":
+    if provincia_seleccionada:
         df_unis_filtradas = df_unis_filtradas[df_unis_filtradas['provincia'] == provincia_seleccionada]
-    if municipio_seleccionado and municipio_seleccionado != "TODOS LOS MUNICIPIOS":
+    if municipio_seleccionado:
         df_unis_filtradas = df_unis_filtradas[df_unis_filtradas['municipio'] == municipio_seleccionado]
     
     if df_unis_filtradas.empty:
         msg = "No se encontraron instituciones"
-        if provincia_seleccionada and provincia_seleccionada != "TODAS LAS PROVINCIAS":
+        if provincia_seleccionada:
             msg += f" en la provincia de '{provincia_seleccionada}'"
-        if municipio_seleccionado and municipio_seleccionado != "TODOS LOS MUNICIPIOS":
+        if municipio_seleccionado:
             msg += f" en el municipio de '{municipio_seleccionado}'"
         msg += "."
         return {}, msg
@@ -696,7 +696,7 @@ def analisis_A4(df):
 @st.cache_data
 def analisis_A5(df):
     if df.empty:
-        return None, None, "DataFrame vacio."
+        return None, None, None, "DataFrame vacio."
     
     ano_mas_reciente = df['Ano_Inicio_Curso'].max()
     curso_mas_reciente = f"{ano_mas_reciente}-{ano_mas_reciente+1}"

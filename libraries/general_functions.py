@@ -95,14 +95,14 @@ def _get_language_dict(lang_code: str, dir:str='languages') -> dict:
         st.error(f"Error al decodificar el archivo JSON: {path}")
         return {}
 
-class LanguageSelector:
+class Translator:
     """
     Un componente singleton para gestionar la selección de idioma y las traducciones
     en una aplicación Streamlit.
     
     Uso:
         # Al inicio de tu script
-        lang_selector = LanguageSelector(langs={"English": "en", "Español": "es"})
+        lang_selector = Translator(langs={"English": "en", "Español": "es"})
         t = lang_selector.translate # Alias para facilitar el uso
 
         # En tu app
@@ -158,12 +158,12 @@ class LanguageSelector:
         final_lang = lang or self.actual_lang
         if final_lang not in self.langs_list: raise ValueError(f"Idioma no reconocido: {final_lang}")
             
-        return _get_language_dict(final_lang, dir=self.lang_dir).get(key, f"warn--{default}" or f"[{final_lang}] Missing translation for '{key}'")
+        return _get_language_dict(final_lang, dir=self.lang_dir).get(key, f"{default or f"[{final_lang}] Missing translation for '{key}'"}")
 
-    def render(self):
+    def render_selector(self, auto_rerun:bool=True):
         """Renderiza el selectbox en la barra lateral para cambiar de idioma."""
         
-        lang_readable_selected = st.sidebar.selectbox(
+        lang_readable_selected = st.selectbox(
             label="Language / Idioma", 
             options=self.langs_readable, 
             index=self.lang_index,
@@ -178,7 +178,7 @@ class LanguageSelector:
         if selected_lang_code and selected_lang_code != self.actual_lang:
             self.lang_index = self.langs_list.index(selected_lang_code)
             self.actual_lang = selected_lang_code
-            st.rerun(scope='app')
+            if auto_rerun: st.rerun(scope='app')
 
 #Para testeo solamente, aun sin aplicar en produccion.
 @st.fragment

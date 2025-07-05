@@ -572,7 +572,6 @@ if __name__ == "__main__":
 #                transition: all 0.2s ease-in-out;
 #            }}
 #
-#            /* ESTADO HOVER: Al pasar el ratón por encima */
 #            div[data-testid="stRadio"] label:hover {{
 #                background-color: #31333f;
 #                border-color: #ff4b4b;
@@ -611,7 +610,7 @@ if __name__ == "__main__":
         st.toast("Normal button pressed.")
 
     # Display navigation buttons
-    st.markdown("---") # Visual separator before buttons
+    st.markdown("---")
     navigator.create_navigation_buttons(
         prev_text="Previous: ", # Example of static text
         next_text="Next: ",
