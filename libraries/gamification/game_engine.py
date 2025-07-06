@@ -178,7 +178,7 @@ class Minigame(ABC):
 
     def _display_post_game_content(self):
         st.markdown("---")
-        st.subheader(self.t.get('detailed_analysis_revealed', "Análisis Detallado Revelado"))
+        st.subheader(self.t.get('detailed_analysis_revealed', "Análisis Detallado:"))
         if self.content_callback: self.content_callback()
     
     def render(self) -> bool:

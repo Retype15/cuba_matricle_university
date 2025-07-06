@@ -302,7 +302,7 @@ def analisis_A1(df: pd.DataFrame, incluir_proyeccion: bool = False) -> Tuple[pd.
     datos_regresion = datos_agrupados.tail(N_ULTIMOS_ANOS_REGRESION) if n_puntos_historicos >= N_ULTIMOS_ANOS_REGRESION else datos_agrupados
     num_anos_regresion = len(datos_regresion)
     
-    X_reg = datos_regresion['Ano_Inicio_Curso'].values.reshape(-1, 1)
+    X_reg = datos_regresion['Ano_Inicio_Curso'].values.reshape(-1, 1)#type:ignore
     y_reg_total = datos_regresion['Matricula_Total'].values
     model_total = LinearRegression().fit(X_reg, y_reg_total)
     
@@ -400,34 +400,36 @@ def graficate_A1(
 
 # A2: Distribución y Evolución de la Matrícula por Rama de Ciencias
 @st.cache_data
-def analisis_A2(df, incluir_proyeccion=False):
+def analisis_A2(df: pd.DataFrame, incluir_proyeccion: bool = False) -> Tuple[pd.DataFrame | None, pd.DataFrame | None, str | None, int | None]:
     if df.empty:
-        return None, None, "DataFrame vacío."
+        return None, None, "error_empty_df", None
     
     rama_evolucion_historica = df.groupby(['Ano_Inicio_Curso', 'rama_ciencias'])['Matricula_Total'].sum().reset_index()
     if rama_evolucion_historica.empty:
-        return None, None, "No hay datos históricos por rama."
+        return None, None, "error_no_historical_data", None
         
-    rama_evolucion_historica['Tipo'] = 'Histórica'
-    if 'Curso_Academico' not in rama_evolucion_historica.columns:
-        rama_evolucion_historica['Curso_Academico'] = rama_evolucion_historica['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
+    rama_evolucion_historica['Curso_Academico'] = rama_evolucion_historica['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
 
-    df_proj_concat = pd.DataFrame()
-    ramas_unicas = rama_evolucion_historica['rama_ciencias'].unique()
-    max_y_value_for_annotation = 0
-    proyeccion_realizada_alguna_rama = False
-    N_ULTIMOS_ANOS_REGRESION = 6
-    titulo_abs = "Evolución Histórica por Rama"
+    total_anual_hist = rama_evolucion_historica.groupby('Ano_Inicio_Curso')['Matricula_Total'].sum().rename('Total_Anual_Rama')
+    rama_evolucion_pct = rama_evolucion_historica.merge(total_anual_hist, on='Ano_Inicio_Curso')
+    rama_evolucion_pct['Porcentaje'] = np.where(
+        rama_evolucion_pct['Total_Anual_Rama'] > 0,
+        (rama_evolucion_pct['Matricula_Total'] / rama_evolucion_pct['Total_Anual_Rama']) * 100, 0
+    )
 
+    df_proj_concat = None
+    num_anos_regresion = 0
     if incluir_proyeccion:
+        df_proj_concat = pd.DataFrame()
+        ramas_unicas = rama_evolucion_historica['rama_ciencias'].unique()
+        N_ULTIMOS_ANOS_REGRESION = 6
+        num_anos_regresion = N_ULTIMOS_ANOS_REGRESION
+
         for rama in ramas_unicas:
             data_rama_hist = rama_evolucion_historica[rama_evolucion_historica['rama_ciencias'] == rama]
-            if data_rama_hist['Matricula_Total'].max() > max_y_value_for_annotation:
-                 max_y_value_for_annotation = data_rama_hist['Matricula_Total'].max()
-
             if len(data_rama_hist) < 2: continue
-            datos_regresion_rama = data_rama_hist.tail(N_ULTIMOS_ANOS_REGRESION) if len(data_rama_hist) >= N_ULTIMOS_ANOS_REGRESION else data_rama_hist
             
+            datos_regresion_rama = data_rama_hist.tail(N_ULTIMOS_ANOS_REGRESION) if len(data_rama_hist) >= N_ULTIMOS_ANOS_REGRESION else data_rama_hist
             X_reg_rama = datos_regresion_rama['Ano_Inicio_Curso'].values.reshape(-1, 1)
             y_reg_rama = datos_regresion_rama['Matricula_Total'].values
             model_rama = LinearRegression().fit(X_reg_rama, y_reg_rama)
@@ -440,112 +442,111 @@ def analisis_A2(df, incluir_proyeccion=False):
             df_proy_rama_graf = pd.DataFrame({
                 'Ano_Inicio_Curso': np.concatenate(([ultimo_ano_hist_rama], anos_proy_puros_rama)),
                 'Matricula_Total': np.concatenate(([ultima_mat_hist_rama], mat_proy_pura_rama.round(0).clip(min=0))),
-                'rama_ciencias': rama, 'Tipo': 'Proyectada' })
-            if 'Curso_Academico' not in df_proy_rama_graf.columns:
-                df_proy_rama_graf['Curso_Academico'] = df_proy_rama_graf['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
+                'rama_ciencias': rama
+            })
+            df_proy_rama_graf['Curso_Academico'] = df_proy_rama_graf['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
             df_proj_concat = pd.concat([df_proj_concat, df_proy_rama_graf], ignore_index=True)
-            proyeccion_realizada_alguna_rama = True
-            if df_proy_rama_graf['Matricula_Total'].max() > max_y_value_for_annotation:
-                max_y_value_for_annotation = df_proy_rama_graf['Matricula_Total'].max()
-        titulo_abs = f"Evolución y Proyección por Rama (Reg. Lin. {N_ULTIMOS_ANOS_REGRESION} últimos años o menos)"
+            
+    return rama_evolucion_historica, rama_evolucion_pct, df_proj_concat, num_anos_regresion #type:ignore
+
+
+def graficate_A2_evolucion(df_historico: pd.DataFrame, ts: 'Translator', df_proyeccion: pd.DataFrame = None, n_anos_reg: int = 0) -> go.Figure:#type:ignore
+    fig = go.Figure()
+    ramas_unicas = df_historico['rama_ciencias'].unique()
+    colores_plotly = px.colors.qualitative.Plotly
+    incluir_proyeccion = df_proyeccion is not None
     
-    fig_abs = go.Figure()
-    colores_plotly = px.colors.qualitative.Plotly 
     for i, rama in enumerate(ramas_unicas):
         color_actual = colores_plotly[i % len(colores_plotly)]
-        df_hist_rama_actual = rama_evolucion_historica[rama_evolucion_historica['rama_ciencias'] == rama]
+        df_hist_rama_actual = df_historico[df_historico['rama_ciencias'] == rama]
         if not df_hist_rama_actual.empty:
-            fig_abs.add_trace(go.Scatter(
+            fig.add_trace(go.Scatter(
                 x=df_hist_rama_actual['Curso_Academico'], y=df_hist_rama_actual['Matricula_Total'],
                 mode='lines+markers', name=rama, legendgroup=rama,
-                line=dict(color=color_actual, dash='solid'), showlegend=True ))
+                line=dict(color=color_actual, dash='solid'), showlegend=True
+            ))
         if incluir_proyeccion:
-            df_proy_rama_actual = df_proj_concat[df_proj_concat['rama_ciencias'] == rama]
+            df_proy_rama_actual = df_proyeccion[df_proyeccion['rama_ciencias'] == rama]
             if not df_proy_rama_actual.empty:
-                fig_abs.add_trace(go.Scatter(
+                fig.add_trace(go.Scatter(
                     x=df_proy_rama_actual['Curso_Academico'], y=df_proy_rama_actual['Matricula_Total'],
-                    mode='lines+markers', name=rama + " (Proy.)", legendgroup=rama,
-                    line=dict(color=color_actual, dash='dash'), showlegend=False ))
+                    mode='lines+markers', name=f"{rama} ({ts.translate('_projected_short', 'Proy.')})", legendgroup=rama,
+                    line=dict(color=color_actual, dash='dash'), showlegend=False
+                ))
     
-    fig_abs.update_layout(title=titulo_abs, xaxis_title='Curso Académico', 
-                          yaxis_title='Matrícula en Rama de Ciencias', legend_title_text='Rama de Ciencias')
-    
-    if incluir_proyeccion and proyeccion_realizada_alguna_rama and not rama_evolucion_historica.empty:
-        x_vline_pos = rama_evolucion_historica['Ano_Inicio_Curso'].max()-rama_evolucion_historica['Ano_Inicio_Curso'].min() -1
-        fig_abs.add_vline(x=x_vline_pos, line_width=2, line_dash="dot", line_color="grey",
-                          annotation_text="Inicio Proyección", annotation_position="top right",
-                          annotation_font_size=10, annotation_font_color="grey")
-
-    fig_pct = None
-    if not rama_evolucion_historica.empty:
-        total_anual_hist = rama_evolucion_historica.groupby('Ano_Inicio_Curso')['Matricula_Total'].sum().rename('Total_Anual_Rama')
-        if not total_anual_hist.empty:
-            rama_evolucion_pct_hist = rama_evolucion_historica.set_index('Ano_Inicio_Curso').join(total_anual_hist).reset_index()
-            rama_evolucion_pct_hist['Porcentaje'] = np.where(
-                rama_evolucion_pct_hist['Total_Anual_Rama'] > 0,
-                (rama_evolucion_pct_hist['Matricula_Total'] / rama_evolucion_pct_hist['Total_Anual_Rama']) * 100, 0 )
-            if 'Curso_Academico' not in rama_evolucion_pct_hist.columns:
-                rama_evolucion_pct_hist['Curso_Academico'] = rama_evolucion_pct_hist['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
-            fig_pct = px.area(rama_evolucion_pct_hist, x='Curso_Academico', y='Porcentaje', color='rama_ciencias',
-                        title='Distribución Porcentual Histórica de la Matrícula por Rama de Ciencias',
-                        labels={'Porcentaje': '% Matrícula'})
-            fig_pct.update_layout(xaxis_title='Curso Académico', yaxis_title='Porcentaje de Matrícula (%)')
-    return fig_abs, fig_pct, None
-
-
-def analisis_A2_correlacion_crecimiento_ramas(df: pd.DataFrame):
-    if df.empty:
-        return None, None, "DataFrame de entrada vacío para análisis de correlación."
-    if not all(col in df.columns for col in ['Ano_Inicio_Curso', 'rama_ciencias', 'Matricula_Total']):
-        return None, None, "El DataFrame debe contener 'Ano_Inicio_Curso', 'rama_ciencias', y 'Matricula_Total' para correlación."
-
-    matricula_anual_rama = df.groupby(['Ano_Inicio_Curso', 'rama_ciencias'])['Matricula_Total'].sum().unstack(level='rama_ciencias')
-    matricula_anual_rama = matricula_anual_rama.dropna(axis=1, how='all')
-    
-    columnas_validas_para_pct_change = [col for col in matricula_anual_rama.columns if matricula_anual_rama[col].count() >= 2]
-    
-    if len(columnas_validas_para_pct_change) < 2:
-        return None, None, "No hay suficientes ramas con datos (>1 año) para calcular una matriz de correlación."
-        
-    matricula_pivot_filtrada = matricula_anual_rama[columnas_validas_para_pct_change]
-    cambio_pct_ramas = matricula_pivot_filtrada.pct_change() * 100
-    cambio_pct_ramas.replace([np.inf, -np.inf], np.nan, inplace=True)
-    
-    min_periods_corr = max(2, len(cambio_pct_ramas.dropna(how='all')) // 3) 
-    
-    df_correlacion = cambio_pct_ramas.corr(min_periods=min_periods_corr)
-    df_correlacion = df_correlacion.dropna(axis=0, how='all').dropna(axis=1, how='all')
-
-    if df_correlacion.empty or df_correlacion.shape[0] < 2 or df_correlacion.shape[1] < 2:
-        return None, None, "Error al generar una matriz de correlación significativa (datos insuficientes tras el procesamiento)."
-
-    fig = px.imshow(
-        df_correlacion,
-        text_auto=".2f", #type: ignore
-        aspect="auto",
-        color_continuous_scale='ice_r',
-        zmin=-1, zmax=1,
-        labels=dict(color="Coef. Correlación"),
-        title='Matriz de Correlación del Crecimiento Anual entre Ramas de Ciencias'
-    )
+    title = ts.translate('A2_chart_title_evolution', "Evolución Histórica por Rama")
+    if incluir_proyeccion:
+        title = ts.translate('A6_chart_title_branches_projection', "Evolución y Proyección por Rama (Reg. Lin. {n_years} últimos años o menos)").format(n_years=n_anos_reg)
 
     fig.update_layout(
+        title=title,
+        xaxis_title=ts.translate('_academic_year', 'Curso Académico'),
+        yaxis_title=ts.translate('A2_yaxis_title_enrollment_branch', 'Matrícula en Rama de Ciencias'),
+        legend_title_text=ts.translate('A2_legend_title_branch', 'Rama de Ciencias')
+    )
+    
+    if incluir_proyeccion and not df_historico.empty:
+        x_vline_pos = len(df_historico['Curso_Academico'].unique()) - 0.5
+        fig.add_vline(x=x_vline_pos, line_width=2, line_dash="dot", line_color="grey",
+                      annotation_text=ts.translate('_projection_start', "Inicio Proyección"),
+                      annotation_position="top right",
+                      annotation_font_size=10, annotation_font_color="grey")
+    return fig
+
+
+def graficate_A2_distribucion(df_distribucion_pct: pd.DataFrame, ts: 'Translator') -> go.Figure:
+    fig = px.area(
+        df_distribucion_pct,
+        x='Curso_Academico',
+        y='Porcentaje',
+        color='rama_ciencias',
+        title=ts.translate('A2_chart_title_distribution', 'Distribución Porcentual Histórica de la Matrícula por Rama de Ciencias'),
+        labels={
+            'Porcentaje': ts.translate('A2_yaxis_label_percentage', '% Matrícula'),
+            'Curso_Academico': ts.translate('_academic_year', 'Curso Académico'),
+            'rama_ciencias': ts.translate('A2_legend_title_branch', 'Rama de Ciencias')
+        }
+    )
+    return fig
+
+
+def graficate_A2_correlacion(df: pd.DataFrame, ts: 'Translator') -> Tuple[go.Figure | None, pd.DataFrame | None, str | None]:
+    if df.empty or not all(c in df.columns for c in ['Ano_Inicio_Curso', 'rama_ciencias', 'Matricula_Total']):
+        return None, None, "error_insufficient_columns"
+
+    matricula_anual_rama = df.groupby(['Ano_Inicio_Curso', 'rama_ciencias'])['Matricula_Total'].sum().unstack(level='rama_ciencias').dropna(axis=1, how='all')
+    valid_cols = [col for col in matricula_anual_rama.columns if matricula_anual_rama[col].count() >= 2]
+    
+    if len(valid_cols) < 2:
+        return None, None, "error_insufficient_branches"
+        
+    cambio_pct_ramas = matricula_anual_rama[valid_cols].pct_change() * 100
+    cambio_pct_ramas.replace([np.inf, -np.inf], np.nan, inplace=True)
+    
+    min_periods = max(2, len(cambio_pct_ramas.dropna(how='all')) // 3)
+    df_correlacion = cambio_pct_ramas.corr(min_periods=min_periods).dropna(axis=0, how='all').dropna(axis=1, how='all')
+
+    if df_correlacion.empty or df_correlacion.shape[0] < 2:
+        return None, None, "error_correlation_matrix"
+
+    fig = px.imshow(
+        df_correlacion, text_auto=".2f", aspect="auto", #type:ignore
+        color_continuous_scale='ice_r', zmin=-1, zmax=1,
+        labels=dict(color=ts.translate('A2_corr_legend', "Coef. Correlación")),
+        title=ts.translate('A2_corr_title', 'Matriz de Correlación del Crecimiento Anual entre Ramas de Ciencias')
+    )
+    fig.update_layout(
         template='plotly_dark',
-        xaxis_title='Rama de Ciencias',
-        yaxis_title='Rama de Ciencias',
+        xaxis_title=ts.translate('A2_legend_title_branch', 'Rama de Ciencias'),
+        yaxis_title=ts.translate('A2_legend_title_branch', 'Rama de Ciencias'),
         height=max(450, 55 * len(df_correlacion.columns)),
         width=max(550, 70 * len(df_correlacion.columns)),
-        xaxis_showgrid=False,
-        yaxis_showgrid=False,
+        xaxis_showgrid=False, yaxis_showgrid=False,
         margin=dict(l=100, r=50, t=80, b=120)
     )
+    fig.update_xaxes(tickangle=45, side="bottom")
     
-    fig.update_xaxes(
-        tickangle=45, 
-        side="bottom", 
-    )
-    
-    return fig, df_correlacion, None
+    return fig, df_correlacion, "success"
 
 # A3: Ranking y Evolución de Carreras por demanda
 @st.cache_data

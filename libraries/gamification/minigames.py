@@ -56,9 +56,9 @@ class DataDuelMinigame(Minigame):
         if self.data is None: raise ValueError("DataDuelMinigame requiere un DataFrame.")
         sample = self.data.sample(2, replace=False)
         item1, item2 = sample.iloc[0], sample.iloc[1]
-        winner_is_item1 = self.comparison_func(item1, item2) if self.comparison_func else item1['Valor'] > item2['Valor']
+        winner_is_item1 = self.comparison_func(item1, item2) if self.comparison_func else item1['value'] > item2['value']
         correct_option = item1['name'] if winner_is_item1 else item2['name']
-        return {"option1": item1['name'], "value1": item1['Valor'], "option2": item2['name'], "value2": item2['Valor'], "correct_option": correct_option, "question_text": self.t.get('duel_question', "¿Cuál tiene un valor mayor?")}
+        return {"option1": item1['name'], "value1": item1['value'], "option2": item2['name'], "value2": item2['value'], "correct_option": correct_option, "question_text": self.t.get('duel_question', "¿Cuál tiene un valor mayor?")}
 
     def display_game_body(self, round_data: dict) -> None:
         st.markdown(f"##### {round_data['question_text']}"); return None
@@ -229,7 +229,7 @@ if __name__ == "__main__":
 
     duel_df = pd.DataFrame({
         'name': ['Empresa A', 'Empresa B', 'Empresa C', 'Empresa D', 'Empresa E'],
-        'Valor': [1200000, 850000, 1500000, 980000, 700000]
+        'value': [1200000, 850000, 1500000, 980000, 700000]
     })
 
     classifier_data = {

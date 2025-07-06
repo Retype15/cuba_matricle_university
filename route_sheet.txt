@@ -3,3 +3,5 @@
 - Terminar las traducciones:
     - Reconstruir las traducciones del game_engine y Minijuegos
     - Traducciones de secciones - OK
+
+Continuar refactorizando y añadiendo los componentes de minijuegos. st_options.py/341
