@@ -183,21 +183,33 @@ class OracleMinigame(RowBasedMinigame):
 class EstimatorMinigame(RowBasedMinigame):
     """
     Minijuego donde el jugador debe estimar un valor numérico usando un slider.
-    La puntuación se basa en la proximidad a la respuesta correcta
+    La puntuación se basa en la proximidad a la respuesta correcta.
+    La escala del slider es inteligente y se adapta al rango del valor real.
+    Admite múltiples rondas.
     """
     MAX_POINTS = 100
+    MINIMUM_SLIDER_TEXT = 20
 
     def prepare_round_data(self, round_index: int) -> dict:
+        """
+        Prepara los datos para una ronda específica.
+        La herencia de RowBasedMinigame se encarga de barajar y seleccionar la fila.
+        """
         correct_item = super().prepare_round_data(round_index)
         actual_value = correct_item['value']
         
-        slider_max = int(actual_value * random.uniform(1.5, 2.5) + random.randint(100, 500))
-        slider_max = max(slider_max, 100)
+        if actual_value == 0:
+            slider_max = self.MINIMUM_SLIDER_TEXT 
+        else:
+            proportional_max = actual_value * random.uniform(1.5, 3.0)
+            
+            slider_max = int(max(proportional_max, actual_value + self.MINIMUM_SLIDER_TEXT))
 
         return {
             'name': correct_item['name'],
             'value': actual_value,
-            'slider_max': slider_max
+            'slider_max': slider_max,
+            'key_suffix': f"{self.game_id}_{round_index}"
         }
 
     def display_instructions(self):
@@ -216,18 +228,21 @@ class EstimatorMinigame(RowBasedMinigame):
             min_value=0,
             max_value=round_data['slider_max'],
             value=int(round_data['slider_max'] / 2),
-            key=f"slider_{self.game_id}_{self.current_round}"
+            key=f"slider_{round_data['key_suffix']}"
         )
 
     def calculate_score(self, user_answer: int, round_data: dict) -> tuple[int, bool]:
         actual_value = round_data['value']
 
-        if actual_value == 0:
-            return (100, True) if user_answer == 0 else (0, False)
+        if actual_value <= 0:
+            return (self.MAX_POINTS, True) if user_answer == actual_value else (0, False)
 
-        error_percentage = min(1.0, abs(user_answer - actual_value) / actual_value)
-        score = int(100 * (1 - error_percentage))
-        was_close_enough = error_percentage < 0.1
+        error_percentage = abs(user_answer - actual_value) / actual_value
+        
+        score_ratio = max(0, 1 - error_percentage)
+        score = int(self.MAX_POINTS * score_ratio)
+        
+        was_close_enough = error_percentage < 0.15
         
         return score, was_close_enough
 
@@ -238,10 +253,15 @@ class EstimatorMinigame(RowBasedMinigame):
         score = round_result['score']
 
         with st.container(border=True):
-            st.markdown(self.t.get('estimator_result_shower', "**Resultado para '{item_name}'**").format(item_name=item_name))
+            st.markdown(self.t.get('estimator_result_shower', "**Resultado para '{item_name}' (Ronda {round_num})**").format(item_name=item_name, round_num=round_number))
+            
+            user_val_str = f"{user_answer:,}"
+            actual_val_str = f"{actual_value:,}"
+            delta_val_str = f"{user_answer - actual_value:,}"
+            
             col1, col2 = st.columns(2)
-            col1.metric(label=self.t.get('_your_estimation', "Tu estimación"), value=f"{user_answer:,}")
-            col2.metric(label=self.t.get('_real_value', "Valor Real"), value=f"{actual_value:,}", delta=f"{user_answer - actual_value:,}")
+            col1.metric(label=self.t.get('_your_estimation', "Tu estimación"), value=user_val_str)
+            col2.metric(label=self.t.get('_real_value', "Valor Real"), value=actual_val_str, delta=delta_val_str)
             
             if round_result['was_correct']:
                  st.success(self.t.get('estimator_claim_victory', "¡Excelente estimación! Obtuviste **{score}** puntos.").format(score=score), icon="🎯")

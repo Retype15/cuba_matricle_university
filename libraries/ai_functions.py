@@ -120,7 +120,7 @@ def ask_ai_component(*,
                      key: str, 
                      analysis_context: str|None = None, 
                      extra_data: list|None = None, 
-                     translation: dict = {}
+                     translation: dict|None = None
                     ) -> None:
     """
     Ask AI component for Streamlit app.
@@ -130,8 +130,8 @@ def ask_ai_component(*,
         extra_data (list|None): Additional data to provide to the AI assistant.
         translation (dict|None): Translations for the component.
     """
-    #if not isinstance(translation, dict):
-    #    translation = {}
+    if translation is None:
+        translation = {}
     if not gemini_client: 
         st.warning(
             f"Error loading GEMINI_API_KEY: You must use your own API key. "

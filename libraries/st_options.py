@@ -1,20 +1,17 @@
-from datetime import date, datetime
-from time import time
-from .plot_functions import *
 from .ai_functions import ask_ai_component
-from .general_functions import to_csv_string
+from .plot_functions import *
 from .Gamification import *
-
 
 def show_info(msg):
     if msg: st.caption(f"ℹ️ {msg}")
 
-### Testeando las funciones del motor de juego, si algo falla es culpa tuya por andar tocando xd (es broma, nada va a fallar aquí : )
+### Testeando las funciones del motor de juego, si algo falla es culpa tuya por andar tocando xd (es broma, nada va a fallar aquí : ) )
+### Introduccion del miembro
 @st.fragment
-def introduction(df_main, game_controller: GameController, ts, **kwargs):
+def introduction(df_main, game_controller: GameController, ts:Translator, **kwargs):
     if 'initial_mode_selected' not in st.session_state:
         st.session_state.initial_mode_selected = False
-
+    #st.table(df_main.head(10))
     st.header(ts.translate('introduction_header', "🎯 Bienvenidos al Corazón de la Educación Superior Cubana"))
     st.markdown(ts.translate('introduction_markdown_1', """
         La universidad no es solo un edificio; es un crisol de sueños, un motor de progreso y un reflejo de las aspiraciones de una sociedad. En este espacio, nos embarcaremos en un viaje analítico, explorando las corrientes que moldean la matrícula universitaria en Cuba.
@@ -51,7 +48,7 @@ def introduction(df_main, game_controller: GameController, ts, **kwargs):
                     Convierte el análisis en un desafío. En cada sección, te enfrentarás a minijuegos para
                     poner a prueba tu intuición sobre los datos antes de verlos. ¡Gana puntos y compite!
                 """))
-                st.warning("WARNING: Work in progress... Not finished yet.") # TODO: REVISAR Y QUITAR CUANDO SE TERMINE DE PROGRAMAR LOS MINIJUEGOS A CADA ANALISIS...
+                #st.warning("WARNING: Work in progress... Not finished yet.") # TODO: REVISAR Y QUITAR CUANDO SE TERMINE DE PROGRAMAR LOS MINIJUEGOS A CADA ANALISIS...
                 if st.button(ts.translate('intro_explorer_path_button', "Activar Modo Juego"), use_container_width=True, type="primary"):
                     game_controller.switch_on()
                     st.session_state.initial_mode_selected = True
@@ -66,8 +63,9 @@ def introduction(df_main, game_controller: GameController, ts, **kwargs):
     st.markdown("---")
     st.success(ts.translate('introduction_sucess', "¡Tu viaje comienza aquí! Selecciona una sección en el menú lateral o usa el botón 'Siguiente'."))
 
+### Pulso Nacional
 @st.fragment
-def A1(df_main, game_controller: GameController, ts, **kwargs):
+def A1(df_main, game_controller: GameController, ts:Translator, **kwargs):
     st.header(ts.translate('A1_header', "🌍 El Pulso Nacional: ¿Cómo Late la Matrícula Universitaria?"))
     st.markdown(
         ts.translate(
@@ -128,9 +126,9 @@ def A1(df_main, game_controller: GameController, ts, **kwargs):
         df_historico_juego, _, _, _ = analisis_A1(df_main)
         
         if df_historico_juego is not None and not df_historico_juego.empty:
-            pico_data = df_historico_juego.loc[df_historico_juego['Matricula_Total'].idxmax()]
-            pico_matricula = pico_data['Matricula_Total']
-            pico_curso = pico_data['Curso_Academico']
+            pico_data = df_historico_juego.loc[df_historico_juego['matricula_total'].idxmax()]
+            pico_matricula = pico_data['matricula_total']
+            pico_curso = pico_data['curso_academico']
 
             game_data_A1_estimator = pd.DataFrame([{
                 "name": ts.translate('A1_peak_enrollment_label', "Matrícula Nacional en el Año Pico ({curso})").format(curso=pico_curso),
@@ -164,8 +162,9 @@ def A1(df_main, game_controller: GameController, ts, **kwargs):
     else:
         render_analysis_content()
 
+### Mosaico de Saberes
 @st.fragment
-def A2(df_main, game_controller: GameController, ts, **kwargs):
+def A2(df_main, game_controller: GameController, ts:Translator, **kwargs):
     st.header(ts.translate('A2_header',"📚 Un Mosaico de Saberes: ¿Hacia Dónde se Inclinan los Futuros Profesionales?"))
     st.markdown(ts.translate('A2_markdown_1',"""
     La universidad es un vasto jardín donde florecen diversas disciplinas. Cada rama del conocimiento,
@@ -179,7 +178,6 @@ def A2(df_main, game_controller: GameController, ts, **kwargs):
 
     # --- ANÁLISIS 1: POPULARIDAD DE LAS RAMAS ---
 
-    @st.fragment
     def render_analysis_content_A2_part1():
         st.subheader(ts.translate('A2_fig_a2_abs_subheader',"La Fuerza de Cada Rama: Evolución Histórica de la Matrícula"))
         with st.spinner(ts.translate('A2_spinner_1',"Analizando la evolución de las ramas de ciencias...")):
@@ -245,12 +243,12 @@ def A2(df_main, game_controller: GameController, ts, **kwargs):
         Antes de sumergirnos en los gráficos, pongamos a prueba tu percepción. A lo largo de Cuba, miles de estudiantes eligen su camino profesional cada año. ¿Cuáles crees que son las ramas del conocimiento que atraen a la mayor cantidad de universitarios? ¿Podrías ordenar las principales áreas según su popularidad?
         """))
         
-        ano_reciente = df_main['Ano_Inicio_Curso'].max()
-        df_ramas_reciente = df_main[df_main['Ano_Inicio_Curso'] == ano_reciente]\
-            .groupby('rama_ciencias')['Matricula_Total'].sum().reset_index()
+        ano_reciente = df_main['ano_inicio_curso'].max()
+        df_ramas_reciente = df_main[df_main['ano_inicio_curso'] == ano_reciente]\
+            .groupby('rama_ciencias')['matricula_total'].sum().reset_index()
 
         if not df_ramas_reciente.empty:
-            game_data_A2_classifier = df_ramas_reciente.rename(columns={'rama_ciencias': 'name', 'Matricula_Total': 'value'})
+            game_data_A2_classifier = df_ramas_reciente.rename(columns={'rama_ciencias': 'name', 'matricula_total': 'value'})
             
             classifier_game_A2 = ClassifierMinigame(
                 game_id="A2_ClassifierSaber",
@@ -270,7 +268,6 @@ def A2(df_main, game_controller: GameController, ts, **kwargs):
 
     # --- ANAISIS 2: CORRELACIÓN ENTRE RAMAS ---
     
-    @st.fragment
     def render_analysis_content_A2_part2():
         st.subheader(ts.translate('A2_subheader_2',"🔗 Interconexiones en el Crecimiento: ¿Cómo se Relacionan las Ramas?"))
         st.markdown(ts.translate('A2_markdown_2',"""
@@ -370,8 +367,9 @@ def A2(df_main, game_controller: GameController, ts, **kwargs):
     else:
         render_analysis_content_A2_part2()
 
+### Carreras Bajo la Lupa
 @st.fragment
-def A3(df_main, game_controller: GameController, ts, **kwargs):
+def A3(df_main, game_controller: GameController, ts:Translator, **kwargs):
     st.header(ts.translate('A3_header',"🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo"))
     st.markdown(ts.translate('A3_markdown_1',"""
     Tras explorar las grandes ramas del saber, es momento de enfocar nuestra lente en las unidades
@@ -381,68 +379,99 @@ def A3(df_main, game_controller: GameController, ts, **kwargs):
     """))
     st.markdown("---")
 
-    st.subheader(ts.translate('A3_subheader_2',"🏆 El Podio de las Carreras: ¿Cuáles Lideran la Matrícula Actual?"))
-    
-    TOP_N_CARRERAS = 10
-    
-    with st.spinner(ts.translate('A3_spinner_1',"Analizando el ranking y evolución de las carreras top...")):
-        df_ranking, df_evolucion, curso_reciente, status = analisis_A3(df_main, top_n=TOP_N_CARRERAS)
+    top_n = 10
 
-    if status != "success":
-        st.warning(ts.translate('A3_warning_analysis_failed', "No se pudo realizar el análisis de popularidad de carreras. Estado: {status}").format(status=status))
-        return
+    def render_analysis_content_part1():
+        st.subheader(ts.translate('A3_subheader_2',"🏆 El Podio de las Carreras: ¿Cuáles Lideran la Matrícula Actual?"))
+        
+        with st.spinner(ts.translate('A3_spinner_1',"Analizando el ranking y evolución de las carreras top...")):
+            df_ranking, df_evolucion, curso_reciente, status = analisis_A3(df_main, top_n=top_n)
 
-    st.markdown(ts.translate('A3_markdown_2',"""
-    A la izquierda observamos el ranking de todas las carreras según su matrícula total en el curso más reciente
-    ({year_range}). A la derecha, vemos la evolución histórica de la matrícula
-    para las {top_n} carreras que actualmente se encuentran en la cima de este ranking.
-    """).format(year_range=curso_reciente, top_n=TOP_N_CARRERAS))
+        if status != "success" or df_ranking is None:
+            st.warning(ts.translate('A3_warning_analysis_failed', "No se pudo realizar el análisis de popularidad de carreras. Estado: {status}").format(status=status))
+            return
 
-    col_ranking, col_evolucion_top = st.columns([1, 2], gap="large")
+        st.markdown(ts.translate('A3_markdown_2',"""
+        A la izquierda observamos el ranking de todas las carreras según su matrícula total en el curso más reciente
+        ({year_range}). A la derecha, vemos la evolución histórica de la matrícula
+        para las {top_n} carreras que actualmente se encuentran en la cima de este ranking.
+        """).format(year_range=curso_reciente, top_n=top_n))
 
-    with col_ranking:
-        st.dataframe(
-            df_ranking, 
-            use_container_width=True,
-            hide_index=True,
-            height=500
+        col_ranking, col_evolucion_top = st.columns([1, 2], gap="large")
+
+        with col_ranking:
+            st.dataframe(
+                df_ranking, 
+                use_container_width=True,
+                hide_index=True,
+                height=500
+            )
+
+        with col_evolucion_top:
+            if df_evolucion is not None and not df_evolucion.empty:
+                fig_evolucion = graficate_A3_evolucion(df_evolucion, ts, top_n)
+                st.plotly_chart(fig_evolucion, use_container_width=True, key="fig_a3_lupa_evolution")
+            else:
+                st.info(ts.translate('A3_col_evo_top_info',"No se generó gráfico de evolución para las carreras top actuales."))
+
+        st.markdown(ts.translate('A3_markdown_3',"""
+        **Puntos Clave del Podio:**
+        *   **Liderazgo Indiscutible:** **Medicina** se posiciona firmemente como la carrera con la mayor matrícula (35,889 estudiantes), una constante que ya habíamos vislumbrado al analizar las ramas del saber.
+        *   **Fuerzas Significativas:** Le siguen **Cultura Física** (14,695) y **Educación Primaria** (12,867), demostrando una demanda considerable en estas áreas.
+        *   **Top 5 Robusto:** **Enfermería** (9,999) y **Contabilidad y Finanzas** (9,883) completan el top 5, ambas con una matrícula muy cercana a los 10,000 estudiantes.
+        *   **Evolución de las Líderes:** El gráfico de la derecha nos permite ver cómo estas carreras (y otras del top 10) han llegado a su posición actual. Observa cómo algunas han tenido un crecimiento más sostenido, mientras otras muestran picos y valles más pronunciados.
+        """))
+
+        ask_ai_component(
+            analysis_context="Analysis of the degree program rankings and the evolution of the top.",
+            key="a3_carreras_top",
+            extra_data=[df_ranking, df_evolucion],
+            translation=ts.translate('ask_ai_component',{})
         )
 
-    with col_evolucion_top:
-        if df_evolucion is not None and not df_evolucion.empty:
-            fig_evolucion = graficate_A3_evolucion(df_evolucion, ts, TOP_N_CARRERAS)
-            st.plotly_chart(fig_evolucion, use_container_width=True, key="fig_a3_lupa_evolucion")
+    if game_controller.game_mode:
+        st.subheader(ts.translate('A3_game1_subheader', "A Prueba: El Ranking de Popularidad"))
+        st.markdown(ts.translate('A3_game1_intro', """
+        Antes de ver el ranking completo, ¿qué tan buena es tu intuición sobre la demanda estudiantil? Te presentamos una selección de carreras. ¡Ordénalas de la más popular a la menos popular según la matrícula del último año!
+        """))
+        
+        df_ranking_game, _, _, _ = analisis_A3(df_main, top_n=top_n)
+        if df_ranking_game is not None and not df_ranking_game.empty:
+            game_data_classifier = df_ranking_game.rename(columns={'carrera': 'name', 'matricula_total': 'value'})
+            
+            classifier_game_A3 = ClassifierMinigame(
+                game_id="A3_ClassifierPopularidad",
+                game_title=ts.translate('A3_game1_title', "El Clasificador de Carreras"),
+                data=game_data_classifier,
+                content_callback=render_analysis_content_part1,
+                difficulty=4,
+                min_score_for_victory=30
+            )
+            classifier_game_A3.render()
         else:
-            st.info(ts.translate('A3_col_evo_top_info',"No se generó gráfico de evolución para las carreras top actuales."))
+            render_analysis_content_part1()
+    else:
+        render_analysis_content_part1()
 
-    st.markdown(ts.translate('A3_markdown_3',"""
-    **Puntos Clave del Podio:**
-    *   **Liderazgo Indiscutible:** **Medicina** se posiciona firmemente como la carrera con la mayor matrícula (35,889 estudiantes), una constante que ya habíamos vislumbrado al analizar las ramas del saber.
-    *   **Fuerzas Significativas:** Le siguen **Cultura Física** (14,695) y **Educación Primaria** (12,867), demostrando una demanda considerable en estas áreas.
-    *   **Top 5 Robusto:** **Enfermería** (9,999) y **Contabilidad y Finanzas** (9,883) completan el top 5, ambas con una matrícula muy cercana a los 10,000 estudiantes.
-    *   **Evolución de las Líderes:** El gráfico de la derecha nos permite ver cómo estas carreras (y otras del top 10) han llegado a su posición actual. Observa cómo algunas han tenido un crecimiento más sostenido, mientras otras muestran picos y valles más pronunciados.
-    """))
-
-    ask_ai_component(
-        analysis_context="Analysis of the degree program rankings and the evolution of the top.",
-        key="a3_carreras_top",
-        extra_data=[df_ranking, df_evolucion],
-        translation=ts.translate('ask_ai_component',{})
-    )
     st.markdown("---")
 
-    st.subheader(ts.translate('A3_subheader_4', "🚀 El Ritmo del Cambio: ¿Qué Carreras Despegan o Aterrizan?"))
-    st.markdown(ts.translate('A3_markdown_4', """
-    La **Tasa de Crecimiento Anual Compuesto (CAGR)** nos ofrece una perspectiva del dinamismo.
-    Calcula el crecimiento (o decrecimiento) porcentual promedio de la matrícula de una carrera cada año,
-    considerando todo el período analizado. Un CAGR alto sugiere una expansión rápida.
-    """))
-    with st.spinner(ts.translate('A3_spinner_4',"Calculando el dinamismo de las carreras (CAGR)...")):
-        fig_top_cagr, fig_bottom_cagr, msg_a6 = analisis_A3_cagr(df_main, ts.actual_lang)
+    def render_analysis_content_part2():
+        st.subheader(ts.translate('A3_subheader_4', "🚀 El Ritmo del Cambio: ¿Qué Carreras Despegan o Aterrizan?"))
+        st.markdown(ts.translate('A3_markdown_4', """
+        La **Tasa de Crecimiento Anual Compuesto (CAGR)** nos ofrece una perspectiva del dinamismo.
+        Calcula el crecimiento (o decrecimiento) porcentual promedio de la matrícula de una carrera cada año,
+        considerando todo el período analizado. Un CAGR alto sugiere una expansión rápida.
+        """))
+        
+        with st.spinner(ts.translate('A3_spinner_4',"Calculando el dinamismo de las carreras (CAGR)...")):
+            df_cagr, periodo_str, status_cagr = analisis_A3_cagr(df_main)
 
-    if msg_a6 != "success":
-        st.warning(ts.translate('A3_warning_cagr_failed', "No se pudo realizar el análisis de crecimiento (CAGR). Estado: {status}").format(status=msg_a6))
-    else:
+        if status_cagr != "success" or df_cagr is None:
+            st.warning(ts.translate('A3_warning_cagr_failed', "No se pudo realizar el análisis de crecimiento (CAGR). Estado: {status}").format(status=status_cagr))
+            return
+            
+        fig_top_cagr, fig_bottom_cagr = graficate_A3_cagr(df_cagr, periodo_str, ts) #type:ignore
+
         col_cagr_top, col_cagr_bottom = st.columns(2, gap="large")
 
         with col_cagr_top:
@@ -474,12 +503,40 @@ def A3(df_main, game_controller: GameController, ts, **kwargs):
         ask_ai_component(
             analysis_context="Analysis of the Compound Annual Growth Rate (CAGR) of degree programs.",
             key="a3_carreras_cagr",
-            extra_data=[fig_top_cagr, fig_bottom_cagr],
+            extra_data=[df_cagr],
             translation=ts.translate('ask_ai_component',{})
         )
 
+    if game_controller.game_mode:
+        st.subheader(ts.translate('A3_game2_subheader', "Duelo del Crecimiento"))
+        st.markdown(ts.translate('A3_game2_intro', """
+        Algunas carreras crecen a un ritmo vertiginoso mientras otras se contraen. ¿Podrás identificar cuál de las dos opciones ha tenido una mayor tasa de crecimiento promedio anual? ¡Acepta el duelo!
+        """))
+        
+        df_cagr_game, _, _ = analisis_A3_cagr(df_main)
+        if df_cagr_game is not None and not df_cagr_game.empty:
+            game_data_duel = df_cagr_game.rename(columns={'carrera': 'name', 'CAGR': 'value'})
+
+            duel_game_A3 = DataDuelMinigame(
+                game_id="A3_DuelCrecimiento",
+                game_title=ts.translate('A3_game2_title', "Duelo de Crecimiento"),
+                data=game_data_duel,
+                content_callback=render_analysis_content_part2,
+                num_rounds=3,
+                min_score_for_victory=20,
+                translation={
+                    'duel_question': ts.translate('A3_duel_question', "Esta carrera tuvo un **MAYOR** crecimiento promedio que la otra.")
+                }
+            )
+            duel_game_A3.render()
+        else:
+            render_analysis_content_part2()
+    else:
+        render_analysis_content_part2()
+
+### Perspectiva de Género
 @st.fragment
-def A4(df_main, game_controller: GameController, ts, **kwargs):
+def A4(df_main, game_controller: GameController, ts:Translator, **kwargs):
     st.header(ts.translate('A4_header', "♀️♂️ Equilibrando la Balanza: Una Mirada a la Perspectiva de Género"))
     st.markdown(ts.translate('A4_markdown_1', """
     La universidad no solo forma profesionales, sino que también moldea una sociedad más justa y equitativa.
@@ -497,67 +554,120 @@ def A4(df_main, game_controller: GameController, ts, **kwargs):
         st.warning(ts.translate('A4_warning_analysis_failed', "No se pudo realizar el análisis de género. Estado: {status}").format(status=status))
         return
 
-    # Gráfico de Ramas
-    if df_ramas is not None and not df_ramas.empty:
-        st.subheader(ts.translate('A4_fig_ramas_subheader', "Participación Femenina por Rama de Ciencias ({curso})").format(curso=curso_reciente))
-        fig_ramas = graficate_A4_ramas(df_ramas, ts, curso_reciente) #type:ignore
-        st.plotly_chart(fig_ramas, use_container_width=True, key="fig_a4_ramas_genero")
-        st.markdown(ts.translate('A4_fig_ramas_markdown_1', """
-        **El Panorama General por Áreas del Saber:**
-        Este gráfico de barras nos muestra el porcentaje de mujeres matriculadas en cada gran rama de ciencias. La línea roja punteada en el 50% representa la paridad perfecta.
+    def render_part1():
+        if df_ramas is not None and not df_ramas.empty:
+            st.subheader(ts.translate('A4_fig_ramas_subheader', "Participación Femenina por Rama de Ciencias ({curso})").format(curso=curso_reciente))
+            fig = graficate_A4_ramas(df_ramas, ts, curso_reciente) #type:ignore
+            st.plotly_chart(fig, use_container_width=True, key="fig_a4_ramas_genero")
+            st.markdown(ts.translate('A4_fig_ramas_markdown_1', """
+            **El Panorama General por Áreas del Saber:**
+            Este gráfico de barras nos muestra el porcentaje de mujeres matriculadas en cada gran rama de ciencias. La línea roja punteada en el 50% representa la paridad perfecta.
 
-        *   **Liderazgo Femenino Pronunciado:** Las **Ciencias Pedagógicas** destacan con más del **80%** de matrícula femenina, seguidas de cerca por las **Ciencias Sociales y Humanísticas** y las **Ciencias Médicas**, ambas superando el **70%**. Esto indica una fuerte presencia y preferencia femenina en estas importantes áreas.
-        *   **Mayoría Femenina Sostenida:** Las **Ciencias Económicas**, **Ciencias de las Artes** y **Ciencias Naturales y Matemáticas** también muestran una mayoría de mujeres, con porcentajes que oscilan entre el **55% y el 65%**, situándose por encima de la línea de paridad.
-        *   **Cerca de la Paridad o Ligera Mayoría Masculina:** Las **Ciencias Agropecuarias** se encuentran más cerca del equilibrio, aunque aún con una ligera mayoría femenina (casi el 50%).
-        *   **Desafíos en Áreas Técnicas y Deportivas:** En contraste, las **Ciencias Técnicas** (aproximadamente 35% mujeres) y, de manera más marcada, las **Ciencias de la Cultura Física y el Deporte** (alrededor del 32% mujeres) son las ramas con la menor representación femenina, indicando una persistente brecha de género en estos campos.
+            *   **Liderazgo Femenino Pronunciado:** Las **Ciencias Pedagógicas** destacan con más del **80%** de matrícula femenina, seguidas de cerca por las **Ciencias Sociales y Humanísticas** y las **Ciencias Médicas**, ambas superando el **70%**. Esto indica una fuerte presencia y preferencia femenina en estas importantes áreas.
+            *   **Mayoría Femenina Sostenida:** Las **Ciencias Económicas**, **Ciencias de las Artes** y **Ciencias Naturales y Matemáticas** también muestran una mayoría de mujeres, con porcentajes que oscilan entre el **55% y el 65%**, situándose por encima de la línea de paridad.
+            *   **Cerca de la Paridad o Ligera Mayoría Masculina:** Las **Ciencias Agropecuarias** se encuentran más cerca del equilibrio, aunque aún con una ligera mayoría femenina (casi el 50%).
+            *   **Desafíos en Áreas Técnicas y Deportivas:** En contraste, las **Ciencias Técnicas** (aproximadamente 35% mujeres) y, de manera más marcada, las **Ciencias de la Cultura Física y el Deporte** (alrededor del 32% mujeres) son las ramas con la menor representación femenina, indicando una persistente brecha de género en estos campos.
+            """))
+            
+            ask_ai_component(
+                analysis_context="Analysis of the percentage of female participation by field of science.",
+                key="a4_ramas_genero",
+                extra_data=[df_ramas],
+                translation=ts.translate('ask_ai_component',{})
+            )
+        else:
+            st.info(ts.translate('A4_info_no_branch_data', "No hay datos de género por ramas para mostrar."))
+
+    def render_part2():
+        st.markdown("---")
+        if df_fem is not None and not df_fem.empty and df_masc is not None and not df_masc.empty:
+            st.subheader(ts.translate('A4_fig_carreras_subheader', "Zoom a las Carreras: Extremos del Espectro de Género ({curso}, Matrícula >= 30)").format(curso=curso_reciente))
+            fig = graficate_A4_carreras(df_fem, df_masc, ts, curso_reciente) #type:ignore
+            st.plotly_chart(fig, use_container_width=True, key="fig_a4_carreras_genero")
+            st.markdown(ts.translate('A4_fig_carreras_markdown_1', """
+            **Casos Destacados de Mayoría y Minoría Femenina:**
+            Estos gráficos nos llevan al detalle de las carreras, mostrando las 10 con mayor porcentaje de mujeres y las 10 con menor porcentaje (es decir, mayor presencia masculina), siempre que tengan una matrícula de al menos 30 estudiantes para asegurar la representatividad.
+
+            *   **Feminización Extrema en Algunas Áreas:** Carreras como **Educación Preescolar** se acercan al 100% de matrícula femenina. Otras, como **Técnico Superior en Logofonoaudiología**, **Educación Logopedia** y **Educación Español-Literatura**, también muestran una abrumadora mayoría de mujeres, superando el 90%. Esto es consistente con la alta feminización de las Ciencias Pedagógicas. **Servicios Estomatológicos** y **Estudios Socioculturales** también destacan en este grupo.
+
+            *   **Dominio Masculino en Ingenierías y Áreas Técnicas:** En el otro extremo, carreras como **Ingeniería Informática**, **Ingeniería en Automática**, **Ciencias de la Computación**, **Gestión del Proceso Inversionista** y varias **Ingenierías Mecánica, Eléctrica y en Técnicos Superior en Entrenamiento Deportivo** presentan porcentajes de mujeres muy bajos, algunos por debajo del 10% y la mayoría por debajo del 25%. Esto refleja la brecha observada en las Ciencias Técnicas y deportivas a nivel de rama.
+
+            *   **Matices Importantes:** Es crucial observar que incluso dentro de las "Top 10 con Menor % de Mujeres", los porcentajes varían. Mientras algunas ingenierías apenas superan el 5-10% de presencia femenina, otras pueden estar más cerca del 20-25%.
+            """))
+
+            ask_ai_component(
+                analysis_context="Analysis of degree programs with the highest and lowest female participation.",
+                key="a4_carreras_genero",
+                extra_data=[df_fem, df_masc],
+                translation=ts.translate('ask_ai_component',{})
+            )
+        else:
+            st.info(ts.translate('A4_info_no_career_data', "No hay suficientes datos de carreras para mostrar el análisis de extremos de género."))
+
+        st.markdown(ts.translate('A4_markdown_2', """
+        ---
+        **Reflexiones para la Acción:**
+        *   La alta feminización en ciertas ramas y carreras es un fenómeno consolidado. Si bien refleja vocaciones, también es importante asegurar que no existan barreras implícitas o desincentivos para la participación masculina en ellas.
+        *   El mayor desafío para la equidad de género se encuentra claramente en las **Ciencias Técnicas** y en varias ingenierías específicas, así como en **Ciencias de la Cultura Física y el Deporte**. Se requieren estrategias continuas y efectivas para atraer y retener a más mujeres en estos campos cruciales para el desarrollo tecnológico y social.
+        *   Estos datos son una invitación a profundizar: ¿Cuáles son las causas de estos desbalances? ¿Cómo podemos inspirar a las nuevas generaciones a explorar todas las áreas del conocimiento sin sesgos de género?
         """))
+
+    if game_controller.game_mode:
+        st.subheader(ts.translate('A4_game1_subheader', "Duelo de Género por Rama"))
+        st.markdown(ts.translate('A4_game1_intro', "Algunas áreas del conocimiento atraen a más mujeres que otras. ¿Sabrías decir en cuál de las siguientes ramas hay un mayor porcentaje de matrícula femenina?"))
         
-        ask_ai_component(
-            analysis_context="Analysis of the percentage of female participation by field of science.",
-            key="a4_ramas_genero",
-            extra_data=[df_ramas],
-            translation=ts.translate('ask_ai_component',{})
-        )
+        if df_ramas is not None and not df_ramas.empty:
+            game_data_duel = df_ramas.rename(columns={'rama_ciencias': 'name', 'Porcentaje_Mujeres': 'value'})
+            
+            duel_game_A4 = DataDuelMinigame(
+                game_id="A4_DuelGeneroRama",
+                game_title=ts.translate('A4_game1_title', "Duelo de Ramas"),
+                data=game_data_duel,
+                content_callback=render_part1,
+                num_rounds=3,
+                min_score_for_victory=20,
+                translation={
+                    'duel_question': ts.translate('A4_duel_question', "¿Qué rama tiene un porcentaje MÁS ALTO de mujeres?")
+                }
+            )
+            duel_game_A4.render()
+        else:
+            render_part1()
+
+        if 'A4_DuelGeneroRama' in game_controller.registered_games and game_controller.registered_games['A4_DuelGeneroRama'].is_finished():
+            st.markdown("---")
+            st.subheader(ts.translate('A4_game2_subheader', "Espera! Hay un intruso entre las carreras!"))
+            st.markdown(ts.translate('A4_game2_intro', "Tres de las siguientes carreras tienen una abrumadora mayoría de mujeres en sus aulas. Una de ellas, sin embargo, es un campo predominantemente masculino. ¡Identifica al intruso!"))
+            
+            if df_fem is not None and not df_fem.empty and df_masc is not None and not df_masc.empty:
+                items_fem = df_fem.sample(3)[['carrera']].copy()
+                items_fem['category'] = 'Feminized'
+                
+                item_masc = df_masc.sample(1)[['carrera']].copy()
+                item_masc['category'] = 'Masculinized'
+                
+                game_data_impostor = pd.concat([items_fem, item_masc]).rename(columns={'carrera': 'item'})
+                
+                impostor_game_A4 = ImpostorMinigame(
+                    game_id="A4_ImpostorGeneroCarrera",
+                    game_title=ts.translate('A4_game2_title', "El Intruso de Género"),
+                    data=game_data_impostor,
+                    item_col='item',
+                    category_col='category',
+                    exclude_if_contains=False,
+                    content_callback=render_part2,
+                    min_score_for_victory=25
+                )
+                impostor_game_A4.render()
+            else:
+                render_part2()
     else:
-        st.info(ts.translate('A4_info_no_branch_data', "No hay datos de género por ramas para mostrar."))
+        render_part1()
+        render_part2()
 
-    st.markdown("---")
-
-    # Gráfico de Carreras
-    if df_fem is not None and not df_fem.empty and df_masc is not None and not df_masc.empty:
-        st.subheader(ts.translate('A4_fig_carreras_subheader', "Zoom a las Carreras: Extremos del Espectro de Género ({curso}, Matrícula >= 30)").format(curso=curso_reciente))
-        fig_carreras = graficate_A4_carreras(df_fem, df_masc, ts, curso_reciente) #type:ignore
-        st.plotly_chart(fig_carreras, use_container_width=True, key="fig_a4_carreras_genero")
-        st.markdown(ts.translate('A4_fig_carreras_markdown_1', """
-        **Casos Destacados de Mayoría y Minoría Femenina:**
-        Estos gráficos nos llevan al detalle de las carreras, mostrando las 10 con mayor porcentaje de mujeres y las 10 con menor porcentaje (es decir, mayor presencia masculina), siempre que tengan una matrícula de al menos 30 estudiantes para asegurar la representatividad.
-
-        *   **Feminización Extrema en Algunas Áreas:** Carreras como **Educación Preescolar** se acercan al 100% de matrícula femenina. Otras, como **Técnico Superior en Logofonoaudiología**, **Educación Logopedia** y **Educación Español-Literatura**, también muestran una abrumadora mayoría de mujeres, superando el 90%. Esto es consistente con la alta feminización de las Ciencias Pedagógicas. **Servicios Estomatológicos** y **Estudios Socioculturales** también destacan en este grupo.
-
-        *   **Dominio Masculino en Ingenierías y Áreas Técnicas:** En el otro extremo, carreras como **Ingeniería Informática**, **Ingeniería en Automática**, **Ciencias de la Computación**, **Gestión del Proceso Inversionista** y varias **Ingenierías Mecánica, Eléctrica y en Técnicos Superior en Entrenamiento Deportivo** presentan porcentajes de mujeres muy bajos, algunos por debajo del 10% y la mayoría por debajo del 25%. Esto refleja la brecha observada en las Ciencias Técnicas y deportivas a nivel de rama.
-
-        *   **Matices Importantes:** Es crucial observar que incluso dentro de las "Top 10 con Menor % de Mujeres", los porcentajes varían. Mientras algunas ingenierías apenas superan el 5-10% de presencia femenina, otras pueden estar más cerca del 20-25%.
-        """))
-
-        ask_ai_component(
-            analysis_context="Analysis of degree programs with the highest and lowest female participation.",
-            key="a4_carreras_genero",
-            extra_data=[df_fem, df_masc],
-            translation=ts.translate('ask_ai_component',{})
-        )
-    else:
-        st.info(ts.translate('A4_info_no_career_data', "No hay suficientes datos de carreras para mostrar el análisis de extremos de género."))
-
-    st.markdown(ts.translate('A4_markdown_2', """
-    ---
-    **Reflexiones para la Acción:**
-    *   La alta feminización en ciertas ramas y carreras es un fenómeno consolidado. Si bien refleja vocaciones, también es importante asegurar que no existan barreras implícitas o desincentivos para la participación masculina en ellas.
-    *   El mayor desafío para la equidad de género se encuentra claramente en las **Ciencias Técnicas** y en varias ingenierías específicas, así como en **Ciencias de la Cultura Física y el Deporte**. Se requieren estrategias continuas y efectivas para atraer y retener a más mujeres en estos campos cruciales para el desarrollo tecnológico y social.
-    *   Estos datos son una invitación a profundizar: ¿Cuáles son las causas de estos desbalances? ¿Cómo podemos inspirar a las nuevas generaciones a explorar todas las áreas del conocimiento sin sesgos de género?
-    """))
-
+### Universidades: Fortalezas y Focos
 @st.fragment
-def A5(df_main, game_controller: GameController, ts, **kwargs):
+def A5(df_main, df_ins, game_controller: GameController, ts:Translator, **kwargs):
     st.header(ts.translate('A5_header', "🏛️ Universidades en Perspectiva: Descubriendo Fortalezas y Focos de Especialización"))
     st.markdown(ts.translate('A5_markdown_1', """
     Cada universidad es un ecosistema único con su propia historia, vocación y áreas de excelencia.
@@ -569,120 +679,173 @@ def A5(df_main, game_controller: GameController, ts, **kwargs):
     st.markdown("---")
     
     with st.spinner(ts.translate('A5_spinner_1', "Analizando la distribución institucional de la matrícula...")):
-        df_treemap_data, df_oferta_limitada, curso_reciente, status = analisis_A5(df_main)
+        df_treemap, df_oferta, curso, status = analisis_A5(df_main)
 
     if status != "success":
         st.warning(ts.translate('A5_warning_analysis_failed', "No se pudo realizar el análisis institucional. Estado: {status}").format(status=status))
         return
 
-    st.subheader(ts.translate('A5_fig_treemap_subheader', "Mapa Interactivo de la Matrícula Universitaria ({curso})").format(curso=curso_reciente))
-    if df_treemap_data is not None and not df_treemap_data.empty:
-        fig_treemap = graficate_A5_treemap(df_treemap_data, ts, curso_reciente) #type:ignore
-        st.plotly_chart(fig_treemap, use_container_width=True, key="fig_a5_treemap_unis")
-        st.markdown(ts.translate('A5_fig_treemap_markdown_1', """
-        **Navegando el Universo Institucional:**
-        Este "mapa de árbol" (treemap) es una representación visual de la matrícula total.
-        *   **El Tamaño Importa:** El área de cada rectángulo es proporcional al número de estudiantes. Comienza con "Todas las Universidades"; haz clic en una universidad (ej. `UCLV`, `UH`, `CUJAE`) para ver cómo se desglosa su matrícula por ramas de ciencias. Un nuevo clic en una rama te mostrará las carreras dentro de ella y su peso en esa institución.
-        *   **Identifica los Gigantes:** A simple vista, puedes identificar las universidades con mayor volumen de estudiantes. Por ejemplo, la **UO (Universidad de Oriente)**, **UH (Universidad de La Habana)** y **UCMLH (Universidad de Ciencias Médicas de La Habana)**, entre otras, muestran rectángulos considerablemente grandes, indicando una matrícula importante.
-        *   **Focos de Especialización:** Observa cómo algunas universidades tienen casi toda su "área" concentrada en una o dos ramas (ej. las Universidades de Ciencias Médicas predominantemente en "Ciencias Médicas"), mientras otras muestran una mayor diversificación, como se observa, Ciencias Médicas sobresale en todas las universidades que la ofertan.
-        """))
-    else:
-        st.info(ts.translate('A5_info_no_treemap_data', "No hay datos disponibles para generar el mapa interactivo."))
-
-    st.markdown("---")
-
-    st.subheader(ts.translate('A5_df_carreras_unicas_subheader', "Joyas Académicas: Carreras por Nivel de Exclusividad"))
-    if df_oferta_limitada is not None and not df_oferta_limitada.empty:
-        st.markdown(ts.translate('A5_df_carreras_unicas_markdown_new', """
-        Este gráfico agrupa las carreras según el número de universidades que las imparten en el curso {curso}.
-        Cada punto representa una carrera. Pasa el ratón sobre un punto para ver su nombre. Las anotaciones en la parte superior
-        indican cuántas carreras existen en cada grupo de exclusividad.
-        """).format(curso=curso_reciente))
-        
-        fig_oferta_limitada = grouped_dot_plot(
-            df_oferta_limitada,
-            x='Num_Universidades_Ofertan',
-            y='carrera',
-            title=ts.translate('A5_chart_title_grouped_offer', 'Distribución de Carreras por Exclusividad de Oferta'),
-            yaxis_title=ts.translate('A5_chart_yaxis_num_unis', 'Nº de Universidades que la Ofertan'),
-            annotation_text=ts.translate('_carrers', 'carreras'),
-            color_scale='Viridis_r'
-        )
-        st.plotly_chart(fig_oferta_limitada, use_container_width=True)
-
-        with st.expander(ts.translate('A5_expander_show_all_data', "Ver la tabla completa con todas las carreras")):
-            st.dataframe(df_oferta_limitada, use_container_width=True, hide_index=True)
-
-        ask_ai_component(
-            analysis_context="List of degree programs with limited availability across universities.",
-            key="a5_carreras_unicas",
-            extra_data=[df_oferta_limitada],
-            translation=ts.translate('ask_ai_component',{})
-        )
-    else:
-        st.info(ts.translate('A5_info_no_limited_offer_data', "No se encontraron datos sobre carreras con oferta limitada."))
-
-    st.markdown("---")
-    
-    st.subheader(ts.translate('A5_subheader_2', "Lupa en Carreras Clave: ¿Quién es Quién en la Formación Específica?"))
-    st.markdown(ts.translate('A5_markdown_2', """
-    Selecciona hasta 3 carreras de tu interés. El gráfico mostrará la evolución histórica de la matrícula
-    para esas carreras, desglosada por cada universidad que las imparte. Esto nos permite comparar
-    el peso y la trayectoria de diferentes instituciones en la formación de profesionales en campos específicos.
-        
-    *Si el gráfico parece muy denso, intenta seleccionar menos carreras o concéntrate en las tendencias generales de las universidades más grandes para cada carrera.*
-    """))
-
-    todas_carreras_sorted = sorted(df_main['carrera'].unique())
-    default_carreras_a9 = []
-    if todas_carreras_sorted:
-        top_carreras_df = df_main.groupby('carrera')['Matricula_Total'].sum().nlargest(2)
-        if not top_carreras_df.empty:
-            default_carreras_a9 = top_carreras_df.index.tolist()
+    def render_part1():
+        st.subheader(ts.translate('A5_fig_treemap_subheader', "Mapa Interactivo de la Matrícula Universitaria ({curso})").format(curso=curso))
+        if df_treemap is not None and not df_treemap.empty:
+            fig = graficate_A5_treemap(df_treemap, ts, curso)
+            st.plotly_chart(fig, use_container_width=True, key="fig_a5_treemap_unis")
+            st.markdown(ts.translate('A5_fig_treemap_markdown_1', """
+            **Navegando el Universo Institucional:**
+            Este "mapa de árbol" (treemap) es una representación visual de la matrícula total.
+            *   **El Tamaño Importa:** El área de cada rectángulo es proporcional al número de estudiantes. Comienza con "Todas las Universidades"; haz clic en una universidad (ej. `UCLV`, `UH`, `CUJAE`) para ver cómo se desglosa su matrícula por ramas de ciencias. Un nuevo clic en una rama te mostrará las carreras dentro de ella y su peso en esa institución.
+            *   **Identifica los Gigantes:** A simple vista, puedes identificar las universidades con mayor volumen de estudiantes. Por ejemplo, la **UO (Universidad de Oriente)**, **UH (Universidad de La Habana)** y **UCMLH (Universidad de Ciencias Médicas de La Habana)**, entre otras, muestran rectángulos considerablemente grandes, indicando una matrícula importante.
+            *   **Focos de Especialización:** Observa cómo algunas universidades tienen casi toda su "área" concentrada en una o dos ramas (ej. las Universidades de Ciencias Médicas predominantemente en "Ciencias Médicas"), mientras otras muestran una mayor diversificación, como se observa, Ciencias Médicas sobresale en todas las universidades que la ofertan.
+            """))
         else:
-            default_carreras_a9 = todas_carreras_sorted[:min(2, len(todas_carreras_sorted))]
-
-    carreras_seleccionadas = st.multiselect(
-        ts.translate('A5_multiselect_carreras', "Carreras para comparar evoluciones por universidad:"),
-        options=todas_carreras_sorted,
-        default=default_carreras_a9,
-        max_selections=3,
-        key="select_carreras_a5_uni_comparison"
-    )
-
-    if carreras_seleccionadas:
-        with st.spinner(ts.translate('A5_spinner_2', "Generando gráfico comparativo por universidad...")):
-            df_comparativa, status_a9 = analisis_A5_comparativa_unis(df_main, carreras_a_comparar=carreras_seleccionadas)
-
-        if status_a9 == "success":
-            fig_comparativa = graficate_A5_comparativa_unis(df_comparativa, ts) #type:ignore
-            st.plotly_chart(fig_comparativa, use_container_width=True, key="fig_a9_comparativa_unis")
+            st.info(ts.translate('A5_info_no_treemap_data', "No hay datos disponibles para generar el mapa interactivo."))
+        
+        st.markdown("---")
+        st.subheader(ts.translate('A5_df_carreras_unicas_subheader', "Joyas Académicas: Carreras por Nivel de Exclusividad"))
+        
+        if game_controller.game_mode:
+            st.markdown("---")
+            st.subheader(ts.translate('A5_game2_subheader', "Adivina la Exclusividad"))
+            st.markdown(ts.translate('A5_game2_intro', "Algunas carreras se imparten en todo el país, mientras que otras son verdaderas rarezas. ¿Qué tan exclusiva crees que es la siguiente carrera?"))
             
+            if df_oferta is not None and not df_oferta.empty:
+                game_data_estimator = df_oferta.rename(columns={'carrera': 'name', 'Num_Universidades_Ofertan': 'value'})
+                
+                estimator_game_A5 = EstimatorMinigame(
+                    game_id="A5_EstimatorExclusividad",
+                    game_title=ts.translate('A5_game2_title', "El Estimador de Exclusividad"),
+                    data=game_data_estimator,
+                    content_callback=render_part1_ext,
+                    num_rounds=4,
+                    min_score_for_victory=200
+                )
+                estimator_game_A5.render()
+            else:
+                render_part1_ext()
+        else:
+            render_part1_ext()
+
+    def render_part1_ext():
+        if df_oferta is not None and not df_oferta.empty:
+            st.markdown(ts.translate('A5_df_carreras_unicas_markdown_new', """
+            Este gráfico agrupa las carreras según el número de universidades que las imparten en el curso {curso}.
+            Cada punto representa una carrera. Pasa el ratón sobre un punto para ver su nombre. Las anotaciones en la parte superior
+            indican cuántas carreras existen en cada grupo de exclusividad.
+            """).format(curso=curso))
+            
+            fig = grouped_dot_plot(
+                df_oferta,
+                x='Num_Universidades_Ofertan',
+                y='carrera',
+                title=ts.translate('A5_chart_title_grouped_offer', 'Distribución de Carreras por Exclusividad de Oferta'),
+                yaxis_title=ts.translate('A5_chart_yaxis_num_unis', 'Nº de Universidades que la Ofertan'),
+                annotation_text=ts.translate('_carrers', 'carreras'),
+                color_scale='Viridis_r'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            with st.expander(ts.translate('A5_expander_show_all_data', "Ver la tabla completa con todas las carreras")):
+                st.dataframe(df_oferta, use_container_width=True, hide_index=True)
+
             ask_ai_component(
-                analysis_context="Historical trends by university for the selected academic programs.",
-                key="a5_comparativa_unis_" + "_".join(sorted([c.replace(' ','_') for c in carreras_seleccionadas])),
-                extra_data=[df_comparativa],
-                translation=ts.translate('ask_ai_component')
+                analysis_context="List of degree programs with limited availability across universities.",
+                key="a5_carreras_unicas",
+                extra_data=[df_oferta],
+                translation=ts.translate('ask_ai_component',{})
             )
         else:
-            st.warning(ts.translate('A5_warning_comparison_failed', "No se pudo generar el gráfico comparativo. Causa: {status}").format(status=status_a9))
-    else:
-        st.info(ts.translate('A5_no_carreras_selected', "Por favor, elige al menos una carrera para ver la comparativa."))
-    
-    st.markdown(ts.translate('A5_markdown_3', """
-    ---
-    **Visiones Estratégicas para la Red de Universidades:**
-    *   **Potenciar la Excelencia:** Identificar universidades líderes en carreras clave puede guiar la inversión para convertirlas en centros de referencia nacional o internacional.
-    *   **Optimizar Recursos:** El treemap y el análisis de ofertas únicas pueden revelar duplicidades innecesarias o, por el contrario, la necesidad de expandir la oferta de ciertas carreras en más regiones.
-    *   **Colaboración Interinstitucional:** Conocer las fortalezas de cada una puede fomentar sinergias, programas conjuntos y movilidad estudiantil y profesoral.
-    """))
+            st.info(ts.translate('A5_info_no_limited_offer_data', "No se encontraron datos sobre carreras con oferta limitada."))
 
+    def render_part2():
+        st.markdown("---")
+        st.subheader(ts.translate('A5_subheader_2', "Lupa en Carreras Clave: ¿Quién es Quién en la Formación Específica?"))
+        st.markdown(ts.translate('A5_markdown_2', """
+        Selecciona hasta 3 carreras de tu interés. El gráfico mostrará la evolución histórica de la matrícula
+        para esas carreras, desglosada por cada universidad que las imparte. Esto nos permite comparar
+        el peso y la trayectoria de diferentes instituciones en la formación de profesionales en campos específicos.
+            
+        *Si el gráfico parece muy denso, intenta seleccionar menos carreras o concéntrate en las tendencias generales de las universidades más grandes para cada carrera.*
+        """))
+
+        todas_carreras_sorted = sorted(df_main['carrera'].unique())
+        default_carreras = []
+        if todas_carreras_sorted:
+            top_carreras_df = df_main.groupby('carrera')['matricula_total'].sum().nlargest(2)
+            if not top_carreras_df.empty:
+                default_carreras = top_carreras_df.index.tolist()
+            else:
+                default_carreras = todas_carreras_sorted[:min(2, len(todas_carreras_sorted))]
+
+        carreras_seleccionadas = st.multiselect(
+            ts.translate('A5_multiselect_carreras', "Carreras para comparar evoluciones por universidad:"),
+            options=todas_carreras_sorted,
+            default=default_carreras,
+            max_selections=3,
+            key="select_carreras_a5_uni_comparison"
+        )
+
+        if carreras_seleccionadas:
+            with st.spinner(ts.translate('A5_spinner_2', "Generando gráfico comparativo por universidad...")):
+                df_comparativa, status_comp = analisis_A5_comparativa(df_main, carreras_a_comparar=carreras_seleccionadas)
+
+            if status_comp == "success" and df_comparativa is not None:
+                fig = graficate_A5_comparativa(df_comparativa, ts)
+                st.plotly_chart(fig, use_container_width=True, key="fig_a9_comparativa_unis")
+                
+                ask_ai_component(
+                    analysis_context="Historical trends by university for the selected academic programs.",
+                    key="a5_comparativa_unis_" + "_".join(sorted([c.replace(' ','_') for c in carreras_seleccionadas])),
+                    extra_data=[df_comparativa],
+                    translation=ts.translate('ask_ai_component')
+                )
+            else:
+                st.warning(ts.translate('A5_warning_comparison_failed', "No se pudo generar el gráfico comparativo. Causa: {status}").format(status=status_comp))
+        else:
+            st.info(ts.translate('A5_no_carreras_selected', "Por favor, elige al menos una carrera para ver la comparativa."))
+        
+        st.markdown(ts.translate('A5_markdown_3', """
+        ---
+        **Visiones Estratégicas para la Red de Universidades:**
+        *   **Potenciar la Excelencia:** Identificar universidades líderes en carreras clave puede guiar la inversión para convertirlas en centros de referencia nacional o internacional.
+        *   **Optimizar Recursos:** El treemap y el análisis de ofertas únicas pueden revelar duplicidades innecesarias o, por el contrario, la necesidad de expandir la oferta de ciertas carreras en más regiones.
+        *   **Colaboración Interinstitucional:** Conocer las fortalezas de cada una puede fomentar sinergias, programas conjuntos y movilidad estudiantil y profesoral.
+        """))
+
+    if game_controller.game_mode:
+        st.subheader(ts.translate('A5_game1_subheader', "GeoGuesser Universitario"))
+        st.markdown(ts.translate('A5_game1_intro', "Antes de analizar las universidades en detalle, ¿conoces su ubicación? ¡Demuéstralo!"))
+        
+        if df_ins is not None and not df_ins.empty:
+            game_data_geo = df_ins[['nombre_institucion', 'provincia']].dropna()
+            
+            GeoGuesserMinigame(
+                game_id="A5_GeoGuesserUbicacion",
+                game_title=ts.translate('A5_game1_title', "Adivina la Provincia"),
+                data=game_data_geo,
+                content_callback=render_part1,
+                num_rounds=2,
+                min_score_for_victory=40
+            ).render()
+        else:
+            render_part1()
+
+        game1_finished = 'A5_GeoGuesserUbicacion' in game_controller.registered_games and game_controller.registered_games['A5_GeoGuesserUbicacion'].is_finished()
+        game2_finished = 'A5_EstimatorExclusividad' in game_controller.registered_games and game_controller.registered_games['A5_EstimatorExclusividad'].is_finished()
+        
+        if game1_finished and game2_finished:
+            render_part2()
+
+    else:
+        render_part1()
+        render_part2()
+
+### Mirando al Mañana (Proyecciones)
 @st.fragment
-def A6(df_main, game_controller: GameController, ts, **kwargs):
+def A6(df_main, game_controller: GameController, ts:Translator, **kwargs):
     st.header(ts.translate('A6_header_1', "🔭 Mirando al Mañana: ¿Qué Podríamos Esperar? (Proyecciones Futuras)"))
     st.markdown(ts.translate('A6_markdown_1', """
     Anticipar el futuro es un desafío, pero analizar las tendencias recientes nos permite trazar
-    escenarios posibles. En esta sección, volvemos a examinar nuestros indicadores clave de matrícula,
+    escenarios posibles. En esta sección, volveremos a examinar nuestros indicadores clave de matrícula,
     pero esta vez extendiendo nuestra mirada dos cursos académicos hacia adelante mediante proyecciones.
 
     ⚠️ **Una Brújula, no un Oráculo:** Es fundamental recordar que estas son **proyecciones**, no predicciones
@@ -692,112 +855,139 @@ def A6(df_main, game_controller: GameController, ts, **kwargs):
     alterar significativamente estas trayectorias. Utilicémoslas como una herramienta para la reflexión
     estratégica y la planificación proactiva, no como un destino escrito en piedra.
     """))
-    st.info(ts.translate('A6_info_1', "Las líneas discontinuas y los puntos en forma de diamante más allá del curso 2024-2025 representan las proyecciones."))
     st.markdown("---")
 
-    # Proyección Nacional
-    st.subheader(ts.translate('A6_subheader_1', "Horizonte Nacional: Proyección de la Matrícula Total"))
-    with st.spinner(ts.translate('A6_spinner_1', "Calculando la proyección de matrícula nacional...")):
-        df_hist_nac, df_proy_nac, status_nac, n_anos_reg_nac = analisis_A1(df_main, projection=True)
+    def render_content():
+        st.subheader(ts.translate('A6_subheader_1', "Horizonte Nacional: Proyección de la Matrícula Total"))
+        with st.spinner(ts.translate('A6_spinner_1', "Calculando la proyección de matrícula nacional...")):
+            df_hist_nac, df_proy_nac, status_nac, n_anos_reg_nac = analisis_A1(df_main, projection=True)
 
-    if status_nac == "success_with_projection" and df_hist_nac is not None and df_proy_nac is not None:
-        fig_proy_nacional = graficate_A1(df_hist_nac, ts, df_proy_nac, n_anos_reg_nac) #type:ignore
-        st.plotly_chart(fig_proy_nacional, use_container_width=True, key="fig_a6_proy_nacional")
-        
-        st.markdown(ts.translate('A6_markdown_national_explanation', """
-        **Interpretando la Tendencia Nacional Proyectada:**
+        if status_nac == "success_with_projection" and df_hist_nac is not None and df_proy_nac is not None and n_anos_reg_nac is not None:
+            st.info(ts.translate('A6_info_1', "Las líneas discontinuas y los puntos en forma de diamante más allá del curso 2024-2025 representan las proyecciones."))
+            fig_proy_nacional = graficate_A1(df_hist_nac, ts, df_proy_nac, n_anos_reg_nac)
+            st.plotly_chart(fig_proy_nacional, use_container_width=True, key="fig_a6_proy_nacional")
+            
+            st.markdown(ts.translate('A6_markdown_national_explanation', """
+            **Interpretando la Tendencia Nacional Proyectada:**
 
-        El gráfico superior combina la evolución histórica de la matrícula (barras y línea sólida hasta el curso 2024-25) con una proyección para los dos cursos siguientes (línea discontinua con diamantes).
+            El gráfico superior combina la evolución histórica de la matrícula (barras y línea sólida hasta el curso 2024-25) con una proyección para los dos cursos siguientes (línea discontinua con diamantes).
 
-        *   **Punto de Partida:** La proyección comienza desde el último dato histórico registrado, que muestra una matrícula nacional de aproximadamente **205,000 estudiantes**.
-        *   **Trayectoria Proyectada:** El modelo de regresión lineal, basado en la tendencia de los últimos años, sugiere una **continuación de la fase de ajuste o declive moderado** que se observa en el período más reciente.
-        *   **Estimaciones Futuras:**
-            *   Para el curso **2025-2026**, el modelo estima una matrícula que podría situarse en el rango de **195,000 a 215,000 estudiantes**.
-            *   Hacia **2026-2027**, esta cifra podría descender hasta el entorno de los **185,000 a 190,000 estudiantes**.
-        *   **Implicación Estratégica:** Si esta tendencia se materializa, plantea preguntas importantes para la planificación: ¿Cómo afectaría esto a la capacidad instalada en las universidades? ¿Requeriría una reevaluación de la asignación de recursos o nuevas estrategias de captación y retención de estudiantes a nivel nacional?
-        """))
-        
-        ask_ai_component(
-            analysis_context="Forecast of overall national enrollment figures.",
-            key="a6_proy_nacional", extra_data=[df_hist_nac, df_proy_nac],
-            translation=ts.translate('ask_ai_component',{})
-        )
-    else:
-        st.warning(ts.translate('A6_warning_national_proj_failed', "No se pudo generar la proyección nacional. Estado: {status}").format(status=status_nac))
-    
-    st.markdown("---")
-
-    # Proyección por Ramas
-    st.subheader(ts.translate('A6_fig_A2_subheader', "Saberes del Mañana: Proyección por Rama de Ciencias"))
-    with st.spinner(ts.translate('A6_fig_A2_spinner', "Calculando la proyección por ramas de ciencias...")):
-        df_hist_ramas, _, df_proy_ramas, n_anos_reg_ramas = analisis_A2(df_main, projection=True)
-    
-    if df_proy_ramas is not None and df_hist_ramas is not None:
-        fig_proy_ramas = graficate_A2_evolucion(df_hist_ramas, ts, df_proy_ramas, n_anos_reg_ramas) #type:ignore
-        st.plotly_chart(fig_proy_ramas, use_container_width=True, key="fig_a6_proy_ramas")
-        ask_ai_component(
-            analysis_context="Forecast of student enrollment by scientific discipline.",
-            key="a6_proy_ramas", extra_data=[df_hist_ramas, df_proy_ramas],
-            translation=ts.translate('ask_ai_component',{})
-        )
-    else:
-        st.warning(ts.translate('A6_warning_branches_proj_failed', "No se pudo generar la proyección por ramas."))
-
-    st.markdown("---")
-
-    # Proyección por Carreras
-    st.subheader(ts.translate('A6_fig_A7_subheader_1', "Carreras Clave en el Horizonte: Proyección Interactiva"))
-    st.markdown(ts.translate('A6_fig_A7_markdown_1', "Selecciona hasta 3 carreras de tu interés para visualizar su proyección de matrícula individual."))
-
-    todas_carreras_sorted = sorted(df_main['carrera'].unique())
-    default_carreras = []
-    if todas_carreras_sorted:
-        try:
-            default_carreras = df_main.groupby('carrera')['Matricula_Total'].sum().nlargest(3).index.tolist()
-        except:
-            default_carreras = todas_carreras_sorted[:min(3, len(todas_carreras_sorted))]
-
-    carreras_seleccionadas = st.multiselect(
-        ts.translate('A6_fig_A7_multiselect_1', "Selecciona carreras para proyectar:"),
-        options=todas_carreras_sorted,
-        default=default_carreras,
-        max_selections=3,
-        key="select_carreras_a6_proy"
-    )
-
-    if carreras_seleccionadas:
-        with st.spinner(ts.translate('A6_fig_A7_spinner_1', "Calculando la proyección para las carreras seleccionadas...")):
-            df_proy_carreras, msg_proy = analisis_A6(df_main, carreras_seleccionadas=carreras_seleccionadas)
-        
-        show_info(msg_proy)
-
-        if df_proy_carreras is not None and not df_proy_carreras.empty:
-            fig_proy_carreras = graficate_A6_proyeccion_carreras(df_proy_carreras, ts)
-            st.plotly_chart(fig_proy_carreras, use_container_width=True, key="fig_a6_proy_carreras_dinamica")
+            *   **Punto de Partida:** La proyección comienza desde el último dato histórico registrado, que muestra una matrícula nacional de aproximadamente **205,000 estudiantes**.
+            *   **Trayectoria Proyectada:** El modelo de regresión lineal, basado en la tendencia de los últimos años, sugiere una **continuación de la fase de ajuste o declive moderado** que se observa en el período más reciente.
+            *   **Estimaciones Futuras:**
+                *   Para el curso **2025-2026**, el modelo estima una matrícula que podría situarse en el rango de **195,000 a 215,000 estudiantes**.
+                *   Hacia **2026-2027**, esta cifra podría descender hasta el entorno de los **185,000 a 190,000 estudiantes**.
+            *   **Implicación Estratégica:** Si esta tendencia se materializa, plantea preguntas importantes para la planificación: ¿Cómo afectaría esto a la capacidad instalada en las universidades? ¿Requeriría una reevaluación de la asignación de recursos o nuevas estrategias de captación y retención de estudiantes a nivel nacional?
+            """))
             
             ask_ai_component(
-                analysis_context=f"Projection for the degree programs: {', '.join(carreras_seleccionadas)}.",
-                key="a6_proy_carreras_" + "_".join(sorted([c.replace(' ', '_') for c in carreras_seleccionadas])),
-                extra_data=[df_proy_carreras],
+                analysis_context="Forecast of overall national enrollment figures.",
+                key="a6_proy_nacional", extra_data=[df_hist_nac, df_proy_nac],
                 translation=ts.translate('ask_ai_component',{})
             )
         else:
-            st.warning(ts.translate('a7_proy_warning', "No se pudieron generar datos para la proyección de: {careers}.").format(careers=', '.join(carreras_seleccionadas)))
+            st.warning(ts.translate('A6_warning_national_proj_failed', "No se pudo generar la proyección nacional. Estado: {status}").format(status=status_nac))
+        
+        st.markdown("---")
+
+        st.subheader(ts.translate('A6_fig_A2_subheader', "Saberes del Mañana: Proyección por Rama de Ciencias"))
+        with st.spinner(ts.translate('A6_fig_A2_spinner', "Calculando la proyección por ramas de ciencias...")):
+            df_hist_ramas, _, df_proy_ramas, n_anos_reg_ramas = analisis_A2(df_main, projection=True)
+        
+        if df_proy_ramas is not None and df_hist_ramas is not None:
+            fig_proy_ramas = graficate_A2_evolucion(df_hist_ramas, ts, df_proy_ramas, n_anos_reg_ramas) #type:ignore
+            st.plotly_chart(fig_proy_ramas, use_container_width=True, key="fig_a6_proy_ramas")
+            ask_ai_component(
+                analysis_context="Forecast of student enrollment by scientific discipline.",
+                key="a6_proy_ramas", extra_data=[df_hist_ramas, df_proy_ramas],
+                translation=ts.translate('ask_ai_component',{})
+            )
+        else:
+            st.warning(ts.translate('A6_warning_branches_proj_failed', "No se pudo generar la proyección por ramas."))
+
+        st.markdown("---")
+
+        st.subheader(ts.translate('A6_fig_A7_subheader_1', "Carreras Clave en el Horizonte: Proyección Interactiva"))
+        st.markdown(ts.translate('A6_fig_A7_markdown_1', "Selecciona hasta 3 carreras de tu interés para visualizar su proyección de matrícula individual."))
+
+        todas_carreras_sorted = sorted(df_main['carrera'].unique())
+        default_carreras = []
+        if todas_carreras_sorted:
+            try:
+                default_carreras = df_main.groupby('carrera')['matricula_total'].sum().nlargest(3).index.tolist()
+            except Exception:
+                default_carreras = todas_carreras_sorted[:min(3, len(todas_carreras_sorted))]
+
+        carreras_seleccionadas = st.multiselect(
+            ts.translate('A6_fig_A7_multiselect_1', "Selecciona carreras para proyectar:"),
+            options=todas_carreras_sorted,
+            default=default_carreras,
+            max_selections=3,
+            key="select_carreras_a6_proy"
+        )
+
+        if carreras_seleccionadas:
+            with st.spinner(ts.translate('A6_fig_A7_spinner_1', "Calculando la proyección para las carreras seleccionadas...")):
+                df_proy_carreras, msg_proy = analisis_A6(df_main, carreras_seleccionadas=carreras_seleccionadas)
+            
+            show_info(msg_proy)
+
+            if df_proy_carreras is not None and not df_proy_carreras.empty:
+                fig_proy_carreras = graficate_A6_proyeccion_carreras(df_proy_carreras, ts)
+                st.plotly_chart(fig_proy_carreras, use_container_width=True, key="fig_a6_proy_carreras_dinamica")
+                
+                ask_ai_component(
+                    analysis_context=f"Projection for the degree programs: {', '.join(carreras_seleccionadas)}.",
+                    key="a6_proy_carreras_" + "_".join(sorted([c.replace(' ', '_') for c in carreras_seleccionadas])),
+                    extra_data=[df_proy_carreras],
+                    translation=ts.translate('ask_ai_component',{})
+                )
+            else:
+                st.warning(ts.translate('a7_proy_warning', "No se pudieron generar datos para la proyección de: {careers}.").format(careers=', '.join(carreras_seleccionadas)))
+        else:
+            st.info(ts.translate('a7_void_info', "Selecciona al menos una carrera para ver su proyección."))
+
+        st.markdown(ts.translate('a7_end_markdown', """
+        ---
+        **Planificando con Visión de Futuro:**
+        Estas proyecciones, con todas sus limitaciones, son un insumo valioso para:
+        *   Anticipar necesidades de **infraestructura y profesorado**.
+        *   Debatir sobre la **asignación de plazas y recursos** entre diferentes áreas y carreras.
+        *   Identificar áreas que podrían requerir **estrategias proactivas** para revertir tendencias negativas o para gestionar un crecimiento sostenible.
+        *   Fomentar un diálogo informado sobre el **futuro de la oferta académica** en Cuba.
+        """))
+
+    if game_controller.game_mode:
+        st.subheader(ts.translate('A6_game_subheader', "🔮 El Oráculo de la Matrícula"))
+        st.markdown(ts.translate('A6_game_intro', """
+        Antes de revelar las proyecciones del modelo, pongamos a prueba tu intuición como analista.
+        Observa la trayectoria histórica de la matrícula nacional. Basado en esta tendencia,
+        ¿qué crees que ocurrió en el último año registrado? ¿Continuó la tendencia, se estabilizó o se revirtió?
+        """))
+        
+        df_hist_juego, _, _, _ = analisis_A1(df_main)
+        if df_hist_juego is not None and len(df_hist_juego) >= 2:
+            game_data_oracle = pd.DataFrame([{
+                "name": ts.translate('A6_game_item_name', "Matrícula Nacional"),
+                "x": df_hist_juego['ano_inicio_curso'].tolist(),
+                "y": df_hist_juego['matricula_total'].tolist()
+            }])
+
+            OracleMinigame(
+                game_id="A6_OracleNacional",
+                game_title=ts.translate('A6_game_title', "Predice la Tendencia Nacional"),
+                data=game_data_oracle,
+                content_callback=render_content,
+                min_score_for_victory=20
+            ).render()
+        else:
+            render_content()
     else:
-        st.info(ts.translate('a7_void_info', "Selecciona al menos una carrera para ver su proyección."))
+        render_content()
 
-    st.markdown(ts.translate('a7_end_markdown', """
-    ---
-    **Planificando con Visión de Futuro:**
-    Estas proyecciones, con todas sus limitaciones, son un insumo valioso para:
-    *   Anticipar necesidades de **infraestructura y profesorado**.
-    *   Debatir sobre la **asignación de plazas y recursos** entre diferentes áreas y carreras.
-    *   Identificar áreas que podrían requerir **estrategias proactivas** para revertir tendencias negativas o para gestionar un crecimiento sostenible.
-    *   Fomentar un diálogo informado sobre el **futuro de la oferta académica** en Cuba.
-    """))
-
+### Areas de Atención
 @st.fragment
-def A7(df_main, game_controller: GameController, ts, **kwargs):
+def A7(df_main, game_controller: GameController, ts:Translator, **kwargs):
     st.header(ts.translate('A7_header_1', "💡 Áreas de Atención: Desafíos y Oportunidades Específicas"))
     st.markdown(ts.translate('A7_markdown_1', """
     Más allá de las grandes tendencias, existen situaciones particulares en carreras y universidades
@@ -808,159 +998,165 @@ def A7(df_main, game_controller: GameController, ts, **kwargs):
     """))
     st.markdown("---")
 
-    with st.spinner(ts.translate('A7_spinner_1', "Identificando casos de atención específica...")):
-        df_nuevas, df_cesadas, df_baja, umbral, status = analisis_A7(df_main)
-    
-    if status != "success":
-        st.warning(ts.translate('A7_error_a8_analysis', "No se pudo completar el análisis de áreas de atención."))
-        return
+    def render_content():
+        with st.spinner(ts.translate('A7_spinner_1', "Identificando casos de atención específica...")):
+            df_nuevas, df_cesadas, df_baja, umbral, status = analisis_A7(df_main)
+        
+        if status != "success":
+            st.warning(ts.translate('A7_error_a8_analysis', "No se pudo completar el análisis de áreas de atención."))
+            return
 
-    st.subheader(ts.translate('A7_a8_subheader_1', "🌱 Sembrando el Futuro: Posibles Nuevas Ofertas o Reactivaciones"))
-    if df_nuevas is not None and not df_nuevas.empty:
-        st.markdown(ts.translate('A7_a8_markdown_1', """
-        El siguiente gráfico muestra cuántas carreras nuevas o reactivadas se detectaron cada año. 
-        Esto revela los períodos de mayor expansión o renovación de la oferta académica.
+        st.subheader(ts.translate('A7_a8_subheader_1', "🌱 Sembrando el Futuro: Posibles Nuevas Ofertas o Reactivaciones"))
+        if df_nuevas is not None and not df_nuevas.empty:
+            st.markdown(ts.translate('A7_a8_markdown_1', """
+            El siguiente gráfico muestra cuántas carreras nuevas o reactivadas se detectaron cada año. 
+            Esto revela los períodos de mayor expansión o renovación de la oferta académica.
+            """))
+            fig_nuevas = graficate_A7_nuevas_ofertas(df_nuevas.copy(), ts)
+            st.plotly_chart(fig_nuevas, use_container_width=True)
+            
+            with st.expander(ts.translate('A7_expander_new_offers', "Ver la lista completa de las {count} nuevas ofertas detectadas").format(count=len(df_nuevas))):
+                df_nuevas_display = df_nuevas.rename(columns={
+                    'university': ts.translate('_university', 'Universidad'),
+                    'career': ts.translate('_career', 'Carrera'),
+                    'detected_start_year': ts.translate('A7_col_detected_start_year', 'Año Inicio Detectado'),
+                    'current_enrollment': ts.translate('A7_col_current_enrollment', 'Matrícula Actual')
+                })
+                st.dataframe(df_nuevas_display, use_container_width=True)
+
+            ask_ai_component(
+                analysis_context="Analysis of degree programs that appear to be new offerings or reactivations.",
+                key="a7_nuevas_ofertas",
+                extra_data=[df_nuevas],
+                translation=ts.translate('ask_ai_component',{})
+            )
+        else:
+            st.info(ts.translate('A7_info_no_new_offers', "No se identificaron carreras que cumplan claramente con el criterio de nueva oferta o reactivación."))
+        
+        st.markdown("---")
+
+        st.subheader(ts.translate('A7_a8_subheader_2', "🍂 Ciclos que Concluyen: Posibles Ceses de Oferta"))
+        if df_cesadas is not None and not df_cesadas.empty:
+            st.markdown(ts.translate('A7_a8_markdown_2_revised', """
+            Este gráfico resume cuántas carreras dejaron de tener matrícula por año, dándonos una idea 
+            de los períodos con mayores ajustes o discontinuaciones en la oferta académica.
+            """))
+            fig_cesadas = graficate_A7_cesadas_ofertas(df_cesadas.copy(), ts)
+            st.plotly_chart(fig_cesadas, use_container_width=True)
+
+            with st.expander(ts.translate('A7_expander_ceased_offers', "Ver la lista completa de las {count} ofertas posiblemente cesadas").format(count=len(df_cesadas))):
+                df_cesadas_display = df_cesadas.rename(columns={
+                    'university': ts.translate('_university', 'Universidad'),
+                    'career': ts.translate('_career', 'Carrera'),
+                    'last_enrollment_year': ts.translate('A7_col_last_enrollment_year', 'Último Año con Matrícula')
+                })
+
+                st.dataframe(df_cesadas_display, use_container_width=True)
+
+            ask_ai_component(
+                analysis_context="Analysis of degree programs that seem to have been discontinued.",
+                key="a7_cese_oferta",
+                extra_data=[df_cesadas],
+                translation=ts.translate('ask_ai_component',{})
+            )
+        else:
+            st.info(ts.translate('A7_info_no_ceased_offers', "No se identificaron carreras que cumplan claramente con el criterio de cese de oferta."))
+        
+        st.markdown("---")
+            
+        curso_reciente = f"{int(df_main['ano_inicio_curso'].max())}-{int(df_main['ano_inicio_curso'].max()+1)}"
+        
+        st.subheader(ts.translate('A7_a8_subheader_3', "📉 Focos de Atención: Matrícula Reducida (Inferior a {umbral})").format(umbral=umbral))
+        if df_baja is not None and not df_baja.empty:
+            st.markdown(ts.translate('A7_a8_markdown_3_revised', """
+            El siguiente gráfico agrupa las carreras según su nivel de matrícula en el curso {curso}. Cada punto representa
+            una carrera en una universidad específica. Pasa el cursor sobre un punto para ver los detalles. 
+            Esto nos ayuda a ver dónde se concentran los casos de matrícula más crítica (ej. 1 o 2 estudiantes).
+            """).format(curso=curso_reciente))
+            
+            fig_baja = graficate_A7_baja_matricula(df_baja.copy(), ts, curso_reciente, umbral)
+            st.plotly_chart(fig_baja, use_container_width=True)
+
+            with st.expander(ts.translate('A7_expander_low_enrollment', "Ver la lista completa de las {count} carreras con matrícula baja").format(count=len(df_baja))):
+                df_baja_display = df_baja.rename(columns={
+                    'university': ts.translate('_university', 'Universidad'),
+                    'career': ts.translate('_career', 'Carrera'),
+                    'enrollment': ts.translate('A7_col_enrollment_last_year', 'Matrícula ({curso})').format(curso=curso_reciente)
+                })
+                st.dataframe(df_baja_display, use_container_width=True)
+
+            ask_ai_component(
+                analysis_context=f"Analysis of degree programs with minimal enrollment in the most recent year (under {umbral} students).",
+                key="a7_baja_matricula",
+                extra_data=[df_baja],
+                translation=ts.translate('ask_ai_component',{})
+            )
+        else:
+            st.info(ts.translate('A7_info_no_low_enrollment', "No se identificaron carreras con matrícula inferior a {umbral} (y >0) en el último año.").format(umbral=umbral))
+
+        st.markdown(ts.translate('A7_conclusion_markdown_1', """
+        ---
+        **Decisiones Informadas para una Gestión Proactiva:**
+        La información presentada en esta sección es un llamado a la acción específica:
+        *   **Nuevas Ofertas / Reactivaciones:**
+            *   **Verificar:** ¿Corresponden a lanzamientos o reactivaciones planificadas?
+            *   **Monitorear:** Evaluar su evolución inicial, necesidades de recursos y estrategias de consolidación.
+            *   **Aprender:** ¿Responden a una demanda social o laboral emergente que podría replicarse?
+        *   **Posibles Ceses de Oferta:**
+            *   **Confirmar:** ¿La discontinuación es oficial y definitiva? Actualizar registros si es necesario.
+            *   **Evaluar Impacto:** Si el cese no fue planificado o tiene implicaciones negativas (ej. única oferta en una región), investigar causas.
+        *   **Matrícula Reducida:**
+            *   **Análisis Causa-Raíz:** ¿Se trata de carreras altamente especializadas con demanda limitada por naturaleza? ¿Problemas de captación? ¿Desactualización curricular? ¿Falta de pertinencia laboral?
+            *   **Estrategias Diferenciadas:** Dependiendo del diagnóstico, las acciones podrían ir desde la promoción focalizada, rediseño curricular, hasta la consideración de fusión con otras carreras o, en últi ma instancia, una discontinuación planificada si no se justifica su mantenimiento.
+
+        Una gestión atenta a estos detalles permite optimizar recursos, responder mejor a las necesidades
+        del país y asegurar la vitalidad y pertinencia de la oferta académica universitaria.
         """))
-        #fig_nuevas = graficate_A7_nuevas_ofertas(df_nuevas, ts)
-        df_nuevas_plot = df_nuevas.copy()
-        df_nuevas_plot['hover_label'] = df_nuevas_plot['career'] + ' (' + df_nuevas_plot['university'] + ')'
-        
-        fig_nuevas = grouped_dot_plot(
-            df_nuevas_plot,
-            x='detected_start_year',
-            y='hover_label',
-            title=ts.translate('A7_chart_title_new_offers', 'Nuevas Carreras Reactivadas por Año'),
-            yaxis_title=ts.translate('A7_chart_xaxis_year_new_offers', 'Año de Reactivación'),
-            annotation_text=ts.translate('_careers', 'carreras'),
-            color_scale='Viridis_r',
-            marker_symbol='diamond-tall'
-        )
-        st.plotly_chart(fig_nuevas, use_container_width=True)
-        
-        with st.expander(ts.translate('A7_expander_new_offers', "Ver la lista completa de las {count} nuevas ofertas detectadas").format(count=len(df_nuevas))):
-            df_nuevas_display = df_nuevas.rename(columns={
-                'university': ts.translate('_university', 'Universidad'),
-                'career': ts.translate('_career', 'Carrera'),
-                'detected_start_year': ts.translate('A7_col_detected_start_year', 'Año Inicio Detectado'),
-                'current_enrollment': ts.translate('A7_col_current_enrollment', 'Matrícula Actual')
-            })
-            st.dataframe(df_nuevas_display, use_container_width=True)
 
-        ask_ai_component(
-            analysis_context="Analysis of degree programs that appear to be new offerings or reactivations.",
-            key="a7_nuevas_ofertas",
-            extra_data=[df_nuevas],
-            translation=ts.translate('ask_ai_component',{})
-        )
-    else:
-        st.info(ts.translate('A7_info_no_new_offers', "No se identificaron carreras que cumplan claramente con el criterio de nueva oferta o reactivación."))
-    
-    st.markdown("---")
-
-    st.subheader(ts.translate('A7_a8_subheader_2', "🍂 Ciclos que Concluyen: Posibles Ceses de Oferta"))
-    if df_cesadas is not None and not df_cesadas.empty:
-        st.markdown(ts.translate('A7_a8_markdown_2_revised', """
-        Este gráfico resume cuántas carreras dejaron de tener matrícula por año, dándonos una idea 
-        de los períodos con mayores ajustes o discontinuaciones en la oferta académica.
+    if game_controller.game_mode:
+        st.subheader(ts.translate('A7_game_subheader', "🕵️‍♂️ Encuentra el Foco de Atención"))
+        st.markdown(ts.translate('A7_game_intro', """
+        Entre las múltiples ofertas académicas de las universidades, algunas prosperan con cientos de estudiantes, mientras que otras luchan por mantenerse a flote. A continuación, te presentamos cuatro ofertas universitarias. Tres de ellas tienen una matrícula saludable, pero una es un "foco de atención" con una matrícula críticamente baja. ¿Puedes identificar al intruso?
         """))
-        #fig_cesadas = graficate_A7_cesadas_ofertas(df_cesadas, ts)
-        df_cesadas_plot = df_cesadas.copy()
-        df_cesadas_plot['hover_label'] = df_cesadas_plot['career'] + ' (' + df_cesadas_plot['university'] + ')'
+
+        _, _, df_baja_game, umbral_game, status_game = analisis_A7(df_main)
         
-        fig_cesadas = grouped_dot_plot(
-            df_cesadas_plot,
-            x='last_enrollment_year',
-            y='hover_label',
-            title=ts.translate('A7_chart_title_detenction', 'Carreras que Tuvieron un Cese por Año'),
-            yaxis_title=ts.translate('A7_chart_yaxis_detenction', 'Año de Detención'),
-            annotation_text=ts.translate('_careers', 'carreras'),
-            color_scale='Viridis_r',
-            marker_symbol='diamond-open-dot'
-        )
-        st.plotly_chart(fig_cesadas, use_container_width=True)
-
-        with st.expander(ts.translate('A7_expander_ceased_offers', "Ver la lista completa de las {count} ofertas posiblemente cesadas").format(count=len(df_cesadas))):
-            df_cesadas_display = df_cesadas.rename(columns={
-                'university': ts.translate('_university', 'Universidad'),
-                'career': ts.translate('_career', 'Carrera'),
-                'last_enrollment_year': ts.translate('A7_col_last_enrollment_year', 'Último Año con Matrícula')
-            })
-            st.dataframe(df_cesadas_display, use_container_width=True)
-
-        ask_ai_component(
-            analysis_context="Analysis of degree programs that seem to have been discontinued.",
-            key="a7_cese_oferta",
-            extra_data=[df_cesadas],
-            translation=ts.translate('ask_ai_component',{})
-        )
+        if status_game == 'success' and df_baja_game is not None and not df_baja_game.empty:
+            ano_reciente = int(df_main['ano_inicio_curso'].max())
+            df_reciente_game = df_main[df_main['ano_inicio_curso'] == ano_reciente]
+            
+            impostor = df_baja_game.sample(1).copy()
+            impostor['category'] = 'Baja Matrícula'
+            impostor['item'] = impostor['university'] + ' - ' + impostor['career']
+            
+            df_saludable = df_reciente_game[df_reciente_game['matricula_total'] >= 50].sample(3)
+            df_saludable['category'] = 'Matrícula Saludable'
+            df_saludable['item'] = df_saludable['entidad'] + ' - ' + df_saludable['carrera']
+            
+            game_data = pd.concat([
+                impostor[['item', 'category']],
+                df_saludable[['item', 'category']]
+            ])
+            
+            impostor_game_A7 = ImpostorMinigame(
+                game_id="A7_ImpostorMatriculaBaja",
+                game_title=ts.translate('A7_game_title', "El Intruso de Matrícula Baja"),
+                data=game_data,
+                item_col='item',
+                category_col='category',
+                exclude_if_contains=False,
+                content_callback=render_content,
+                min_score_for_victory=25
+            )
+            impostor_game_A7.render()
+        else:
+            render_content()
     else:
-        st.info(ts.translate('A7_info_no_ceased_offers', "No se identificaron carreras que cumplan claramente con el criterio de cese de oferta."))
-    
-    st.markdown("---")
-        
-    curso_reciente = f"{int(df_main['Ano_Inicio_Curso'].max())}-{int(df_main['Ano_Inicio_Curso'].max()+1)}"
-    
-    st.subheader(ts.translate('A7_a8_subheader_3', "📉 Focos de Atención: Matrícula Reducida (Inferior a {umbral})").format(umbral=umbral))
-    if df_baja is not None and not df_baja.empty:
-        st.markdown(ts.translate('A7_a8_markdown_3_revised', """
-        El siguiente gráfico agrupa las carreras según su nivel de matrícula en el curso {curso}. Cada círculo representa
-        una carrera en una universidad específica. Pasa el cursor sobre un círculo para ver los detalles. 
-        Esto nos ayuda a ver dónde se concentran los casos de matrícula más crítica (ej. 1 o 2 estudiantes).
-        """).format(curso=curso_reciente))
-        
-        df_baja['display_label'] = df_baja['career'] + ' (' + df_baja['university'] + ')'
+        render_content()
 
-        #st.table(df_baja)
-        fig_baja_agrupada = grouped_dot_plot(
-            df_baja,
-            x='enrollment',
-            y='display_label',
-            title=ts.translate('a7_fig3_title', "Carreras por universidad que muestra la cantidad de matrícula que ofertan en el ultimo curso ({curso_reciente})").format(curso_reciente=curso_reciente),
-            yaxis_title=ts.translate('a7_fig3_yaxis_title', "Cantidad de Matrícula ofertada"),
-            annotation_text=ts.translate('_elements', 'elementos'),
-            color_scale='thermal_r',
-            marker_symbol='diamond-x-open'
-        )
-        st.plotly_chart(fig_baja_agrupada, use_container_width=True)
-
-        with st.expander(ts.translate('A7_expander_low_enrollment', "Ver la lista completa de las {count} carreras con matrícula baja").format(count=len(df_baja))):
-            df_baja_display = df_baja.rename(columns={
-                'university': ts.translate('_university', 'Universidad'),
-                'career': ts.translate('_career', 'Carrera'),
-                'enrollment': ts.translate('A7_col_enrollment_last_year', 'Matrícula ({curso})').format(curso=curso_reciente)
-            })
-            st.dataframe(df_baja_display, use_container_width=True)
-
-        ask_ai_component(
-            analysis_context=f"Analysis of degree programs with minimal enrollment in the most recent year (under {umbral} students).",
-            key="a7_baja_matricula",
-            extra_data=[df_baja],
-            translation=ts.translate('ask_ai_component',{})
-        )
-    else:
-        st.info(ts.translate('A7_info_no_low_enrollment', "No se identificaron carreras con matrícula inferior a {umbral} (y >0) en el último año.").format(umbral=umbral))
-
-    st.markdown(ts.translate('A7_conclusion_markdown_1', """
-    ---
-    **Decisiones Informadas para una Gestión Proactiva:**
-    La información presentada en esta sección es un llamado a la acción específica:
-    *   **Nuevas Ofertas / Reactivaciones:**
-        *   **Verificar:** ¿Corresponden a lanzamientos o reactivaciones planificadas?
-        *   **Monitorear:** Evaluar su evolución inicial, necesidades de recursos y estrategias de consolidación.
-        *   **Aprender:** ¿Responden a una demanda social o laboral emergente que podría replicarse?
-    *   **Posibles Ceses de Oferta:**
-        *   **Confirmar:** ¿La discontinuación es oficial y definitiva? Actualizar registros si es necesario.
-        *   **Evaluar Impacto:** Si el cese no fue planificado o tiene implicaciones negativas (ej. única oferta en una región), investigar causas.
-    *   **Matrícula Reducida:**
-        *   **Análisis Causa-Raíz:** ¿Se trata de carreras altamente especializadas con demanda limitada por naturaleza? ¿Problemas de captación? ¿Desactualización curricular? ¿Falta de pertinencia laboral?
-        *   **Estrategias Diferenciadas:** Dependiendo del diagnóstico, las acciones podrían ir desde la promoción focalizada, rediseño curricular, hasta la consideración de fusión con otras carreras o, en última instancia, una discontinuación planificada si no se justifica su mantenimiento.
-
-    Una gestión atenta a estos detalles permite optimizar recursos, responder mejor a las necesidades
-    del país y asegurar la vitalidad y pertinencia de la oferta académica universitaria.
-    """))
-
+### A6: Perfil Detallado de Carreras
 @st.fragment
-def B1(df_main, game_controller: GameController, ts, **kwargs):
+def B1(df_main, game_controller: GameController, ts:Translator, **kwargs):
     st.header(ts.translate('B1_header_1', "🔬 Playground: Perfil Detallado de Carrera"))
     st.markdown(ts.translate('B1_markdown_1', """
     Sumérgete en los detalles de la carrera que elijas. Descubre su evolución histórica,
@@ -995,8 +1191,8 @@ def B1(df_main, game_controller: GameController, ts, **kwargs):
         fig_evol = graficate_B1_evolucion_genero(df_evol_genero, ts, carrera_sel)
         st.plotly_chart(fig_evol, use_container_width=True)
         
-        df_cagr_data = df_evol_genero[['Ano_Inicio_Curso', 'Matricula_Total']]
-        anos_disponibles = sorted(df_cagr_data['Ano_Inicio_Curso'].unique())
+        df_cagr_data = df_evol_genero[['ano_inicio_curso', 'matricula_total']]
+        anos_disponibles = sorted(df_cagr_data['ano_inicio_curso'].unique())
         if len(anos_disponibles) >= 2:
             start_year_cagr, end_year_cagr = st.select_slider(
                 ts.translate('B1_slider_label_cagr', "Selecciona el rango de años para el cálculo del CAGR:"),
@@ -1012,7 +1208,7 @@ def B1(df_main, game_controller: GameController, ts, **kwargs):
 
     st.subheader(ts.translate('B1_subheader_2_snapshot', "Análisis Anual Detallado"))
     
-    anos_disponibles_snapshot = sorted(df_evol_genero['Ano_Inicio_Curso'].unique())
+    anos_disponibles_snapshot = sorted(df_evol_genero['ano_inicio_curso'].unique())
     anio_sel = st.select_slider(
         ts.translate('B1_slider_label_snapshot', "Selecciona un año para ver los detalles:"),
         options=anos_disponibles_snapshot,
@@ -1048,8 +1244,9 @@ def B1(df_main, game_controller: GameController, ts, **kwargs):
         translation=ts.translate('ask_ai_component', {})
     )
 
+### A6: Guía Instituciones
 @st.fragment
-def B2(df_main, df_ins, game_controller: GameController, ts, **kwargs):
+def B2(df_main, df_ins, game_controller: GameController, ts:Translator, **kwargs):
     st.header(ts.translate('b2_header', "🗺️ Guía de Instituciones: Explora la Oferta Académica por Localidad"))
     st.markdown(ts.translate('b2_intro', """
     Descubre las instituciones de educación superior en Cuba, filtrando por provincia y municipio.
@@ -1126,7 +1323,7 @@ def B2(df_main, df_ins, game_controller: GameController, ts, **kwargs):
         "Mostrando {shown} de {total} institución(es) ({last_year})."
     ).format(shown=n_mostradas, total=n_totales, last_year=curso_reciente_str_basic))
 
-    anos_disponibles_matricula = sorted(df_main['Ano_Inicio_Curso'].unique().tolist())
+    anos_disponibles_matricula = sorted(df_main['ano_inicio_curso'].unique().tolist())
     if not anos_disponibles_matricula:
         st.warning(ts.translate('b2_warning_no_years_for_detail', "No hay años de matrícula disponibles para ver detalles."))
         return
@@ -1194,13 +1391,14 @@ def B2(df_main, df_ins, game_controller: GameController, ts, **kwargs):
         translation=ts.translate('ask_ai_component', {})
     )
 
+### Conclusiones
 @st.fragment
-def conclusion(*args, game_controller:GameController, ts,    **kwargs):
+def conclusion(game_controller: GameController, ts:Translator, **kwargs):
     st.header(ts.translate('conclusion_header', "🏁 Conclusiones y Horizontes Futuros: Forjando la Universidad del Mañana"))
     st.markdown(ts.translate('conclusion_intro', """
     Hemos viajado a través de una década de datos, explorando el complejo ecosistema
-    de la educación superior en Cuba. Donde hemos visualizado
-    una parte de una historia más grande: la historia de miles de aspiraciones, de esfuerzos institucionales
+    de la educación superior en Cuba. Ya sea como analista o como explorador, cada gráfico desbloqueado y cada desafío superado 
+    ha sido una pieza de un rompecabezas más grande: la historia de miles de aspiraciones, de esfuerzos institucionales
     y de la incesante búsqueda del conocimiento que define a nuestra nación.
 
     Este análisis no es un punto final, sino un faro que ilumina el camino recorrido y nos ayuda
@@ -1212,7 +1410,7 @@ def conclusion(*args, game_controller:GameController, ts,    **kwargs):
     ))
     st.markdown("---")
 
-    st.subheader("🌟 Destellos del Viaje: Principales Hallazgos en este Recorrido")
+    st.subheader(ts.translate('conclusion_findings_subheader', "🌟 Destellos del Viaje: Principales Hallazgos"))
     hallazgos_text = ts.translate('conclusion_findings_text', """
     Al mirar atrás en nuestro análisis, emergen varios faros que guían nuestra comprensión:
 
@@ -1293,6 +1491,6 @@ def conclusion(*args, game_controller:GameController, ts,    **kwargs):
 
     ask_ai_component(
         analysis_context=context_conclusion_ia,
-        key="final_conclussions",
+        key="final_conclusions",
         translation=ts.translate('ask_ai_component',{})
     )
