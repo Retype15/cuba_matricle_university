@@ -112,9 +112,9 @@ class Translator:
     _instance = None
 
     def __new__(cls, *args, **kwargs):
-        if 'language_selector_instance' not in st.session_state:
-            st.session_state.language_selector_instance = super().__new__(cls)
-        return st.session_state.language_selector_instance
+        if 'Translator' not in st.session_state:
+            st.session_state.Translator = super().__new__(cls)
+        return st.session_state.Translator
 
     def __init__(self, langs: Dict[str, str] = {"English": 'en'}, lang_dir: str = "languages"):
         """
@@ -140,6 +140,11 @@ class Translator:
             self.lang_index = 0
 
         self._initialized = True
+
+        def __eq__(self, other):
+            if not isinstance(other, Translator):
+                return self.actual_lang == other
+            return self.actual_lang == other.actual_lang
         
     def translate(self, key: str, default: Any = None, *, lang: str | None = None) -> Any:
         """

@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from game_engine import Minigame, RowBasedMinigame
+from .game_engine import Minigame, RowBasedMinigame
 from streamlit_sortables import sort_items
 from typing import Callable, Any
 
@@ -57,8 +57,8 @@ class DataDuelMinigame(Minigame):
         sample = self.data.sample(2, replace=False)
         item1, item2 = sample.iloc[0], sample.iloc[1]
         winner_is_item1 = self.comparison_func(item1, item2) if self.comparison_func else item1['Valor'] > item2['Valor']
-        correct_option = item1['Nombre'] if winner_is_item1 else item2['Nombre']
-        return {"option1": item1['Nombre'], "value1": item1['Valor'], "option2": item2['Nombre'], "value2": item2['Valor'], "correct_option": correct_option, "question_text": self.t.get('duel_question', "¿Cuál tiene un valor mayor?")}
+        correct_option = item1['name'] if winner_is_item1 else item2['name']
+        return {"option1": item1['name'], "value1": item1['Valor'], "option2": item2['name'], "value2": item2['Valor'], "correct_option": correct_option, "question_text": self.t.get('duel_question', "¿Cuál tiene un valor mayor?")}
 
     def display_game_body(self, round_data: dict) -> None:
         st.markdown(f"##### {round_data['question_text']}"); return None
@@ -146,8 +146,8 @@ class OracleMinigame(RowBasedMinigame):
     def display_instructions(self): st.subheader(f"🔮 {self.t.get('oracle_title', 'El Oráculo')}")
 
     def display_game_body(self, round_data: pd.Series) -> None:
-        st.markdown(f"**{round_data['Nombre']}:** {self.t.get('oracle_question', 'Observa la evolución y predice la tendencia.')}")
-        chart_df = pd.DataFrame({'x': round_data['Eje_x'][:-1], 'y': round_data['Eje_y'][:-1]})
+        st.markdown(f"**{round_data['name']}:** {self.t.get('oracle_question', 'Observa la evolución y predice la tendencia.')}")
+        chart_df = pd.DataFrame({'x': round_data['x'][:-1], 'y': round_data['y'][:-1]})
         fig = px.line(chart_df, x='x', y='y', markers=True, template="plotly_dark")
         fig.update_layout(title="Evolución... ¿Qué pasará después?", xaxis_title="Año", yaxis_title="Matrícula")
         st.plotly_chart(fig, use_container_width=True)
@@ -165,18 +165,18 @@ class OracleMinigame(RowBasedMinigame):
         if user_prediction: self._process_submission(user_prediction, round_data)
 
     def calculate_score(self, user_answer, round_data: pd.Series) -> tuple[int, bool]:
-        actual_trend = self.comparison_func(round_data['Eje_y'])
+        actual_trend = self.comparison_func(round_data['y'])
         return self.POINTS_FOR_CORRECT_PREDICTION if (user_answer == actual_trend) else 0, user_answer == actual_trend
 
     def display_round_feedback(self, round_result: dict, round_number: int):
         with st.container(border=True):
             user_prediction, data = round_result['user_answer'], round_result['round_data']
-            actual_trend, icon = self.comparison_func(data['Eje_y']), "✅" if round_result['was_correct'] else "❌"
-            st.markdown(f"**Ronda {round_number} ({data['Nombre']}):** {icon}")
+            actual_trend, icon = self.comparison_func(data['y']), "✅" if round_result['was_correct'] else "❌"
+            st.markdown(f"**Ronda {round_number} ({data['name']}):** {icon}")
             map_pred_text = {'up': "Subirá 📈", 'stable': "Estable ➖", 'down': "Bajará 📉"}
             st.write(f"Tu predicción: **{map_pred_text[user_prediction]}**")
             st.write(f"Resultado real: **{map_pred_text[actual_trend]}**")
-            chart_df = pd.DataFrame({'x': data['Eje_x'], 'y': data['Eje_y']})
+            chart_df = pd.DataFrame({'x': data['x'], 'y': data['y']})
             fig = px.line(chart_df, x='x', y='y', markers=True, template="plotly_dark")
             fig.add_shape(type="line", x0=chart_df['x'].iloc[-2], y0=chart_df['y'].iloc[-2], x1=chart_df['x'].iloc[-1], y1=chart_df['y'].iloc[-1], line=dict(color="yellow", width=4, dash="dot"))
             fig.update_layout(title="Resultado Completo Revelado", xaxis_title="Año", yaxis_title="Matrícula")
@@ -228,7 +228,7 @@ if __name__ == "__main__":
     ])
 
     duel_df = pd.DataFrame({
-        'Nombre': ['Empresa A', 'Empresa B', 'Empresa C', 'Empresa D', 'Empresa E'],
+        'name': ['Empresa A', 'Empresa B', 'Empresa C', 'Empresa D', 'Empresa E'],
         'Valor': [1200000, 850000, 1500000, 980000, 700000]
     })
 
@@ -239,13 +239,13 @@ if __name__ == "__main__":
     classifier_df = pd.DataFrame(classifier_data)
 
     oracle_df = pd.DataFrame({
-        'Nombre': ['Acción X', 'Acción Y', 'Acción Z'],
-        'Eje_x': [
+        'name': ['Acción X', 'Acción Y', 'Acción Z'],
+        'x': [
             [2020, 2021, 2022, 2023, 2024, 2025],
             [2020, 2021, 2022, 2023, 2024, 2025],
             [2020, 2021, 2022, 2023, 2024, 2025]
         ],
-        'Eje_y': [
+        'y': [
             [50, 55, 65, 60, 70, 100],  # Tendencia ascendente
             [100, 95, 90, 85, 80, 10], # Tendencia descendente
             [120, 122, 118, 120, 121, 122] # Tendencia estable

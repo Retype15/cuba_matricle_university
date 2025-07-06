@@ -2,7 +2,7 @@ from typing import Any
 from libraries.streamlit_extended import HierarchicalSidebarNavigation
 from libraries.st_options import *
 from libraries.general_functions import translation, Translator, FloatingPanel
-from libraries.game_engine import GameController
+from libraries.Gamification import GameController
 
 st.set_page_config(layout="wide", page_title="Cuban University Enrollment Analysis", page_icon="🎓")
 
@@ -74,8 +74,8 @@ else:
     panel_progreso = None
 
     if not seccion_actual == "Introduccion" or ('initial_mode_selected' in st.session_state and st.session_state.initial_mode_selected):
-        #with st.sidebar:
-        #    game_controller.display_mode_toggle()
+        #with st.sidebar:                           #TODO:deprecated
+        #    game_controller.display_mode_toggle()  #TODO:deprecated
         panel_progreso = FloatingPanel(
             key="progreso_player",
             content_funcs=[game_controller.display_mode_toggle, game_controller.display_score_panel],
@@ -83,7 +83,7 @@ else:
             button_tooltip="Ver mi progreso"
         )
         #if game_controller.game_mode: chat_button(game_controller.display_score_panel) #TODO:deprecated
-            #game_controller.display_mode_toggle()
+            #game_controller.display_mode_toggle()                                      #TODO:deprecated
 
     st.sidebar.title(ts.translate('sidebar_title',"🧭 Explorador de secciones"))
     nav.display_sidebar_navigation(radio_title_main=ts.translate('sidebar_radio_title_main',"Elige una sección:"), radio_title_sub_prefix=ts.translate('sidebar_radio_title_sub_prefix',"Subseccion: "))
@@ -114,7 +114,7 @@ else:
 
     nav.create_navigation_buttons(prev_text=ts.translate('back',"Anterior: "), next_text=ts.translate('next',"Siguiente: "))
     
-    #game_controller.confirm_deactivation_dialog() #type:deprecated
+    #game_controller.confirm_deactivation_dialog() #TODO:deprecated
 
     st.sidebar.markdown("---")
     st.sidebar.markdown(

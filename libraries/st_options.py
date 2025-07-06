@@ -1,7 +1,7 @@
 from .plot_functions import *
 from .ai_functions import ask_ai_component
 from .general_functions import to_csv_string
-from .game_engine import GameController
+from .Gamification import GameController, SimpleQuestionMinigame, DataDuelMinigame, ClassifierMinigame, OracleMinigame
 
 
 def show_info(msg):
@@ -77,58 +77,59 @@ def A1(df_main, game_controller: GameController, ts, **kwargs):
             """
         )
     )
-    #st.markdown("---")
 
-    def render_content():
-        with st.spinner(ts.translate('A1_spinner_1',"Construyendo la gráfica A1, por favor espere...")):
-            fig_a1, msg_a1 = analisis_A1(df_main, incluir_proyeccion=False)
+    @st.fragment
+    def render_analysis_content():
+        with st.spinner(ts.translate('A1_spinner_1', "Construyendo la gráfica A1, por favor espere...")):
+            df_historico, _, msg_code, _ = analisis_A1(df_main, incluir_proyeccion=False)
 
-        if fig_a1:
-            st.plotly_chart(fig_a1, use_container_width=True, key="fig_a1_pulso_nacional")
-            if msg_a1:
-                show_info(msg_a1)
-            
-            st.subheader(ts.translate('A1_fig_1_subheader',"Descifrando el Ritmo de la Década (2015-2025):"))
-            st.markdown(ts.translate(
-                key='A1_fig_1_markdown_1',
-                default="""
+        if msg_code != "success_historical_only":
+            st.warning(ts.translate('generic_warn_figs', "No se pudo generar el gráfico del panorama nacional (A1)."))
+            return
+        
+        fig_a1 = graficate_A1(df_historico, ts) #type:ignore
+        st.plotly_chart(fig_a1, use_container_width=True, key="fig_a1_pulso_nacional")
+        
+        st.subheader(ts.translate('A1_fig_1_subheader',"Descifrando el Ritmo de la Década (2015-2025):"))
+        st.markdown(ts.translate(
+            key='A1_fig_1_markdown_1',
+            default="""
             Observando la trayectoria de la matrícula nacional total en el gráfico superior, podemos identificar varias fases clave:
             *   **Impulso Inicial (2015-16 a 2016-17):** El viaje comienza en el curso 2015-2016 con una cifra que ronda los **165,000 estudiantes**.
             *   **Crecimiento Sostenido hacia la Cima (2017-18 a 2020-21):** la tendencia ascendente se retoma con fuerza hasta alcanzar su **punto más álgido en el curso 2020-2021, superando los 285,000 estudiantes**.
             *   **Meseta y Comienzo del Declive (2021-22 a 2022-23):** El curso 2021-2022 muestra una ligera contracción...
             *   **Ajuste Reciente (2023-24 a 2024-25):** Los dos últimos cursos registrados muestran una **continuación de la tendencia descendente...**
             """
-            ))
-            
-            # La IA se mantiene dentro del contenido
-            context_ai_text:str = "The current analysis is about the evolution of total national enrollment, male and female, in Cuba."
-            if msg_a1:
-                context_ai_text += f"\nAnalysis note: {msg_a1}"
+        ))
+        
+        context_ai_text = "The current analysis is about the evolution of total national enrollment, male and female, in Cuba."
+        ask_ai_component(
+            analysis_context=context_ai_text,
+            key="a1_nacional",
+            extra_data=[fig_a1],
+            translation=ts.translate('ask_ai_component', {})
+        )
 
-            ask_ai_component(
-                analysis_context=context_ai_text,
-                key="a1_nacional",
-                extra_data=[fig_a1]
-            )
-        else:
-            st.warning(msg_a1 if msg_a1 else ts.translate('generic_warn_figs', "No se pudo generar el gráfico del panorama nacional (A1)."))
-
-    game_data = {
-        "title": "El Año Dorado",
-        "question": "¿En qué curso académico la matrícula universitaria nacional alcanzó su punto más alto en la última década?",
-        "options": ["2016-2017", "2019-2020", "2020-2021", "2022-2023"],
-        "correct_answer": "2020-2021",
-        "points": 25
-    }
+    df_historico_juego, _, _, _ = analisis_A1(df_main, incluir_proyeccion=False)
     
-    #peak_year_game = SimpleQuestionMinigame(
-    #    id="a1_peak_year",
-    #    controller=game_controller,
-    #    data=game_data,
-    #    content_callback=render_content
-    #)
-    render_content( )
-    #peak_year_game.render()
+    if df_historico_juego is not None:
+        df_2021 = df_historico_juego[df_historico_juego['Ano_Inicio_Curso'] <= 2022]
+        game_data = pd.DataFrame([{
+            "name": ts.translate('national_enrollment', "Matrícula Nacional"),
+            "x": df_2021['Curso_Academico'].tolist(),
+            "y": df_2021['Matricula_Total'].tolist()
+        }])
+
+        oracle_game_A1 = OracleMinigame(
+            game_id="A1_OracleNacional",
+            game_title=ts.translate('A1_game_title', "El Oráculo Nacional"),
+            data=game_data,
+            content_callback=render_analysis_content,
+            num_rounds=1
+        )
+        oracle_game_A1.render()
+    else:
+        render_analysis_content()
 
 @st.fragment
 def A2(df_main,*args, game_controller:GameController, ts, **kwargs):
@@ -139,7 +140,7 @@ def A2(df_main,*args, game_controller:GameController, ts, **kwargs):
     a la sociedad. En esta sección, desglosamos la matrícula total para ver cómo se distribuyen
     los estudiantes entre estas grandes áreas, con el objetivo de responder preguntascomo:
     - ¿Hay protagonistas claros?
-    - ¿Cómo ha danzado el interés estudiantil a lo largo de la última década?
+    - ¿Cómo ha sido el interés estudiantil a lo largo de la última década?
     """))
 
     with st.spinner(ts.translate('A2_spinner_1',"Analizando la evolución de las ramas de ciencias...")):
@@ -849,8 +850,8 @@ def A7(df_main,*args, game_controller:GameController, ts, **kwargs):
     """))
 
 @st.fragment
-def B1(df_main,*args, game_controller:GameController, ts, **kwargs):
-    st.header(ts.translate('B1_header_1', "🔬 Playground: Perfil Detallado de Carrera: Una Radiografía Completa"))
+def B1(df_main, game_controller: GameController, ts, **kwargs):
+    st.header(ts.translate('B1_header_1', "🔬 Playground: Perfil Detallado de Carrera"))
     st.markdown(ts.translate('B1_markdown_1', """
     Sumérgete en los detalles de la carrera que elijas. Descubre su evolución histórica de matrícula,
     incluyendo la composición por género, su tasa de crecimiento promedio en el período que definas,
@@ -862,169 +863,174 @@ def B1(df_main,*args, game_controller:GameController, ts, **kwargs):
         ts.translate('B1_selectbox_label_1', "Selecciona una Carrera para analizar su perfil:"),
         options=todas_carreras_unicas,
         index=todas_carreras_unicas.index("MEDICINA") if "MEDICINA" in todas_carreras_unicas else 0,
-        key="sel_carrera_b1_perfil_final"
+        key="sel_carrera_b1_perfil"
     )
 
-    fig_b1_evol_gen = None
-    df_unis_b1 = None
-    fig_pie_genero = None
-    fig_bar_unis = None
-    cagr_b1_info = {}
-    datos_para_ia = []
-    contexto_texto_ia = ""
-    msg_b1 = ""
-
-    if carrera_sel_b1:
-        st.markdown("---")
-        
-        with st.spinner(ts.translate('B1_spinner_1', "Generando perfil para {career}...").format(career=carrera_sel_b1)):
-            fig_b1_evol_gen, df_evol_para_cagr_b1, df_unis_b1, datos_genero_ultimo_ano_b1, rama_b1, msg_b1 = analisis_perfil_carrera(
-                df_main,
-                carrera_sel_b1
-            )
-        
-        st.subheader(ts.translate('B1_subheader_1', "Perfil Integral de: {career}").format(career=carrera_sel_b1))
-        st.markdown(ts.translate('B1_markdown_1_rama', "**Rama de Ciencias:** {branch}").format(branch=rama_b1))
-        show_info(msg_b1)
-
-        if fig_b1_evol_gen:
-            st.plotly_chart(fig_b1_evol_gen, use_container_width=True, key="fig_b1_perfil_evol_genero_final")
-        else:
-            st.warning(ts.translate('B1_warning_no_chart', "No se pudo generar el gráfico de evolución para esta carrera."))
-
-        st.markdown("---")
-
-        if df_evol_para_cagr_b1 is not None and not df_evol_para_cagr_b1.empty:
-            anos_disponibles_carrera_b1 = sorted(df_evol_para_cagr_b1['Ano_Inicio_Curso'].unique())
-            if len(anos_disponibles_carrera_b1) >= 2:
-                st.markdown(ts.translate('B1_markdown_cagr_title', "**Crecimiento Promedio Anual (CAGR) para el Período Seleccionado:**"))
-                st.caption(ts.translate('B1_caption_cagr_info', "El CAGR indica la tasa de crecimiento porcentual promedio por año. Ajusta el slider para explorar diferentes períodos."))
-                
-                selected_years_cagr = st.slider(
-                    ts.translate('B1_slider_label_cagr', "Selecciona el rango de años (inicio-fin) para el cálculo del CAGR:"),
-                    min_value=int(anos_disponibles_carrera_b1[0]),
-                    max_value=int(anos_disponibles_carrera_b1[-1]),
-                    value=(int(anos_disponibles_carrera_b1[0]), int(anos_disponibles_carrera_b1[-1])),
-                    key=f"slider_cagr_{carrera_sel_b1.replace(' ','_')}"
-                )
-                ano_inicio_cagr_sel, ano_fin_cagr_sel = selected_years_cagr
-
-                if ano_inicio_cagr_sel < ano_fin_cagr_sel:
-                    cagr_b1_info = calcular_cagr(df_evol_para_cagr_b1, ano_inicio_cagr_sel, ano_fin_cagr_sel)
-                    st.metric(
-                        label=f"CAGR {cagr_b1_info.get('periodo', '')}",
-                        value=cagr_b1_info.get('valor', 'N/A')
-                    )
-                else:
-                    st.warning(ts.translate('B1_warning_invalid_cagr_range', "El año inicial del período CAGR debe ser menor que el año final para un cálculo válido."))
-            else:
-                show_info(ts.translate('B1_info_insufficient_years', "No hay suficientes años de datos para '{career}' para calcular un CAGR con período seleccionable.").format(career=carrera_sel_b1))
-        st.markdown("---")
-        
-        col_b1_genero_metric, col_b1_genero_pie = st.columns([1,1])
-
-        with col_b1_genero_metric:
-            st.markdown(ts.translate('B1_markdown_genero_title', "**Composición de Género (Curso {year_start}-{year_end}):**").format(
-                year_start=df_main['Ano_Inicio_Curso'].max(),
-                year_end=df_main['Ano_Inicio_Curso'].max()+1
-            ))
-            if datos_genero_ultimo_ano_b1 and datos_genero_ultimo_ano_b1.get('Total', 0) > 0:
-                st.metric(label=ts.translate('B1_metric_total_women', "Total Mujeres"), value=f"{int(datos_genero_ultimo_ano_b1['Mujeres']):,}")
-                st.metric(label=ts.translate('B1_metric_total_men', "Total Hombres"), value=f"{int(datos_genero_ultimo_ano_b1['Hombres']):,}")
-            else:
-                show_info(ts.translate('B1_info_no_gender_data', "No hay datos de género disponibles para el último año."))
-
-        with col_b1_genero_pie:
-            if datos_genero_ultimo_ano_b1 and datos_genero_ultimo_ano_b1.get('Total', 0) > 0:
-                genero_col = ts.translate('_genero', 'Genero')
-                cantidad_col = ts.translate('_cantidad', 'Cantidad')
-                mujeres_label = ts.translate('_women', 'Mujeres')
-                hombres_label = ts.translate('_men', 'Hombres')
-
-                df_pie_genero = pd.DataFrame({
-                    genero_col: [mujeres_label, hombres_label],
-                    cantidad_col: [datos_genero_ultimo_ano_b1['Mujeres'], datos_genero_ultimo_ano_b1['Hombres']]
-                })
-
-                fig_pie_genero = px.pie(
-                    df_pie_genero,
-                    values=cantidad_col,
-                    names=genero_col,
-                    title=ts.translate('B1_pie_title_genero', "Distribución de Género en {career}:").format(career=carrera_sel_b1),
-                    color_discrete_map={mujeres_label: 'lightpink', hombres_label: 'lightskyblue'}
-                )
-                fig_pie_genero.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig_pie_genero, use_container_width=True, key="pie_genero_b1")
-
-        st.markdown("---")
-
-        if df_unis_b1 is not None and not df_unis_b1.empty:
-            st.markdown(ts.translate('b1_universities_title', "**Universidades que imparten '{career}' (Matrícula en último curso):**").format(career=carrera_sel_b1))
-
-            year_start = df_main["Ano_Inicio_Curso"].max()
-            year_end = year_start + 1
-            matricula_col_original = f"Matrícula {year_start}-{year_end}"
-            universidad_col_original = "Universidad"
-
-            df_unis_b1_sorted = df_unis_b1.sort_values(by=matricula_col_original, ascending=True)
-
-            universidad_label_traducida = ts.translate('_university', 'Universidad')
-            matricula_label_traducida = ts.translate('_enrollment', 'Matrícula')
-
-            fig_bar_unis = px.bar(
-                df_unis_b1_sorted,
-                x=matricula_col_original,
-                y=universidad_col_original,
-                orientation='h',
-                title=ts.translate('b1_bar_chart_title', "Distribución por Universidad: {career}").format(career=carrera_sel_b1),
-                height=max(300, len(df_unis_b1_sorted) * 30)
-            )
-            
-            fig_bar_unis.update_layout(
-                yaxis_title=universidad_label_traducida,
-                xaxis_title=matricula_label_traducida
-            )
-            
-            st.plotly_chart(fig_bar_unis, use_container_width=True, key="fig_b1_bar_unis_final")
-
-        elif df_unis_b1 is not None and df_unis_b1.empty:
-            show_info(ts.translate('b1_info_no_universities_found', "Ninguna universidad registró matrícula para '{career}' en el último curso.").format(career=carrera_sel_b1))
-
-        else:
-            show_info(ts.translate('b1_info_no_university_data', "No se encontraron datos de universidades para esta carrera en el último año."))
-
-        contexto_texto_ia = (
-            f"The profile of the degree program **{carrera_sel_b1}** is being analyzed.\n"
-            f"This program belongs to the branch of science: **{rama_b1}**.\n"
-        )
-        if cagr_b1_info:
-            contexto_texto_ia += (
-                f"For the selected period ({cagr_b1_info.get('periodo', '')}), the Compound Annual Growth Rate (CAGR) "
-                f"is **{cagr_b1_info.get('valor', 'N/A')}**."
-            )
-        if msg_b1:
-             contexto_texto_ia += f"\nAnalysis note: {msg_b1}"
-             
-        if fig_b1_evol_gen:
-            datos_para_ia.append(fig_b1_evol_gen)
-        if fig_pie_genero:
-            datos_para_ia.append(fig_pie_genero)
-        if fig_bar_unis:
-            datos_para_ia.append(fig_bar_unis)
-
-    else:
+    if not carrera_sel_b1:
         show_info(ts.translate('b1_info_select_career', "Por favor, selecciona una Carrera para continuar."))
+        return
 
+    context_ai_text = ""
+    datos_para_ia = []
+    
+    st.markdown("---")
+    
+    with st.spinner(ts.translate('B1_spinner_1', "Generando perfil para {career}...").format(career=carrera_sel_b1)):
+        df_evol_genero_carrera, df_unis_b1, datos_genero_ultimo_ano_b1, rama_b1, msg_code = analisis_perfil_carrera(df_main, carrera_sel_b1)
+
+    if msg_code != "success_profile_generated":
+        st.warning(f"No se pudo generar el perfil. Código: {msg_code}")
+        return
+
+    st.subheader(ts.translate('B1_subheader_1', "Perfil Integral de: {career}").format(career=carrera_sel_b1))
+    st.markdown(ts.translate('B1_markdown_1_rama', "**Rama de Ciencias:** {branch}").format(branch=rama_b1 or "N/D"))
+
+    if df_evol_genero_carrera is not None and not df_evol_genero_carrera.empty:
+        df_melted_evolucion = df_evol_genero_carrera.melt(
+            id_vars=['Ano_Inicio_Curso', 'Curso_Academico'], 
+            value_vars=['Matricula_Total', 'Matricula_Mujeres', 'Matricula_Hombres'],
+            var_name='Tipo_Matricula', 
+            value_name='Cantidad'
+        )
+        mapa_nombres_leyenda = {
+            'Matricula_Total': ts.translate('_total_students', 'Total Estudiantes'),
+            'Matricula_Mujeres': ts.translate('_women', 'Mujeres'),
+            'Matricula_Hombres': ts.translate('_men', 'Hombres')
+        }
+        df_melted_evolucion['Tipo_Matricula_Display'] = df_melted_evolucion['Tipo_Matricula'].map(mapa_nombres_leyenda)
+        
+        fig_evolucion_genero = px.line(
+            df_melted_evolucion, 
+            x='Curso_Academico', 
+            y='Cantidad', 
+            color='Tipo_Matricula_Display',
+            title=ts.translate('B1_chart_title_evolution', "Evolución Histórica Matrícula y Género: {career}").format(career=carrera_sel_b1),
+            markers=True,
+            labels={
+                'Cantidad': ts.translate('_number_of_students', 'Número de Estudiantes'),
+                'Tipo_Matricula_Display': ts.translate('_enrollment_breakdown', 'Desglose Matrícula'),
+                'Curso_Academico': ts.translate('_academic_year', 'Curso Académico')
+            }
+        )
+        st.plotly_chart(fig_evolucion_genero, use_container_width=True, key="fig_b1_perfil_evol_genero_final")
+        datos_para_ia.append(fig_evolucion_genero)
+    else:
+        st.warning(ts.translate('B1_warning_no_chart', "No se pudo generar el gráfico de evolución para esta carrera."))
+
+    st.markdown("---")
+
+    df_evol_para_cagr_b1 = df_evol_genero_carrera[['Ano_Inicio_Curso', 'Matricula_Total']] if df_evol_genero_carrera is not None else pd.DataFrame()
+    if not df_evol_para_cagr_b1.empty:
+        anos_disponibles_carrera_b1 = sorted(df_evol_para_cagr_b1['Ano_Inicio_Curso'].unique())
+        if len(anos_disponibles_carrera_b1) >= 2:
+            st.markdown(ts.translate('B1_markdown_cagr_title', "**Crecimiento Promedio Anual (CAGR) para el Período Seleccionado:**"))
+            st.caption(ts.translate('B1_caption_cagr_info', "El CAGR indica la tasa de crecimiento porcentual promedio por año. Ajusta el slider para explorar diferentes períodos."))
+            
+            selected_years_cagr = st.slider(
+                ts.translate('B1_slider_label_cagr', "Selecciona el rango de años (inicio-fin) para el cálculo del CAGR:"),
+                min_value=int(anos_disponibles_carrera_b1[0]),
+                max_value=int(anos_disponibles_carrera_b1[-1]),
+                value=(int(anos_disponibles_carrera_b1[0]), int(anos_disponibles_carrera_b1[-1])),
+                key=f"slider_cagr_{carrera_sel_b1.replace(' ','_')}"
+            )
+            ano_inicio_cagr_sel, ano_fin_cagr_sel = selected_years_cagr
+
+            cagr_b1_info = calcular_cagr(df_evol_para_cagr_b1, ano_inicio_cagr_sel, ano_fin_cagr_sel)
+            status = cagr_b1_info.get("status")
+            
+            if status == "SUCCESS":
+                cagr_value = cagr_b1_info.get("cagr_value", 0.0) * 100
+                periodo_str = f"({int(cagr_b1_info.get('start_year'))}-{int(cagr_b1_info.get('end_year'))})" #type:ignore
+                st.metric(label=f"CAGR {periodo_str}", value=f"{cagr_value:.2f}%")
+            else:
+                error_map = {
+                    "ERROR_INVALID_RANGE": 'cagr_error_invalid_range',
+                    "ERROR_INSUFFICIENT_PERIOD_DATA": 'cagr_error_insufficient_data',
+                    "ERROR_ZERO_START_ENROLLMENT": 'cagr_error_zero_start',
+                }
+                default_texts = {
+                    'cagr_error_invalid_range': "Rango inválido: el año inicial debe ser menor que el final.",
+                    'cagr_error_insufficient_data': "Datos insuficientes en el período seleccionado.",
+                    'cagr_error_zero_start': "No se puede calcular: la matrícula inicial es cero.",
+                    'cagr_error_unspecified': "No se pudo calcular el CAGR."
+                }
+                error_key = error_map.get(status, 'cagr_error_unspecified') #type:ignore
+                st.warning(ts.translate(error_key, default_texts.get(error_key)))
+        else:
+            show_info(ts.translate('B1_info_insufficient_years', "No hay suficientes años de datos para '{career}' para calcular un CAGR con período seleccionable.").format(career=carrera_sel_b1))
+    st.markdown("---")
+    
+    col_b1_genero_metric, col_b1_genero_pie = st.columns([1,1])
+    
+    with col_b1_genero_metric:
+        st.markdown(ts.translate('B1_markdown_genero_title', "**Composición de Género (Curso {year_start}-{year_end}):**").format(
+            year_start=int(df_main['Ano_Inicio_Curso'].max()),
+            year_end=int(df_main['Ano_Inicio_Curso'].max()+1)
+        ))
+        if datos_genero_ultimo_ano_b1 and datos_genero_ultimo_ano_b1.get('Total', 0) > 0:
+            st.metric(label=ts.translate('B1_metric_total_women', "Total Mujeres"), value=f"{int(datos_genero_ultimo_ano_b1['Mujeres']):,}")
+            st.metric(label=ts.translate('B1_metric_total_men', "Total Hombres"), value=f"{int(datos_genero_ultimo_ano_b1['Hombres']):,}")
+        else:
+            show_info(ts.translate('B1_info_no_gender_data', "No hay datos de género disponibles para el último año."))
+
+    with col_b1_genero_pie:
+        if datos_genero_ultimo_ano_b1 and datos_genero_ultimo_ano_b1.get('Total', 0) > 0:
+            genero_col, cantidad_col = ts.translate('_gender', 'Genero'), ts.translate('_quantity', 'Cantidad')
+            mujeres_label, hombres_label = ts.translate('_women', 'Mujeres'), ts.translate('_men', 'Hombres')
+
+            df_pie_genero = pd.DataFrame({
+                genero_col: [mujeres_label, hombres_label],
+                cantidad_col: [datos_genero_ultimo_ano_b1['Mujeres'], datos_genero_ultimo_ano_b1['Hombres']]
+            })
+            fig_pie_genero = px.pie(
+                df_pie_genero, values=cantidad_col, names=genero_col,
+                title=ts.translate('B1_pie_title_genero', "Distribución de Género en {career}:").format(career=carrera_sel_b1),
+                color_discrete_map={mujeres_label: 'lightpink', hombres_label: 'lightskyblue'}
+            )
+            fig_pie_genero.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig_pie_genero, use_container_width=True, key="pie_genero_b1")
+            datos_para_ia.append(fig_pie_genero)
+
+    st.markdown("---")
+
+    if df_unis_b1 is not None and not df_unis_b1.empty:
+        st.markdown(ts.translate('b1_universities_title', "**Universidades que imparten '{career}' (Matrícula en último curso):**").format(career=carrera_sel_b1))
+        
+        ano_reciente = int(df_main['Ano_Inicio_Curso'].max())
+        matricula_col_name = f'Matricula_{ano_reciente}-{ano_reciente+1}'
+        df_unis_b1_sorted = df_unis_b1.sort_values(by=matricula_col_name, ascending=True)
+
+        fig_bar_unis = px.bar(
+            df_unis_b1_sorted,
+            x=matricula_col_name, y='Universidad', orientation='h',
+            title=ts.translate('b1_bar_chart_title', "Distribución por Universidad: {career}").format(career=carrera_sel_b1),
+            labels={
+                'Universidad': ts.translate('_university', 'Universidad'),
+                matricula_col_name: ts.translate('_enrollment', 'Matrícula')
+            },
+            height=max(300, len(df_unis_b1_sorted) * 30)
+        )
+        st.plotly_chart(fig_bar_unis, use_container_width=True, key="fig_b1_bar_unis_final")
+        datos_para_ia.append(fig_bar_unis)
+    else:
+        info_no_unis_key = 'b1_info_no_universities_found'
+        info_no_unis_default = "Ninguna universidad registró matrícula..."
+        show_info(ts.translate(info_no_unis_key, info_no_unis_default).format(career=carrera_sel_b1))
+
+    context_ai_text = f"Analysis of the degree profile for **{carrera_sel_b1}**, which belongs to the branch of science: **{rama_b1}**."
+    if cagr_b1_info.get("status") == "SUCCESS":
+        context_ai_text += f" For the period {int(cagr_b1_info['start_year'])}-{int(cagr_b1_info['end_year'])}, the CAGR was {cagr_b1_info.get('cagr_value', 0.0) * 100:.2f}%."
+    
     ask_ai_component(
-        analysis_context=contexto_texto_ia,
+        analysis_context=context_ai_text,
         key=f"b1_perfil_carrera_{carrera_sel_b1.replace(' ','_')}",
         extra_data=datos_para_ia,
-        translation=ts.translate('ask_ai_component',{})
+        translation=ts.translate('ask_ai_component', {})
     )
 
 @st.fragment
-def B2(df_main, df_ins, *args, game_controller:GameController, ts, **kwargs):
-    st.header(ts.translate('b2_header', "🗺️ B2. Guía de Instituciones: Explora la Oferta Académica por Localidad"))
+def B2(df_main, df_ins, game_controller: GameController, ts, **kwargs):
+    st.header(ts.translate('b2_header', "🗺️ Guía de Instituciones: Explora la Oferta Académica por Localidad"))
     st.markdown(ts.translate('b2_intro', """
     Descubre las instituciones de educación superior en Cuba, filtrando por provincia y municipio.
     Para cada universidad, encontrarás información general, su composición de género, las ramas de ciencias
@@ -1036,176 +1042,153 @@ def B2(df_main, df_ins, *args, game_controller:GameController, ts, **kwargs):
 
     if df_ins.empty:
         st.warning(ts.translate('b2_warning_no_data', "Los datos de instituciones ('db_uni.parquet') no están disponibles o están vacíos. Esta sección no puede mostrarse."))
-    else:
-        st.subheader(ts.translate('b2_subheader_filters', "Filtros de Búsqueda:"))
-        col_filtro1, col_filtro2 = st.columns(2)
-        
-        all_provinces_text = ts.translate('_all_provinces', "TODAS LAS PROVINCIAS")
-        all_municipalities_text = ts.translate('_all_municipalities', "TODOS LOS MUNICIPIOS")
-        province_label = ts.translate('b2_label_province', "Provincia:")
-        municipality_label = ts.translate('b2_label_municipality', "Municipio:")
+        return
 
-        with col_filtro1:
-            provincias_disponibles_b2 = [all_provinces_text] + sorted(df_ins['provincia'].unique().tolist())
-            provincia_sel_b2 = st.selectbox(
-                province_label,
-                options=provincias_disponibles_b2,
-                key="sel_prov_b2_guia_cuerpo_final"
-            )
+    st.subheader(ts.translate('b2_subheader_filters', "Filtros de Búsqueda:"))
+    col_filtro1, col_filtro2 = st.columns(2)
 
-        with col_filtro2:
-            municipios_disponibles_filtrados_b2 = [all_municipalities_text]
-            if provincia_sel_b2 != all_provinces_text:
-                municipios_de_provincia = sorted(df_ins[df_ins['provincia'] == provincia_sel_b2]['municipio'].unique().tolist())
-                municipios_disponibles_filtrados_b2.extend(municipios_de_provincia)
-            
-            municipio_sel_b2 = st.selectbox(
-                municipality_label,
-                options=municipios_disponibles_filtrados_b2,
-                key="sel_mun_b2_guia_cuerpo_final",
-                disabled=(provincia_sel_b2 == all_provinces_text)
-            )
-        
-        pattern_sel_b2 = st.text_input(
-            ts.translate('b2_label_search_pattern', "Buscar por nombre o sigla de institución (filtro visual):"),
-            key="sel_patron_b2"
+    all_provinces_text = ts.translate('_all_provinces', "TODAS LAS PROVINCIAS")
+    all_municipalities_text = ts.translate('_all_municipalities', "TODOS LOS MUNICIPIOS")
+    province_label = ts.translate('b2_label_province', "Provincia:")
+    municipality_label = ts.translate('b2_label_municipality', "Municipio:")
+
+    with col_filtro1:
+        provincias_disponibles_b2 = [all_provinces_text] + sorted(df_ins['provincia'].unique().tolist())
+        provincia_sel_b2 = st.selectbox(
+            province_label,
+            options=provincias_disponibles_b2,
+            key="sel_prov_b2_guia"
         )
-        st.markdown("---")
 
-        with st.spinner(ts.translate('b2_spinner_loading', "Cargando guía de instituciones...")):
-            provincia_para_filtrar = None if provincia_sel_b2 == all_provinces_text else provincia_sel_b2
-            municipio_para_filtrar = None
-            if provincia_para_filtrar is not None and municipio_sel_b2 != all_municipalities_text:
-                municipio_para_filtrar = municipio_sel_b2
+    with col_filtro2:
+        municipios_disponibles_filtrados_b2 = [all_municipalities_text]
+        if provincia_sel_b2 != all_provinces_text:
+            municipios_de_provincia = sorted(df_ins[df_ins['provincia'] == provincia_sel_b2]['municipio'].unique().tolist())
+            municipios_disponibles_filtrados_b2.extend(municipios_de_provincia)
 
-            guia_data_b2, msg_b2 = analisis_guia_universidades(
-                df_ins, df_main,
-                provincia_seleccionada=provincia_para_filtrar,
-                municipio_seleccionado=municipio_para_filtrar
-            )
-        show_info(msg_b2)
+        municipio_sel_b2 = st.selectbox(
+            municipality_label,
+            options=municipios_disponibles_filtrados_b2,
+            key="sel_mun_b2_guia",
+            disabled=(provincia_sel_b2 == all_provinces_text)
+        )
 
-        if guia_data_b2:
-            contexto_texto_ia = f"Analysis of the institutions guide. Applied filters:\n- Province: {provincia_sel_b2}\n- Municipality: {municipio_sel_b2}"
-            if msg_b2:
-                contexto_texto_ia += f"\nAnalysis note: {msg_b2}"
-            
-            fichas_tecnicas_unis = []
-            
-            filtered_guia_data = {}
-            if pattern_sel_b2:
-                for nombre, data in guia_data_b2.items():
-                    if pattern_sel_b2.lower() in nombre.lower() or pattern_sel_b2.lower() in data.get('sigla', '').lower():
-                        filtered_guia_data[nombre] = data
-            else:
-                filtered_guia_data = guia_data_b2
+    pattern_sel_b2 = st.text_input(
+        ts.translate('b2_label_search_pattern', "Buscar por nombre o sigla de institución (filtro visual):"),
+        key="sel_patron_b2"
+    )
+    st.markdown("---")
 
-            st.markdown(ts.translate(
-                'b2_markdown_showing_filtered',
-                "**Mostrando {shown} de {total} institución(es) según los filtros:**"
-            ).format(shown=len(filtered_guia_data), total=len(guia_data_b2)))
+    provincia_para_filtrar = None if provincia_sel_b2 == all_provinces_text else provincia_sel_b2
+    municipio_para_filtrar = None if municipio_sel_b2 == all_municipalities_text else municipio_sel_b2
 
-            for nombre_uni, data_uni in filtered_guia_data.items():
-                ficha_actual = {
-                    ts.translate('_institution', "Institución"): nombre_uni,
-                    ts.translate('_acronym', "Sigla"): data_uni.get('sigla', 'N/D'),
-                    ts.translate('_province', "Provincia"): data_uni.get('provincia', 'N/D'),
-                    ts.translate('_municipality', "Municipio"): data_uni.get('municipio', 'N/D')
-                }
-                datos_genero = data_uni.get("datos_genero_uni")
-                ficha_actual[ts.translate('_female_enrollment', "Matrícula Mujeres")] = int(datos_genero['Mujeres']) if datos_genero and 'Mujeres' in datos_genero else 0
-                ficha_actual[ts.translate('_male_enrollment', "Matrícula Hombres")] = int(datos_genero['Hombres']) if datos_genero and 'Hombres' in datos_genero else 0
-                lista_carreras_consolidada = []
-                if data_uni.get("ramas_ofertadas"):
-                    for rama_info in data_uni["ramas_ofertadas"]:
-                        if rama_info.get("carreras"):
-                            for carrera_info in rama_info["carreras"]:
-                                lista_carreras_consolidada.append({
-                                    ts.translate('_branch', "rama"): rama_info['nombre_rama'],
-                                    ts.translate('_career', "carrera"): carrera_info['nombre_carrera'],
-                                    ts.translate('_enrollment', "matricula"): carrera_info['matricula_ultimo_ano']
-                                })
-                ficha_actual[ts.translate('_academic_offering_csv', "Oferta Académica (CSV)")] = to_csv_string(lista_carreras_consolidada)
-                fichas_tecnicas_unis.append(ficha_actual)
+    with st.spinner(ts.translate('b2_spinner_loading', "Cargando guía de instituciones...")):
+        df_guia, msg_b2 = analisis_guia_universidades(
+            df_instituciones=df_ins,
+            df_matricula=df_main,
+            lang=ts.actual_lang,
+            provincia_seleccionada=provincia_para_filtrar,
+            municipio_seleccionado=municipio_para_filtrar
+        )
+    show_info(msg_b2)
 
-                titulo_expander = f"🏛️ {nombre_uni} ({data_uni.get('sigla', 'N/D')})"
-                detalles_loc_exp = [d for d in [data_uni.get('municipio'), data_uni.get('provincia')] if d and d != 'N/D']
-                if detalles_loc_exp:
-                    titulo_expander += f" | {', '.join(detalles_loc_exp)}"
-                if data_uni.get('ano_creacion') and pd.notna(data_uni['ano_creacion']):
-                    titulo_expander += f" ({ts.translate('_founded_in', 'Fundada en')} {int(data_uni['ano_creacion'])})"
-                
-                with st.expander(titulo_expander):
-                    col_info_basica, col_genero_pastel_uni = st.columns([2, 1])
-
-                    with col_info_basica:
-                        st.markdown(f"**{ts.translate('_organism', 'Organismo')}:** `{data_uni.get('organismo', 'N/D')}`")
-                        st.markdown(f"**{ts.translate('_address', 'Dirección')}:** *{data_uni.get('direccion', 'N/D')}*")
-                        st.markdown(f"**{ts.translate('_main_modality', 'Modalidad Principal')}:** `{data_uni.get('modalidad_estudio', 'N/D')}`")
-
-                    with col_genero_pastel_uni:
-                        if datos_genero and datos_genero.get('Total', 0) > 0:
-                            genero_col = ts.translate('_gender', 'Género')
-                            cantidad_col = ts.translate('_quantity', 'Cantidad')
-                            mujeres_label = ts.translate('_women', 'Mujeres')
-                            hombres_label = ts.translate('_men', 'Hombres')
-                            df_pie_genero_uni = pd.DataFrame({
-                                genero_col: [mujeres_label, hombres_label],
-                                cantidad_col: [datos_genero['Mujeres'], datos_genero['Hombres']]
-                            })
-                            fig_pie_genero_uni = px.pie(
-                                df_pie_genero_uni, values=cantidad_col, names=genero_col,
-                                title=ts.translate('b2_pie_title_gender_total', "Género Total ({start}-{end})").format(
-                                    start=df_main['Ano_Inicio_Curso'].max(), end=df_main['Ano_Inicio_Curso'].max() + 1),
-                                color_discrete_map={mujeres_label: 'orchid', hombres_label: 'royalblue'}, height=250)
-                            fig_pie_genero_uni.update_layout(margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
-                            fig_pie_genero_uni.update_traces(textposition='inside', textinfo='percent+label')
-                            st.plotly_chart(fig_pie_genero_uni, use_container_width=True)
-                        else:
-                            st.caption(ts.translate('b2_caption_no_gender_data', "Sin datos de género disponibles para el último año."))
-                    
-                    st.markdown("---")
-                    if data_uni.get("ramas_ofertadas"):
-                        st.markdown(ts.translate('b2_markdown_academic_offering', "**Oferta Académica (Ramas y Carreras con matrícula en último año):**"))
-                        for rama_info in data_uni["ramas_ofertadas"]:
-                            with st.container():
-                                st.markdown(f"##### <span style='color: #1E90FF;'>►</span> {rama_info['nombre_rama']}", unsafe_allow_html=True)
-                                if rama_info.get("carreras"):
-                                    df_carreras_rama = pd.DataFrame(rama_info["carreras"])
-                                    
-                                    career_col_original = 'nombre_carrera'
-                                    enrollment_col_original = 'matricula_ultimo_ano'
-                                    
-                                    career_label_translated = ts.translate('_career', 'Carrera')
-                                    enrollment_label_translated = ts.translate('_enrollment', 'Matrícula')
-
-                                    df_display = df_carreras_rama.copy()
-                                    
-                                    df_display.rename(columns={
-                                        career_col_original: career_label_translated,
-                                        enrollment_col_original: enrollment_label_translated
-                                    }, inplace=True)
-                                    
-                                    st.dataframe(df_display.set_index(career_label_translated))
-                                else:
-                                    st.caption(ts.translate('b2_caption_no_careers', "  ↳ *No se encontraron carreras con matrícula en el último año.*"))
-                    else:
-                        show_info(ts.translate('b2_info_no_branches', "Esta institución no tiene ramas de ciencias con oferta activa o carreras con matrícula reportada."))
-            
-            if fichas_tecnicas_unis:
-                df_consolidado_ia = pd.DataFrame(fichas_tecnicas_unis)
-                datos_para_ia.append(df_consolidado_ia)
+    if df_guia is not None and not df_guia.empty:
         
-        elif provincia_sel_b2 and provincia_sel_b2 != all_provinces_text:
-            show_info(ts.translate('b2_info_no_institutions_filtered', "No se encontraron instituciones para los filtros aplicados."))
-        else:
-            show_info(ts.translate('b2_info_no_institutions', "No hay instituciones para mostrar con los filtros actuales."))
+        df_guia_filtrado_nombre = df_guia
+        if pattern_sel_b2:
+            df_guia_filtrado_nombre = df_guia[
+                df_guia['nombre_institucion'].str.contains(pattern_sel_b2, case=False, na=False) |
+                df_guia['sigla_institucion'].str.contains(pattern_sel_b2, case=False, na=False)
+            ]
+
+        n_mostradas = df_guia_filtrado_nombre['nombre_institucion'].nunique()
+        n_totales = df_guia['nombre_institucion'].nunique()
+
+        st.markdown(ts.translate(
+            'b2_markdown_showing_filtered',
+            "**Mostrando {shown} de {total} institución(es) según los filtros:**"
+        ).format(shown=n_mostradas, total=n_totales))
+
+        for nombre_uni, df_uni_group in df_guia_filtrado_nombre.groupby('nombre_institucion', sort=False):
+            data_uni_row = df_uni_group.iloc[0]
+
+            titulo_expander = f"🏛️ {nombre_uni} ({data_uni_row.get('sigla_institucion', 'N/D')})"
+            detalles_loc_exp = [d for d in [data_uni_row.get('municipio'), data_uni_row.get('provincia')] if d]
+            if detalles_loc_exp:
+                titulo_expander += f" | {', '.join(detalles_loc_exp)}"
+            if pd.notna(data_uni_row.get('ano_creacion')):
+                titulo_expander += f" ({ts.translate('_founded_in', 'Fundada en')} {int(data_uni_row['ano_creacion'])})"
+            
+            with st.expander(titulo_expander):
+                col_info_basica, col_genero_pastel_uni = st.columns([2, 1])
+
+                with col_info_basica:
+                    st.markdown(f"**{ts.translate('_organism', 'Organismo')}:** `{data_uni_row.get('organismo', 'N/D')}`")
+                    st.markdown(f"**{ts.translate('_address', 'Dirección')}:** *{data_uni_row.get('direccion_fisica', 'N/D')}*")
+                    st.markdown(f"**{ts.translate('_main_modality', 'Modalidad Principal')}:** `{data_uni_row.get('modalidad_estudio', 'N/D')}`")
+
+                with col_genero_pastel_uni:
+                    total_uni_ultimo_ano = data_uni_row.get('Matricula_Total_Uni_Ultimo_Ano', 0)
+                    if total_uni_ultimo_ano > 0:
+                        mujeres = data_uni_row.get('Matricula_Mujeres_Uni_Ultimo_Ano', 0)
+                        hombres = data_uni_row.get('Matricula_Hombres_Uni_Ultimo_Ano', 0)
+                        
+                        genero_col = ts.translate('_gender', 'Género')
+                        cantidad_col = ts.translate('_quantity', 'Cantidad')
+                        mujeres_label = ts.translate('_women', 'Mujeres')
+                        hombres_label = ts.translate('_men', 'Hombres')
+
+                        df_pie_genero_uni = pd.DataFrame({
+                            genero_col: [mujeres_label, hombres_label],
+                            cantidad_col: [mujeres, hombres]
+                        })
+                        fig_pie_genero_uni = px.pie(
+                            df_pie_genero_uni, values=cantidad_col, names=genero_col,
+                            title=ts.translate('b2_pie_title_gender_total', "Género Total ({start}-{end})").format(
+                                start=int(df_main['Ano_Inicio_Curso'].max()), end=int(df_main['Ano_Inicio_Curso'].max()) + 1),
+                            color_discrete_map={mujeres_label: 'orchid', hombres_label: 'royalblue'}, height=250)
+                        fig_pie_genero_uni.update_layout(margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
+                        fig_pie_genero_uni.update_traces(textposition='inside', textinfo='percent+label')
+                        st.plotly_chart(fig_pie_genero_uni, use_container_width=True)
+                    else:
+                        st.caption(ts.translate('b2_caption_no_gender_data', "Sin datos de género disponibles para el último año."))
+                
+                st.markdown("---")
+                st.markdown(ts.translate('b2_markdown_academic_offering', "**Oferta Académica (Ramas y Carreras con matrícula en último año):**"))
+
+                na_string = ts.translate('_not_available_short', "N/D")
+                df_oferta_uni = df_uni_group[df_uni_group['carrera'] != na_string].copy()
+
+                if not df_oferta_uni.empty:
+                    for nombre_rama, df_rama_group in df_oferta_uni.groupby('rama_ciencias', sort=False):
+                        st.markdown(f"##### <span style='color: #1E90FF;'>►</span> {nombre_rama}", unsafe_allow_html=True)
+                        
+                        career_label_translated = ts.translate('_career', 'Carrera')
+                        enrollment_label_translated = ts.translate('_enrollment', 'Matrícula')
+
+                        df_display = df_rama_group[['carrera', 'Matricula_Carrera_Ultimo_Ano']].rename(columns={
+                            'carrera': career_label_translated,
+                            'Matricula_Carrera_Ultimo_Ano': enrollment_label_translated
+                        }).set_index(career_label_translated)
+                        
+                        st.dataframe(df_display, use_container_width=True)
+                else:
+                    show_info(ts.translate('b2_info_no_branches', "Esta institución no tiene ramas de ciencias con oferta activa o carreras con matrícula reportada en el último año."))
+        
+        contexto_texto_ia = ts.translate(
+            'b2_ai_context',
+            "Análisis de la guía de instituciones. Filtros aplicados: Provincia: {province}, Municipio: {municipality}."
+        ).format(province=provincia_sel_b2, municipality=municipio_sel_b2)
+        if msg_b2:
+            contexto_texto_ia += f"\n{ts.translate('analisys_note', 'Nota de análisis')}: {msg_b2}"
+        datos_para_ia.append(df_guia_filtrado_nombre)
+
     st.markdown('---')
     ask_ai_component(
         analysis_context=contexto_texto_ia,
         key="b2_guia_instituciones",
         extra_data=datos_para_ia,
-        translation=ts.translate('ask_ai_component',{})
+        translation=ts.translate('ask_ai_component', {})
     )
 
 @st.fragment
