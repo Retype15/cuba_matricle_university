@@ -1,13 +1,15 @@
+from datetime import date, datetime
+from time import time
 from .plot_functions import *
 from .ai_functions import ask_ai_component
 from .general_functions import to_csv_string
-from .Gamification import GameController, SimpleQuestionMinigame, DataDuelMinigame, ClassifierMinigame, OracleMinigame
+from .Gamification import *
 
 
 def show_info(msg):
     if msg: st.caption(f"ℹ️ {msg}")
 
-### Testeando las funciones del motor de juego, si algo falla es culpa tuya xd
+### Testeando las funciones del motor de juego, si algo falla es culpa tuya por andar tocando xd (es broma, nada va a fallar aquí : )
 @st.fragment
 def introduction(df_main, game_controller: GameController, ts, **kwargs):
     if 'initial_mode_selected' not in st.session_state:
@@ -75,20 +77,24 @@ def A1(df_main, game_controller: GameController, ts, **kwargs):
             Imagina que podemos tomarle el pulso a todo el sistema universitario cubano a lo largo de una década.
             ¿Cómo ha sido su ritmo? ¿Ha experimentado momentos de vigoroso crecimiento, períodos de estabilidad,
             o quizás fases donde el latido se ha vuelto más pausado?
+
+            Esta primera sección nos ofrece una vista panorámica de la matrícula total a nivel nacional,
+            permitiéndonos identificar las grandes tendencias que han marcado el sistema de educación superior
+            en los últimos años. Es nuestro punto de partida para entender el contexto general antes de
+            sumergirnos en análisis más específicos.
             """
         )
     )
 
-    @st.fragment
     def render_analysis_content():
         with st.spinner(ts.translate('A1_spinner_1', "Construyendo la gráfica A1, por favor espere...")):
-            df_historico, _, msg_code, _ = analisis_A1(df_main, incluir_proyeccion=False)
+            df_historico, _, msg_code, _ = analisis_A1(df_main)
 
-        if msg_code != "success_historical_only":
+        if msg_code != "success_historical_only" or df_historico is None:
             st.warning(ts.translate('generic_warn_figs', "No se pudo generar el gráfico del panorama nacional (A1)."))
             return
         
-        fig_a1 = graficate_A1(df_historico, ts) #type:ignore
+        fig_a1 = graficate_A1(df_historico, ts)
         st.plotly_chart(fig_a1, use_container_width=True, key="fig_a1_pulso_nacional")
         
         st.subheader(ts.translate('A1_fig_1_subheader',"Descifrando el Ritmo de la Década (2015-2025):"))
@@ -96,14 +102,21 @@ def A1(df_main, game_controller: GameController, ts, **kwargs):
             key='A1_fig_1_markdown_1',
             default="""
             Observando la trayectoria de la matrícula nacional total en el gráfico superior, podemos identificar varias fases clave:
-            *   **Impulso Inicial (2015-16 a 2016-17):** El viaje comienza en el curso 2015-2016 con una cifra que ronda los **165,000 estudiantes**.
-            *   **Crecimiento Sostenido hacia la Cima (2017-18 a 2020-21):** la tendencia ascendente se retoma con fuerza hasta alcanzar su **punto más álgido en el curso 2020-2021, superando los 285,000 estudiantes**.
-            *   **Meseta y Comienzo del Declive (2021-22 a 2022-23):** El curso 2021-2022 muestra una ligera contracción...
-            *   **Ajuste Reciente (2023-24 a 2024-25):** Los dos últimos cursos registrados muestran una **continuación de la tendencia descendente...**
+
+            *   **Impulso Inicial (2015-16 a 2016-17):** El viaje comienza en el curso 2015-2016 con una cifra que ronda los **165,000 estudiantes**. El año siguiente muestra un ligero aumento, estableciendo una base sólida para el crecimiento que vendrá.
+
+            *   **Crecimiento Sostenido hacia la Cima (2017-18 a 2020-21):** A partir del curso 2017-18, y a pesar de la falta de datos para 2018-19, la tendencia ascendente se retoma con fuerza hasta alcanzar su **punto más álgido en el curso 2020-2021, superando los 285,000 estudiantes**. Este período representa la fase de mayor expansión de la matrícula en la década.
+
+            *   **Meseta y Comienzo del Declive (2021-22 a 2022-23):** El curso 2021-2022 muestra una ligera contracción respecto al pico, marcando el inicio de una nueva fase. La matrícula se mantiene alta pero ya no crece, y para 2022-23, el descenso se hace más evidente.
+
+            *   **Ajuste Reciente (2023-24 a 2024-25):** Los dos últimos cursos registrados muestran una **continuación de la tendencia descendente**, con la matrícula total situándose en torno a los **205,000 estudiantes** en el período más reciente. Esto sugiere un reajuste del sistema tras el pico de expansión.
             """
         ))
         
-        context_ai_text = "The current analysis is about the evolution of total national enrollment, male and female, in Cuba."
+        context_ai_text = ts.translate(
+            'A1_ai_context',
+            "The current analysis is about the evolution of total national enrollment, male and female, in Cuba from 2015 to 2025. The data, presented in the chart, shows a significant peak around 2020-2021 followed by a decline."
+        )
         ask_ai_component(
             analysis_context=context_ai_text,
             key="a1_nacional",
@@ -111,24 +124,43 @@ def A1(df_main, game_controller: GameController, ts, **kwargs):
             translation=ts.translate('ask_ai_component', {})
         )
 
-    df_historico_juego, _, _, _ = analisis_A1(df_main, incluir_proyeccion=False)
-    
-    if df_historico_juego is not None:
-        df_2021 = df_historico_juego[df_historico_juego['Ano_Inicio_Curso'] <= 2022]
-        game_data = pd.DataFrame([{
-            "name": ts.translate('national_enrollment', "Matrícula Nacional"),
-            "x": df_2021['Curso_Academico'].tolist(),
-            "y": df_2021['Matricula_Total'].tolist()
-        }])
+    if game_controller.game_mode:
+        df_historico_juego, _, _, _ = analisis_A1(df_main)
+        
+        if df_historico_juego is not None and not df_historico_juego.empty:
+            pico_data = df_historico_juego.loc[df_historico_juego['Matricula_Total'].idxmax()]
+            pico_matricula = pico_data['Matricula_Total']
+            pico_curso = pico_data['Curso_Academico']
 
-        oracle_game_A1 = OracleMinigame(
-            game_id="A1_OracleNacional",
-            game_title=ts.translate('A1_game_title', "El Oráculo Nacional"),
-            data=game_data,
-            content_callback=render_analysis_content,
-            num_rounds=1
-        )
-        oracle_game_A1.render()
+            game_data_A1_estimator = pd.DataFrame([{
+                "name": ts.translate('A1_peak_enrollment_label', "Matrícula Nacional en el Año Pico ({curso})").format(curso=pico_curso),
+                "value": pico_matricula
+            }])
+
+            st.markdown("---")
+            st.subheader(ts.translate('A1_game_subheader', "A Prueba: La Magnitud del Pico"))
+            st.markdown(ts.translate(
+                'A1_game_intro',
+                "El sistema universitario cubano alcanzó un número máximo de estudiantes en un punto de la última década. Antes de ver el gráfico, ¿qué tan buena es tu intuición? Intenta estimar cuál fue esa cifra máxima."
+            ))
+
+            estimator_game_A1 = EstimatorMinigame(
+                game_id="A1_EstimatorPicoNacional",
+                game_title=ts.translate('A1_game_title', "El Estimador del Pico Nacional"),
+                data=game_data_A1_estimator,
+                content_callback=render_analysis_content,
+                num_rounds=1,
+                min_score_for_victory=75,
+                translation={
+                    'estimator_question': ts.translate(
+                        'A1_estimator_question', 
+                        "¿Cuántos estudiantes crees que había en todo el país durante el curso de máxima matrícula ({curso})?"
+                    ).format(curso=pico_curso)
+                }
+            )
+            estimator_game_A1.render()
+        else:
+            render_analysis_content()
     else:
         render_analysis_content()
 
@@ -338,8 +370,6 @@ def A2(df_main, game_controller: GameController, ts, **kwargs):
     else:
         render_analysis_content_A2_part2()
 
-### Continuar refactorizando y añadiendo los componentes de minijuegos.
-
 @st.fragment
 def A3(df_main, game_controller: GameController, ts, **kwargs):
     st.header(ts.translate('A3_header',"🔍 Carreras Bajo la Lupa: Popularidad, Tendencias y Dinamismo"))
@@ -351,7 +381,6 @@ def A3(df_main, game_controller: GameController, ts, **kwargs):
     """))
     st.markdown("---")
 
-    # --- Análisis de Popularidad y Evolución ---
     st.subheader(ts.translate('A3_subheader_2',"🏆 El Podio de las Carreras: ¿Cuáles Lideran la Matrícula Actual?"))
     
     TOP_N_CARRERAS = 10
@@ -361,7 +390,7 @@ def A3(df_main, game_controller: GameController, ts, **kwargs):
 
     if status != "success":
         st.warning(ts.translate('A3_warning_analysis_failed', "No se pudo realizar el análisis de popularidad de carreras. Estado: {status}").format(status=status))
-        return # Detiene la ejecución si el análisis principal falla
+        return
 
     st.markdown(ts.translate('A3_markdown_2',"""
     A la izquierda observamos el ranking de todas las carreras según su matrícula total en el curso más reciente
@@ -395,14 +424,13 @@ def A3(df_main, game_controller: GameController, ts, **kwargs):
     """))
 
     ask_ai_component(
-        analysis_context=ts.translate('A3_ai_context_ranking', "Análisis del ranking de carreras y la evolución de las top {n}."),
+        analysis_context="Analysis of the degree program rankings and the evolution of the top.",
         key="a3_carreras_top",
         extra_data=[df_ranking, df_evolucion],
         translation=ts.translate('ask_ai_component',{})
     )
     st.markdown("---")
 
-    # --- Análisis de Crecimiento (CAGR) ---
     st.subheader(ts.translate('A3_subheader_4', "🚀 El Ritmo del Cambio: ¿Qué Carreras Despegan o Aterrizan?"))
     st.markdown(ts.translate('A3_markdown_4', """
     La **Tasa de Crecimiento Anual Compuesto (CAGR)** nos ofrece una perspectiva del dinamismo.
@@ -444,7 +472,7 @@ def A3(df_main, game_controller: GameController, ts, **kwargs):
         """))
 
         ask_ai_component(
-            analysis_context=ts.translate('A3_ai_context_cagr', "Análisis de la Tasa de Crecimiento Anual Compuesto (CAGR) de las carreras."),
+            analysis_context="Analysis of the Compound Annual Growth Rate (CAGR) of degree programs.",
             key="a3_carreras_cagr",
             extra_data=[fig_top_cagr, fig_bottom_cagr],
             translation=ts.translate('ask_ai_component',{})
@@ -472,7 +500,7 @@ def A4(df_main, game_controller: GameController, ts, **kwargs):
     # Gráfico de Ramas
     if df_ramas is not None and not df_ramas.empty:
         st.subheader(ts.translate('A4_fig_ramas_subheader', "Participación Femenina por Rama de Ciencias ({curso})").format(curso=curso_reciente))
-        fig_ramas = graficate_A4_ramas(df_ramas, ts, curso_reciente)
+        fig_ramas = graficate_A4_ramas(df_ramas, ts, curso_reciente) #type:ignore
         st.plotly_chart(fig_ramas, use_container_width=True, key="fig_a4_ramas_genero")
         st.markdown(ts.translate('A4_fig_ramas_markdown_1', """
         **El Panorama General por Áreas del Saber:**
@@ -485,7 +513,7 @@ def A4(df_main, game_controller: GameController, ts, **kwargs):
         """))
         
         ask_ai_component(
-            analysis_context=ts.translate('A4_ai_context_branches', "Análisis del porcentaje de participación femenina por rama de ciencias."),
+            analysis_context="Analysis of the percentage of female participation by field of science.",
             key="a4_ramas_genero",
             extra_data=[df_ramas],
             translation=ts.translate('ask_ai_component',{})
@@ -498,7 +526,7 @@ def A4(df_main, game_controller: GameController, ts, **kwargs):
     # Gráfico de Carreras
     if df_fem is not None and not df_fem.empty and df_masc is not None and not df_masc.empty:
         st.subheader(ts.translate('A4_fig_carreras_subheader', "Zoom a las Carreras: Extremos del Espectro de Género ({curso}, Matrícula >= 30)").format(curso=curso_reciente))
-        fig_carreras = graficate_A4_carreras(df_fem, df_masc, ts, curso_reciente)
+        fig_carreras = graficate_A4_carreras(df_fem, df_masc, ts, curso_reciente) #type:ignore
         st.plotly_chart(fig_carreras, use_container_width=True, key="fig_a4_carreras_genero")
         st.markdown(ts.translate('A4_fig_carreras_markdown_1', """
         **Casos Destacados de Mayoría y Minoría Femenina:**
@@ -512,7 +540,7 @@ def A4(df_main, game_controller: GameController, ts, **kwargs):
         """))
 
         ask_ai_component(
-            analysis_context=ts.translate('A4_ai_context_careers', "Análisis de las carreras con mayor y menor participación femenina."),
+            analysis_context="Analysis of degree programs with the highest and lowest female participation.",
             key="a4_carreras_genero",
             extra_data=[df_fem, df_masc],
             translation=ts.translate('ask_ai_component',{})
@@ -547,7 +575,6 @@ def A5(df_main, game_controller: GameController, ts, **kwargs):
         st.warning(ts.translate('A5_warning_analysis_failed', "No se pudo realizar el análisis institucional. Estado: {status}").format(status=status))
         return
 
-    # Parte 1: Treemap y Oferta Limitada
     st.subheader(ts.translate('A5_fig_treemap_subheader', "Mapa Interactivo de la Matrícula Universitaria ({curso})").format(curso=curso_reciente))
     if df_treemap_data is not None and not df_treemap_data.empty:
         fig_treemap = graficate_A5_treemap(df_treemap_data, ts, curso_reciente) #type:ignore
@@ -574,11 +601,11 @@ def A5(df_main, game_controller: GameController, ts, **kwargs):
         
         fig_oferta_limitada = grouped_dot_plot(
             df_oferta_limitada,
-            x='Num_Universidades_Ofertan', # Columna para el eje Y (agrupación)
-            y='carrera',                   # Columna para la etiqueta en el hover
+            x='Num_Universidades_Ofertan',
+            y='carrera',
             title=ts.translate('A5_chart_title_grouped_offer', 'Distribución de Carreras por Exclusividad de Oferta'),
             yaxis_title=ts.translate('A5_chart_yaxis_num_unis', 'Nº de Universidades que la Ofertan'),
-            annotation_text=ts.translate('_carrers', 'carreras'), # Texto para las anotaciones
+            annotation_text=ts.translate('_carrers', 'carreras'),
             color_scale='Viridis_r'
         )
         st.plotly_chart(fig_oferta_limitada, use_container_width=True)
@@ -587,7 +614,7 @@ def A5(df_main, game_controller: GameController, ts, **kwargs):
             st.dataframe(df_oferta_limitada, use_container_width=True, hide_index=True)
 
         ask_ai_component(
-            analysis_context=ts.translate('A5_ai_context_limited_offer', "Listado de carreras con oferta limitada a pocas universidades."),
+            analysis_context="List of degree programs with limited availability across universities.",
             key="a5_carreras_unicas",
             extra_data=[df_oferta_limitada],
             translation=ts.translate('ask_ai_component',{})
@@ -597,7 +624,6 @@ def A5(df_main, game_controller: GameController, ts, **kwargs):
 
     st.markdown("---")
     
-    # Parte 2: Comparativa de Universidades (antes A9)
     st.subheader(ts.translate('A5_subheader_2', "Lupa en Carreras Clave: ¿Quién es Quién en la Formación Específica?"))
     st.markdown(ts.translate('A5_markdown_2', """
     Selecciona hasta 3 carreras de tu interés. El gráfico mostrará la evolución histórica de la matrícula
@@ -629,14 +655,14 @@ def A5(df_main, game_controller: GameController, ts, **kwargs):
             df_comparativa, status_a9 = analisis_A5_comparativa_unis(df_main, carreras_a_comparar=carreras_seleccionadas)
 
         if status_a9 == "success":
-            fig_comparativa = graficate_A5_comparativa_unis(df_comparativa, ts)
+            fig_comparativa = graficate_A5_comparativa_unis(df_comparativa, ts) #type:ignore
             st.plotly_chart(fig_comparativa, use_container_width=True, key="fig_a9_comparativa_unis")
             
             ask_ai_component(
-                analysis_context=ts.translate('A5_ai_context_uni_comparison', "Evolución histórica por universidad para las carreras seleccionadas."),
+                analysis_context="Historical trends by university for the selected academic programs.",
                 key="a5_comparativa_unis_" + "_".join(sorted([c.replace(' ','_') for c in carreras_seleccionadas])),
                 extra_data=[df_comparativa],
-                translation=ts.translate('ask_ai_component',{})
+                translation=ts.translate('ask_ai_component')
             )
         else:
             st.warning(ts.translate('A5_warning_comparison_failed', "No se pudo generar el gráfico comparativo. Causa: {status}").format(status=status_a9))
@@ -650,17 +676,6 @@ def A5(df_main, game_controller: GameController, ts, **kwargs):
     *   **Optimizar Recursos:** El treemap y el análisis de ofertas únicas pueden revelar duplicidades innecesarias o, por el contrario, la necesidad de expandir la oferta de ciertas carreras en más regiones.
     *   **Colaboración Interinstitucional:** Conocer las fortalezas de cada una puede fomentar sinergias, programas conjuntos y movilidad estudiantil y profesoral.
     """))
-
-
-
-
-
-
-################################ ME QUEDÉ por AQUI, ERNESTO SI LEES ESTO, puedes continuar haciendolo o no, igual manana probablemente siga...####################################
-
-
-
-
 
 @st.fragment
 def A6(df_main, game_controller: GameController, ts, **kwargs):
@@ -683,10 +698,10 @@ def A6(df_main, game_controller: GameController, ts, **kwargs):
     # Proyección Nacional
     st.subheader(ts.translate('A6_subheader_1', "Horizonte Nacional: Proyección de la Matrícula Total"))
     with st.spinner(ts.translate('A6_spinner_1', "Calculando la proyección de matrícula nacional...")):
-        df_hist_nac, df_proy_nac, status_nac, n_anos_reg_nac = analisis_A1(df_main, incluir_proyeccion=True)
+        df_hist_nac, df_proy_nac, status_nac, n_anos_reg_nac = analisis_A1(df_main, projection=True)
 
     if status_nac == "success_with_projection" and df_hist_nac is not None and df_proy_nac is not None:
-        fig_proy_nacional = graficate_A1(df_hist_nac, ts, df_proy_nac, n_anos_reg_nac)
+        fig_proy_nacional = graficate_A1(df_hist_nac, ts, df_proy_nac, n_anos_reg_nac) #type:ignore
         st.plotly_chart(fig_proy_nacional, use_container_width=True, key="fig_a6_proy_nacional")
         
         st.markdown(ts.translate('A6_markdown_national_explanation', """
@@ -703,7 +718,7 @@ def A6(df_main, game_controller: GameController, ts, **kwargs):
         """))
         
         ask_ai_component(
-            analysis_context=ts.translate('A6_ai_context_national', "Proyección de la matrícula nacional total."),
+            analysis_context="Forecast of overall national enrollment figures.",
             key="a6_proy_nacional", extra_data=[df_hist_nac, df_proy_nac],
             translation=ts.translate('ask_ai_component',{})
         )
@@ -715,14 +730,13 @@ def A6(df_main, game_controller: GameController, ts, **kwargs):
     # Proyección por Ramas
     st.subheader(ts.translate('A6_fig_A2_subheader', "Saberes del Mañana: Proyección por Rama de Ciencias"))
     with st.spinner(ts.translate('A6_fig_A2_spinner', "Calculando la proyección por ramas de ciencias...")):
-        df_hist_ramas, _, df_proy_ramas, n_anos_reg_ramas = analisis_A2(df_main, incluir_proyeccion=True)
+        df_hist_ramas, _, df_proy_ramas, n_anos_reg_ramas = analisis_A2(df_main, projection=True)
     
-    if df_proy_ramas is not None and not df_proy_ramas.empty and df_hist_ramas is not None:
-        fig_proy_ramas = graficate_A2_evolucion(df_hist_ramas, ts, df_proy_ramas, n_anos_reg_ramas)
+    if df_proy_ramas is not None and df_hist_ramas is not None:
+        fig_proy_ramas = graficate_A2_evolucion(df_hist_ramas, ts, df_proy_ramas, n_anos_reg_ramas) #type:ignore
         st.plotly_chart(fig_proy_ramas, use_container_width=True, key="fig_a6_proy_ramas")
-        # Aquí también podría ir un markdown explicativo, si te parece
         ask_ai_component(
-            analysis_context=ts.translate('A6_ai_context_branches', "Proyección de la matrícula por rama de ciencias."),
+            analysis_context="Forecast of student enrollment by scientific discipline.",
             key="a6_proy_ramas", extra_data=[df_hist_ramas, df_proy_ramas],
             translation=ts.translate('ask_ai_component',{})
         )
@@ -762,7 +776,7 @@ def A6(df_main, game_controller: GameController, ts, **kwargs):
             st.plotly_chart(fig_proy_carreras, use_container_width=True, key="fig_a6_proy_carreras_dinamica")
             
             ask_ai_component(
-                analysis_context=ts.translate('A6_ai_context_careers', "Proyección para las carreras: {careers}.").format(careers=', '.join(carreras_seleccionadas)),
+                analysis_context=f"Projection for the degree programs: {', '.join(carreras_seleccionadas)}.",
                 key="a6_proy_carreras_" + "_".join(sorted([c.replace(' ', '_') for c in carreras_seleccionadas])),
                 extra_data=[df_proy_carreras],
                 translation=ts.translate('ask_ai_component',{})
@@ -781,8 +795,6 @@ def A6(df_main, game_controller: GameController, ts, **kwargs):
     *   Identificar áreas que podrían requerir **estrategias proactivas** para revertir tendencias negativas o para gestionar un crecimiento sostenible.
     *   Fomentar un diálogo informado sobre el **futuro de la oferta académica** en Cuba.
     """))
-
-### AKIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIi
 
 @st.fragment
 def A7(df_main, game_controller: GameController, ts, **kwargs):
@@ -803,7 +815,6 @@ def A7(df_main, game_controller: GameController, ts, **kwargs):
         st.warning(ts.translate('A7_error_a8_analysis', "No se pudo completar el análisis de áreas de atención."))
         return
 
-    # --- Categoría 1: Nuevas Ofertas ---
     st.subheader(ts.translate('A7_a8_subheader_1', "🌱 Sembrando el Futuro: Posibles Nuevas Ofertas o Reactivaciones"))
     if df_nuevas is not None and not df_nuevas.empty:
         st.markdown(ts.translate('A7_a8_markdown_1', """
@@ -822,7 +833,7 @@ def A7(df_main, game_controller: GameController, ts, **kwargs):
             yaxis_title=ts.translate('A7_chart_xaxis_year_new_offers', 'Año de Reactivación'),
             annotation_text=ts.translate('_careers', 'carreras'),
             color_scale='Viridis_r',
-            marker_symbol='diamond-tall' # Cambiado a círculo sólido para nuevas ofertas
+            marker_symbol='diamond-tall'
         )
         st.plotly_chart(fig_nuevas, use_container_width=True)
         
@@ -836,7 +847,7 @@ def A7(df_main, game_controller: GameController, ts, **kwargs):
             st.dataframe(df_nuevas_display, use_container_width=True)
 
         ask_ai_component(
-            analysis_context=ts.translate('A7_ai_context_new_offers', "Análisis de carreras que parecen ser nuevas ofertas o reactivaciones."),
+            analysis_context="Analysis of degree programs that appear to be new offerings or reactivations.",
             key="a7_nuevas_ofertas",
             extra_data=[df_nuevas],
             translation=ts.translate('ask_ai_component',{})
@@ -846,7 +857,6 @@ def A7(df_main, game_controller: GameController, ts, **kwargs):
     
     st.markdown("---")
 
-    # --- Categoría 2: Ceses de Oferta ---
     st.subheader(ts.translate('A7_a8_subheader_2', "🍂 Ciclos que Concluyen: Posibles Ceses de Oferta"))
     if df_cesadas is not None and not df_cesadas.empty:
         st.markdown(ts.translate('A7_a8_markdown_2_revised', """
@@ -878,7 +888,7 @@ def A7(df_main, game_controller: GameController, ts, **kwargs):
             st.dataframe(df_cesadas_display, use_container_width=True)
 
         ask_ai_component(
-            analysis_context=ts.translate('A7_ai_context_ceased_offers', "Análisis de carreras que parecen haber cesado su oferta."),
+            analysis_context="Analysis of degree programs that seem to have been discontinued.",
             key="a7_cese_oferta",
             extra_data=[df_cesadas],
             translation=ts.translate('ask_ai_component',{})
@@ -888,7 +898,6 @@ def A7(df_main, game_controller: GameController, ts, **kwargs):
     
     st.markdown("---")
         
-    # --- Categoría 3: Matrícula Baja ---
     curso_reciente = f"{int(df_main['Ano_Inicio_Curso'].max())}-{int(df_main['Ano_Inicio_Curso'].max()+1)}"
     
     st.subheader(ts.translate('A7_a8_subheader_3', "📉 Focos de Atención: Matrícula Reducida (Inferior a {umbral})").format(umbral=umbral))
@@ -923,7 +932,7 @@ def A7(df_main, game_controller: GameController, ts, **kwargs):
             st.dataframe(df_baja_display, use_container_width=True)
 
         ask_ai_component(
-            analysis_context=ts.translate('A7_ai_context_low_enrollment', "Análisis de carreras con matrícula muy baja en el último año (inferior a {umbral}).").format(umbral=umbral),
+            analysis_context=f"Analysis of degree programs with minimal enrollment in the most recent year (under {umbral} students).",
             key="a7_baja_matricula",
             extra_data=[df_baja],
             translation=ts.translate('ask_ai_component',{})
@@ -1033,7 +1042,7 @@ def B1(df_main, game_controller: GameController, ts, **kwargs):
 
     st.markdown("---")
     ask_ai_component(
-        analysis_context=f"Perfil detallado de la carrera: {carrera_sel}. Año del snapshot: {anio_sel or 'N/A'}.",
+        analysis_context=f"Detailed profile of the degree program: {carrera_sel}. Snapshot year: {anio_sel or 'N/A'}.",
         key=f"b1_perfil_carrera_{carrera_sel.replace(' ','_')}",
         extra_data=[df_evol_genero, df_unis, datos_genero],
         translation=ts.translate('ask_ai_component', {})
@@ -1044,161 +1053,144 @@ def B2(df_main, df_ins, game_controller: GameController, ts, **kwargs):
     st.header(ts.translate('b2_header', "🗺️ Guía de Instituciones: Explora la Oferta Académica por Localidad"))
     st.markdown(ts.translate('b2_intro', """
     Descubre las instituciones de educación superior en Cuba, filtrando por provincia y municipio.
-    Para cada universidad, encontrarás información general, su composición de género, las ramas de ciencias
-    que ofrece y las carreras disponibles con su matrícula en el último año académico registrado.
+    Para cada universidad, encontrarás información general y la oferta académica por ramas y carreras
+    en el año que selecciones.
     """))
 
-    contexto_texto_ia = ""
-    datos_para_ia = []
-
     if df_ins.empty:
-        st.warning(ts.translate('b2_warning_no_data', "Los datos de instituciones ('db_uni.parquet') no están disponibles o están vacíos. Esta sección no puede mostrarse."))
+        st.error(ts.translate('b2_error_no_institutions_data', "Los datos de instituciones no están disponibles. Esta sección no puede mostrarse."))
         return
-
+    if df_main.empty:
+        st.error(ts.translate('b2_error_no_enrollment_data', "Los datos de matrícula no están disponibles. La información de oferta será limitada."))
+        
     st.subheader(ts.translate('b2_subheader_filters', "Filtros de Búsqueda:"))
     col_filtro1, col_filtro2 = st.columns(2)
 
     all_provinces_text = ts.translate('_all_provinces', "TODAS LAS PROVINCIAS")
     all_municipalities_text = ts.translate('_all_municipalities', "TODOS LOS MUNICIPIOS")
-    province_label = ts.translate('b2_label_province', "Provincia:")
-    municipality_label = ts.translate('b2_label_municipality', "Municipio:")
 
     with col_filtro1:
-        provincias_disponibles_b2 = [all_provinces_text] + sorted(df_ins['provincia'].unique().tolist())
-        provincia_sel_b2 = st.selectbox(
-            province_label,
-            options=provincias_disponibles_b2,
+        provincias_disponibles = [all_provinces_text] + sorted(df_ins['provincia'].unique().tolist())
+        provincia_sel = st.selectbox(
+            ts.translate('b2_label_province', "Provincia:"),
+            options=provincias_disponibles,
             key="sel_prov_b2_guia"
         )
 
     with col_filtro2:
-        municipios_disponibles_filtrados_b2 = [all_municipalities_text]
-        if provincia_sel_b2 != all_provinces_text:
-            municipios_de_provincia = sorted(df_ins[df_ins['provincia'] == provincia_sel_b2]['municipio'].unique().tolist())
-            municipios_disponibles_filtrados_b2.extend(municipios_de_provincia)
+        municipios_disponibles = [all_municipalities_text]
+        if provincia_sel != all_provinces_text:
+            municipios_de_provincia = sorted(df_ins[df_ins['provincia'] == provincia_sel]['municipio'].unique().tolist())
+            municipios_disponibles.extend(municipios_de_provincia)
 
-        municipio_sel_b2 = st.selectbox(
-            municipality_label,
-            options=municipios_disponibles_filtrados_b2,
+        municipio_sel = st.selectbox(
+            ts.translate('b2_label_municipality', "Municipio:"),
+            options=municipios_disponibles,
             key="sel_mun_b2_guia",
-            disabled=(provincia_sel_b2 == all_provinces_text)
+            disabled=(provincia_sel == all_provinces_text)
         )
 
-    pattern_sel_b2 = st.text_input(
+    pattern_sel = st.text_input(
         ts.translate('b2_label_search_pattern', "Buscar por nombre o sigla de institución (filtro visual):"),
         key="sel_patron_b2"
     )
     st.markdown("---")
 
-    provincia_para_filtrar = None if provincia_sel_b2 == all_provinces_text else provincia_sel_b2
-    municipio_para_filtrar = None if municipio_sel_b2 == all_municipalities_text else municipio_sel_b2
+    provincia_para_filtrar = None if provincia_sel == all_provinces_text else provincia_sel
+    municipio_para_filtrar = None if municipio_sel == all_municipalities_text else municipio_sel
 
     with st.spinner(ts.translate('b2_spinner_loading', "Cargando guía de instituciones...")):
-        df_guia, msg_b2 = analisis_guia_universidades(
+        df_guia_basic, curso_reciente_str_basic, status_basic = analisis_guia_universidades_basic(
             df_instituciones=df_ins,
             df_matricula=df_main,
-            lang=ts.actual_lang,
             provincia_seleccionada=provincia_para_filtrar,
             municipio_seleccionado=municipio_para_filtrar
         )
-    show_info(msg_b2)
+    
+    if status_basic != "success" or df_guia_basic is None:
+        st.warning(ts.translate('b2_warning_basic_analysis_failed', "No se pudo cargar la lista básica de instituciones. Estado: {status}").format(status=status_basic))
+        return
 
-    if df_guia is not None and not df_guia.empty:
+    df_guia_filtrado_nombre = df_guia_basic
+    if pattern_sel:
+        df_guia_filtrado_nombre = df_guia_basic[
+            df_guia_basic['nombre_institucion'].str.contains(pattern_sel, case=False, na=False) |
+            df_guia_basic['sigla_institucion'].str.contains(pattern_sel, case=False, na=False)
+        ]
+    
+    n_mostradas = df_guia_filtrado_nombre['nombre_institucion'].nunique()
+    n_totales = df_guia_basic['nombre_institucion'].nunique()
+    
+    st.info(ts.translate(
+        'b2_info_showing_unis',
+        "Mostrando {shown} de {total} institución(es) ({last_year})."
+    ).format(shown=n_mostradas, total=n_totales, last_year=curso_reciente_str_basic))
+
+    anos_disponibles_matricula = sorted(df_main['Ano_Inicio_Curso'].unique().tolist())
+    if not anos_disponibles_matricula:
+        st.warning(ts.translate('b2_warning_no_years_for_detail', "No hay años de matrícula disponibles para ver detalles."))
+        return
         
-        df_guia_filtrado_nombre = df_guia
-        if pattern_sel_b2:
-            df_guia_filtrado_nombre = df_guia[
-                df_guia['nombre_institucion'].str.contains(pattern_sel_b2, case=False, na=False) |
-                df_guia['sigla_institucion'].str.contains(pattern_sel_b2, case=False, na=False)
-            ]
+    ano_seleccionado_detalle = st.select_slider(
+        ts.translate('b2_slider_year_detail', "Selecciona el año para ver la oferta académica detallada:"),
+        options=anos_disponibles_matricula,
+        value=anos_disponibles_matricula[-1],
+        key="slider_uni_detail_year"
+    )
+    curso_seleccionado_detalle_str = f"{ano_seleccionado_detalle}-{ano_seleccionado_detalle+1}" #type:ignore
+    
+    if df_guia_filtrado_nombre.empty:
+        st.info(ts.translate('b2_info_no_unis_matched_filters', "No se encontraron instituciones que coincidan con los filtros aplicados."))
+    else:
 
-        n_mostradas = df_guia_filtrado_nombre['nombre_institucion'].nunique()
-        n_totales = df_guia['nombre_institucion'].nunique()
-
-        st.markdown(ts.translate(
-            'b2_markdown_showing_filtered',
-            "**Mostrando {shown} de {total} institución(es) según los filtros:**"
-        ).format(shown=n_mostradas, total=n_totales))
-
-        for nombre_uni, df_uni_group in df_guia_filtrado_nombre.groupby('nombre_institucion', sort=False):
-            data_uni_row = df_uni_group.iloc[0]
-
-            titulo_expander = f"🏛️ {nombre_uni} ({data_uni_row.get('sigla_institucion', 'N/D')})"
-            detalles_loc_exp = [d for d in [data_uni_row.get('municipio'), data_uni_row.get('provincia')] if d]
+        for nombre_uni, df_uni_row in df_guia_filtrado_nombre.iterrows():
+            title_expander = f"🏛️ {df_uni_row['nombre_institucion']} ({df_uni_row['sigla_institucion']})"
+            detalles_loc_exp = [d for d in [df_uni_row.get('municipio'), df_uni_row.get('provincia')] if d]
             if detalles_loc_exp:
-                titulo_expander += f" | {', '.join(detalles_loc_exp)}"
-            if pd.notna(data_uni_row.get('ano_creacion')):
-                titulo_expander += f" ({ts.translate('_founded_in', 'Fundada en')} {int(data_uni_row['ano_creacion'])})"
+                title_expander += f" | {', '.join(detalles_loc_exp)}"
+            if pd.notna(df_uni_row.get('ano_creacion')):
+                title_expander += f" ({ts.translate('_founded_in', 'Fundada en')} {int(df_uni_row['ano_creacion'])})"
             
-            with st.expander(titulo_expander):
+            with st.expander(title_expander):
                 col_info_basica, col_genero_pastel_uni = st.columns([2, 1])
-
+                #st.markdown(datetime.fromtimestamp(time()).strftime('%Y-%m-%d %H:%M:%S'))
                 with col_info_basica:
-                    st.markdown(f"**{ts.translate('_organism', 'Organismo')}:** `{data_uni_row.get('organismo', 'N/D')}`")
-                    st.markdown(f"**{ts.translate('_address', 'Dirección')}:** *{data_uni_row.get('direccion_fisica', 'N/D')}*")
-                    st.markdown(f"**{ts.translate('_main_modality', 'Modalidad Principal')}:** `{data_uni_row.get('modalidad_estudio', 'N/D')}`")
+                    st.markdown(f"**{ts.translate('_organism', 'Organismo')}:** `{df_uni_row.get('organismo', 'N/D')}`")
+                    st.markdown(f"**{ts.translate('_address', 'Dirección')}:** *{df_uni_row.get('direccion_fisica', 'N/D')}*")
+                    st.markdown(f"**{ts.translate('_main_modality', 'Modalidad Principal')}:** `{df_uni_row.get('modalidad_estudio', 'N/D')}`")
+                
+                df_oferta_uni, datos_genero_uni, status_offer = get_uni_academic_offer(
+                    df_main, df_uni_row['sigla_institucion'], ano_seleccionado_detalle #type:ignore
+                )
 
                 with col_genero_pastel_uni:
-                    total_uni_ultimo_ano = data_uni_row.get('Matricula_Total_Uni_Ultimo_Ano', 0)
-                    if total_uni_ultimo_ano > 0:
-                        mujeres = data_uni_row.get('Matricula_Mujeres_Uni_Ultimo_Ano', 0)
-                        hombres = data_uni_row.get('Matricula_Hombres_Uni_Ultimo_Ano', 0)
-                        
-                        genero_col = ts.translate('_gender', 'Género')
-                        cantidad_col = ts.translate('_quantity', 'Cantidad')
-                        mujeres_label = ts.translate('_women', 'Mujeres')
-                        hombres_label = ts.translate('_men', 'Hombres')
-
-                        df_pie_genero_uni = pd.DataFrame({
-                            genero_col: [mujeres_label, hombres_label],
-                            cantidad_col: [mujeres, hombres]
-                        })
-                        fig_pie_genero_uni = px.pie(
-                            df_pie_genero_uni, values=cantidad_col, names=genero_col,
-                            title=ts.translate('b2_pie_title_gender_total', "Género Total ({start}-{end})").format(
-                                start=int(df_main['Ano_Inicio_Curso'].max()), end=int(df_main['Ano_Inicio_Curso'].max()) + 1),
-                            color_discrete_map={mujeres_label: 'orchid', hombres_label: 'royalblue'}, height=250)
-                        fig_pie_genero_uni.update_layout(margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
-                        fig_pie_genero_uni.update_traces(textposition='inside', textinfo='percent+label')
+                    if status_offer == "success" and datos_genero_uni and datos_genero_uni.get('Total', 0) > 0:
+                        fig_pie_genero_uni = graficate_B2_distribucion_genero_uni(datos_genero_uni, ts, curso_seleccionado_detalle_str)
                         st.plotly_chart(fig_pie_genero_uni, use_container_width=True)
                     else:
-                        st.caption(ts.translate('b2_caption_no_gender_data', "Sin datos de género disponibles para el último año."))
+                        st.caption(ts.translate('b2_caption_no_gender_data_for_year', "Sin datos de género disponibles para {curso}.").format(curso=curso_seleccionado_detalle_str))
                 
                 st.markdown("---")
-                st.markdown(ts.translate('b2_markdown_academic_offering', "**Oferta Académica (Ramas y Carreras con matrícula en último año):**"))
+                st.markdown(ts.translate('b2_markdown_academic_offering', "**Oferta Académica ({curso}, ramas y carreras con matrícula):**").format(curso=curso_seleccionado_detalle_str))
 
-                na_string = ts.translate('_not_available_short', "N/D")
-                df_oferta_uni = df_uni_group[df_uni_group['carrera'] != na_string].copy()
-
-                if not df_oferta_uni.empty:
+                if status_offer == "success" and df_oferta_uni is not None and not df_oferta_uni.empty:
                     for nombre_rama, df_rama_group in df_oferta_uni.groupby('rama_ciencias', sort=False):
                         st.markdown(f"##### <span style='color: #1E90FF;'>►</span> {nombre_rama}", unsafe_allow_html=True)
                         
-                        career_label_translated = ts.translate('_career', 'Carrera')
-                        enrollment_label_translated = ts.translate('_enrollment', 'Matrícula')
-
-                        df_display = df_rama_group[['carrera', 'Matricula_Carrera_Ultimo_Ano']].rename(columns={
-                            'carrera': career_label_translated,
-                            'Matricula_Carrera_Ultimo_Ano': enrollment_label_translated
-                        }).set_index(career_label_translated)
+                        df_display = df_rama_group[['carrera', 'Matricula_Carrera_Anio']].rename(columns={
+                            'carrera': ts.translate('_career', 'Carrera'),
+                            'Matricula_Carrera_Anio': ts.translate('_enrollment', 'Matrícula')
+                        }).set_index(ts.translate('_career', 'Carrera'))
                         
                         st.dataframe(df_display, use_container_width=True)
                 else:
-                    show_info(ts.translate('b2_info_no_branches', "Esta institución no tiene ramas de ciencias con oferta activa o carreras con matrícula reportada en el último año."))
-        
-        contexto_texto_ia = ts.translate(
-            'b2_ai_context',
-            "Análisis de la guía de instituciones. Filtros aplicados: Provincia: {province}, Municipio: {municipality}."
-        ).format(province=provincia_sel_b2, municipality=municipio_sel_b2)
-        if msg_b2:
-            contexto_texto_ia += f"\n{ts.translate('analisys_note', 'Nota de análisis')}: {msg_b2}"
-        datos_para_ia.append(df_guia_filtrado_nombre)
-
+                    st.info(ts.translate('b2_info_no_branches_for_year', "Esta institución no tiene ramas de ciencias con oferta activa o carreras con matrícula reportada para {curso}.").format(curso=curso_seleccionado_detalle_str))
+    
     st.markdown('---')
     ask_ai_component(
-        analysis_context=contexto_texto_ia,
+        analysis_context=f"Analysis of the institutions guide. Applied filters — Province: {provincia_sel}, Municipality: {municipio_sel}, Year: {ano_seleccionado_detalle}.",
         key="b2_guia_instituciones",
-        extra_data=datos_para_ia,
+        extra_data=[df_guia_filtrado_nombre],
         translation=ts.translate('ask_ai_component', {})
     )
 

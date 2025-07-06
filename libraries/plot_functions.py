@@ -238,94 +238,6 @@ def grouped_dot_plot(
     return fig
 
 #------------------------------------------------------------------------------------------------
-@st.cache_data
-def analisis_guia_universidades(
-    df_instituciones: pd.DataFrame, 
-    df_matricula: pd.DataFrame, 
-    lang: str,
-    provincia_seleccionada: str|None = None, 
-    municipio_seleccionado: str|None = None
-) -> Tuple[pd.DataFrame | None, str]:
-    
-    ts = st.session_state.Translator
-
-    if df_instituciones.empty:
-        return None, ts.translate('b2_warning_no_data', "Los datos de instituciones ('db_uni.parquet') no están disponibles o están vacíos.")
-
-    ano_mas_reciente_matricula = 0
-    df_matricula_ultimo_ano_carreras = pd.DataFrame()
-    df_matricula_ultimo_ano_general_uni = pd.DataFrame()
-
-    if not df_matricula.empty and 'Ano_Inicio_Curso' in df_matricula.columns:
-        ano_mas_reciente_matricula = int(df_matricula['Ano_Inicio_Curso'].max())
-        df_matricula_reciente = df_matricula[df_matricula['Ano_Inicio_Curso'] == ano_mas_reciente_matricula].copy()
-
-        if not df_matricula_reciente.empty:
-            df_matricula_ultimo_ano_carreras = df_matricula_reciente[df_matricula_reciente['Matricula_Total'] > 0]\
-                .groupby(['entidad', 'rama_ciencias', 'carrera'])['Matricula_Total'].sum().reset_index()\
-                .rename(columns={
-                    'entidad': 'sigla_institucion',
-                    'Matricula_Total': 'Matricula_Carrera_Ultimo_Ano'
-                })
-
-            df_matricula_ultimo_ano_general_uni = df_matricula_reciente.groupby('entidad').agg(
-                Matricula_Total_Uni_Ultimo_Ano=('Matricula_Total', 'sum'),
-                Matricula_Mujeres_Uni_Ultimo_Ano=('Matricula_Mujeres', 'sum'),
-                Matricula_Hombres_Uni_Ultimo_Ano=('Matricula_Hombres', 'sum')
-            ).reset_index().rename(columns={'entidad': 'sigla_institucion'})
-
-    df_guia = pd.merge(
-        df_instituciones,
-        df_matricula_ultimo_ano_general_uni,
-        on='sigla_institucion',
-        how='left'
-    )
-
-    if not df_matricula_ultimo_ano_carreras.empty:
-        df_guia = pd.merge(
-            df_guia,
-            df_matricula_ultimo_ano_carreras,
-            on='sigla_institucion',
-            how='left'
-        )
-    else:
-        df_guia['rama_ciencias'] = None
-        df_guia['carrera'] = None
-        df_guia['Matricula_Carrera_Ultimo_Ano'] = None
-
-    cols_matricula = [col for col in df_guia.columns if 'Matricula' in col]
-    for col in cols_matricula:
-        df_guia[col] = df_guia[col].fillna(0).astype(int)
-
-    na_string = ts.translate('_not_available_short', "N/D")
-    df_guia['rama_ciencias'] = df_guia['rama_ciencias'].fillna(na_string)
-    df_guia['carrera'] = df_guia['carrera'].fillna(na_string)
-
-    df_guia = df_guia.sort_values(
-        by=['nombre_institucion', 'rama_ciencias', 'Matricula_Carrera_Ultimo_Ano'],
-        ascending=[True, True, False]
-    ).reset_index(drop=True)
-
-    if provincia_seleccionada:
-        df_guia = df_guia[df_guia['provincia'] == provincia_seleccionada].copy()
-    if municipio_seleccionado:
-        df_guia = df_guia[df_guia['municipio'] == municipio_seleccionado].copy()
-
-    if df_guia.empty:
-        msg = ts.translate('b2_info_no_institutions_filtered_base', "No se encontraron instituciones")
-        if provincia_seleccionada:
-            msg += " " + ts.translate('b2_info_in_province', "en la provincia de '{province}'").format(province=provincia_seleccionada)
-        if municipio_seleccionado:
-            msg += " " + ts.translate('b2_info_in_municipality', "en el municipio de '{municipality}'").format(municipality=municipio_seleccionado)
-        return pd.DataFrame(), msg + "."
-
-    if ano_mas_reciente_matricula > 0:
-        curso_str = f"{ano_mas_reciente_matricula}-{ano_mas_reciente_matricula + 1}"
-        msg = ts.translate('b2_success_guide_generated', "Guía generada para el curso {curso}.").format(curso=curso_str)
-    else:
-        msg = ts.translate('b2_success_guide_generated_no_year', "Guía generada (datos de matrícula del último año no disponibles).")
-
-    return df_guia, msg
 
 @st.cache_data
 def analisis_perfil_carrera(df: pd.DataFrame, carrera_seleccionada: str) -> Tuple[pd.DataFrame | None, pd.DataFrame | None, Dict[str, Any] | None, str | None, str | None]:
@@ -381,7 +293,7 @@ def analisis_perfil_carrera(df: pd.DataFrame, carrera_seleccionada: str) -> Tupl
 
 # A1: Evolución Histórica y Proyectada de la Matrícula Nacional
 @st.cache_data
-def analisis_A1(df: pd.DataFrame, incluir_proyeccion: bool = False) -> Tuple[pd.DataFrame | None, pd.DataFrame | None, str | None, int | None]:
+def analisis_A1(df: pd.DataFrame, projection: bool = False) -> Tuple[pd.DataFrame | None, pd.DataFrame | None, str | None, int | None]:
     
     if df.empty:
         return None, None, "error_empty_df", None
@@ -400,7 +312,7 @@ def analisis_A1(df: pd.DataFrame, incluir_proyeccion: bool = False) -> Tuple[pd.
 
     datos_agrupados['Curso_Academico'] = datos_agrupados['Ano_Inicio_Curso'].apply(lambda x: f"{x}-{x+1}")
     
-    if not incluir_proyeccion:
+    if not projection:
         return datos_agrupados, None, "success_historical_only", None
 
     df_proyeccion = None
@@ -512,7 +424,7 @@ def graficate_A1(
 # A2: Distribución y Evolución de la Matrícula por Rama de Ciencias
 
 @st.cache_data
-def analisis_A2(df: pd.DataFrame, incluir_proyeccion: bool = False) -> Tuple[pd.DataFrame | None, pd.DataFrame | None, str | None, int | None]:
+def analisis_A2(df: pd.DataFrame, projection: bool = False) -> Tuple[pd.DataFrame | None, pd.DataFrame | None, str | None, int | None]:
     if df.empty:
         return None, None, "error_empty_df", None
     
@@ -531,7 +443,7 @@ def analisis_A2(df: pd.DataFrame, incluir_proyeccion: bool = False) -> Tuple[pd.
 
     df_proj_concat = None
     num_anos_regresion = 0
-    if incluir_proyeccion:
+    if projection:
         df_proj_concat = pd.DataFrame()
         ramas_unicas = rama_evolucion_historica['rama_ciencias'].unique()
         N_ULTIMOS_ANOS_REGRESION = 6
@@ -717,21 +629,17 @@ def analisis_A3_cagr(df, lang:str='es'):
     min_year = df['Ano_Inicio_Curso'].min()
     max_year = df['Ano_Inicio_Curso'].max()
 
-    # Pre-agrupar para eficiencia
     matricula_por_carrera_y_ano = df.groupby(['carrera', 'Ano_Inicio_Curso'])['Matricula_Total'].sum().unstack()
 
     for carrera, row in matricula_por_carrera_y_ano.iterrows():
         matricula_inicio = row.get(min_year)
         matricula_fin = row.get(max_year)
         
-        # Comprobar que hay datos no nulos y positivos para inicio y fin
         if pd.notna(matricula_inicio) and pd.notna(matricula_fin) and matricula_inicio > 0 and matricula_fin > 0:
-            # Años efectivos con datos para esa carrera
             anos_efectivos = row.dropna().index
             n_anos_periodo = anos_efectivos.max() - anos_efectivos.min()
 
             if n_anos_periodo >= 1:
-                # El CAGR se calcula sobre el período entre la primera y última aparición.
                 matricula_primero = row.loc[anos_efectivos.min()]
                 matricula_ultimo = row.loc[anos_efectivos.max()]
 
@@ -782,7 +690,6 @@ def analisis_A4(df: pd.DataFrame, min_enrollment_for_career: int = 30) -> Tuple[
     if df_reciente.empty:
         return None, None, None, curso_mas_reciente, "error_no_data_for_year"
 
-    # Análisis por Rama de Ciencias
     genero_rama_reciente = df_reciente.groupby('rama_ciencias').agg(
         Total_Mujeres=('Matricula_Mujeres', 'sum'),
         Total_Hombres=('Matricula_Hombres', 'sum'),
@@ -875,10 +782,8 @@ def analisis_A5(df: pd.DataFrame) -> Tuple[pd.DataFrame | None, pd.DataFrame | N
     if df_reciente.empty:
         return None, None, curso_mas_reciente, "error_no_data_for_year"
 
-    # Datos para el Treemap
     df_treemap_data = df_reciente[df_reciente['Matricula_Total'] > 0]
     
-    # Datos para Carreras con oferta limitada
     df_carreras_pocas_unis = None
     carreras_oferta_data = df_reciente[df_reciente['Matricula_Total'] > 0]\
         .groupby('carrera')['entidad'].nunique().sort_values(ascending=True)
@@ -1155,7 +1060,6 @@ def analisis_perfil_carrera_snapshot(df: pd.DataFrame, carrera_seleccionada: str
     if df_carrera_anio.empty:
         return None, None, "error_no_data_for_year"
 
-    # Datos de Universidades para el año
     df_unis = df_carrera_anio.groupby('entidad')['Matricula_Total'].sum().reset_index()
     df_unis = df_unis[df_unis['Matricula_Total'] > 0].sort_values(by='Matricula_Total', ascending=False)
     df_unis = df_unis.rename(columns={
@@ -1163,7 +1067,6 @@ def analisis_perfil_carrera_snapshot(df: pd.DataFrame, carrera_seleccionada: str
         'Matricula_Total': f'Matricula_{anio_seleccionado}-{anio_seleccionado+1}'
     })
 
-    # Datos de Género para el año
     total_mujeres = df_carrera_anio['Matricula_Mujeres'].sum()
     total_hombres = df_carrera_anio['Matricula_Hombres'].sum()
     datos_genero = {
@@ -1187,11 +1090,11 @@ def graficate_B1_evolucion_genero(df_evolucion: pd.DataFrame, ts: 'Translator', 
         x=df_plot['Curso_Academico'],
         y=df_plot['Matricula_Mujeres'],
         mode='lines',
-        line=dict(width=0.5, color='rgba(238, 130, 238, 0.8)'), # Violeta
+        line=dict(width=0.5, color='rgba(238, 130, 238, 0.8)'),
         fillcolor='rgba(238, 130, 238, 0.4)',
-        fill='tozeroy', # Rellena hasta el eje X
+        fill='tozeroy',
         name=women_label,
-        stackgroup='genero', # Agrupa las áreas
+        stackgroup='genero',
         hoverinfo='x+y',
         text=df_plot['Matricula_Mujeres'],
         hovertemplate=f'<b>{women_label}</b><br>%{{x}}: %{{y:,}}<extra></extra>'
@@ -1201,7 +1104,7 @@ def graficate_B1_evolucion_genero(df_evolucion: pd.DataFrame, ts: 'Translator', 
         x=df_plot['Curso_Academico'],
         y=df_plot['Matricula_Hombres'],
         mode='lines',
-        line=dict(width=0.5, color='rgba(30, 144, 255, 0.8)'), # DodgerBlue
+        line=dict(width=0.5, color='rgba(30, 144, 255, 0.8)'),
         fillcolor='rgba(30, 144, 255, 0.4)',
         fill='tonexty',
         name=men_label,
@@ -1285,4 +1188,104 @@ def graficate_B1_distribucion_unis(df_unis: pd.DataFrame, ts: 'Translator', carr
         xaxis_title=ts.translate('_enrollment', 'Matrícula')
     )
     fig.update_traces(textposition='outside')
+    return fig
+
+@st.cache_data
+def analisis_guia_universidades_basic(
+    df_instituciones: pd.DataFrame, 
+    df_matricula: pd.DataFrame, 
+    provincia_seleccionada: str|None = None, 
+    municipio_seleccionado: str|None = None
+) -> Tuple[pd.DataFrame | None, str | None, str]:
+    
+    if df_instituciones.empty:
+        return None, None, "error_institutions_empty"
+
+    ano_mas_reciente_matricula = 0
+    curso_str = "N/D"
+    
+    if not df_matricula.empty and 'Ano_Inicio_Curso' in df_matricula.columns:
+        ano_mas_reciente_matricula = int(df_matricula['Ano_Inicio_Curso'].max())
+        curso_str = f"{ano_mas_reciente_matricula}-{ano_mas_reciente_matricula+1}"
+        
+        df_matricula_ultimo_ano_general_uni = df_matricula[df_matricula['Ano_Inicio_Curso'] == ano_mas_reciente_matricula].groupby('entidad').agg(
+            Matricula_Total_Uni_Ultimo_Ano=('Matricula_Total', 'sum')
+        ).reset_index().rename(columns={'entidad': 'sigla_institucion'})
+        
+        df_guia_base = pd.merge(
+            df_instituciones,
+            df_matricula_ultimo_ano_general_uni,
+            on='sigla_institucion',
+            how='left'
+        )
+        df_guia_base['Matricula_Total_Uni_Ultimo_Ano'] = df_guia_base['Matricula_Total_Uni_Ultimo_Ano'].fillna(0).astype(int)
+    else:
+        df_guia_base = df_instituciones.copy()
+        df_guia_base['Matricula_Total_Uni_Ultimo_Ano'] = 0
+
+    df_filtrado = df_guia_base.copy()
+    if provincia_seleccionada:
+        df_filtrado = df_filtrado[df_filtrado['provincia'] == provincia_seleccionada]
+    if municipio_seleccionado:
+        df_filtrado = df_filtrado[df_filtrado['municipio'] == municipio_seleccionado]
+
+    df_filtrado = df_filtrado.sort_values(
+        by=['Matricula_Total_Uni_Ultimo_Ano', 'nombre_institucion'],
+        ascending=[False, True]
+    ).reset_index(drop=True)
+
+    if df_filtrado.empty:
+        return pd.DataFrame(), curso_str, "info_no_institutions_filtered"
+
+    return df_filtrado, curso_str, "success"
+
+#B2: Guía de Instituciones
+
+@st.cache_data
+def get_uni_academic_offer(df_matricula: pd.DataFrame, sigla_institucion: str, anio_seleccionado: int) -> Tuple[pd.DataFrame | None, Dict | None, str]:
+    if df_matricula.empty:
+        return None, None, "error_matricula_empty"
+
+    df_uni_anio = df_matricula[
+        (df_matricula['entidad'] == sigla_institucion) & 
+        (df_matricula['Ano_Inicio_Curso'] == anio_seleccionado)
+    ].copy()
+
+    if df_uni_anio.empty:
+        return None, None, "info_no_data_for_uni_year"
+
+    df_oferta = df_uni_anio[df_uni_anio['Matricula_Total'] > 0]\
+        .groupby(['rama_ciencias', 'carrera'])['Matricula_Total'].sum().reset_index()
+    df_oferta = df_oferta.rename(columns={'Matricula_Total': 'Matricula_Carrera_Anio'})
+    df_oferta = df_oferta.sort_values(by=['rama_ciencias', 'Matricula_Carrera_Anio'], ascending=[True, False])
+
+    total_mujeres = df_uni_anio['Matricula_Mujeres'].sum()
+    total_hombres = df_uni_anio['Matricula_Hombres'].sum()
+    datos_genero_uni = {
+        'Mujeres': total_mujeres,
+        'Hombres': total_hombres,
+        'Total': total_mujeres + total_hombres
+    }
+
+    return df_oferta, datos_genero_uni, "success"
+
+def graficate_B2_distribucion_genero_uni(datos_genero: dict, ts: 'Translator', curso_str: str) -> go.Figure:
+    labels = {
+        'women': ts.translate('_women', 'Mujeres'),
+        'men': ts.translate('_men', 'Hombres')
+    }
+    df_pie = pd.DataFrame({
+        'genero': [labels['women'], labels['men']],
+        'cantidad': [datos_genero.get('Mujeres', 0), datos_genero.get('Hombres', 0)]
+    })
+    
+    fig = px.pie(
+        df_pie, values='cantidad', names='genero',
+        title=ts.translate('b2_pie_title_gender_total', "Género Total ({curso})").format(curso=curso_str),
+        color='genero',
+        color_discrete_map={labels['women']: 'orchid', labels['men']: 'royalblue'},
+        height=250, template='plotly_dark'
+    )
+    fig.update_layout(margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
+    fig.update_traces(textposition='inside', textinfo='percent+label')
     return fig

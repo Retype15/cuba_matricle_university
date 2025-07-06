@@ -4,8 +4,8 @@ import plotly.express as px
 from .game_engine import Minigame, RowBasedMinigame
 from streamlit_sortables import sort_items
 from typing import Callable, Any
+import random
 
-# --- Funciones Complementarias ---
 def trend_comparison(y_series: list | pd.Series) -> str:
     if len(y_series) < 2: return 'stable'
     change = y_series[-1] - y_series[-2]
@@ -13,8 +13,6 @@ def trend_comparison(y_series: list | pd.Series) -> str:
     if percent_change > 2: return 'up'
     if percent_change < -2: return 'down'
     return 'stable'
-
-# --- Clases de Minijuegos ---  
 
 class SimpleQuestionMinigame(RowBasedMinigame):
     """Un minijuego simple de pregunta con opciones."""
@@ -43,7 +41,7 @@ class SimpleQuestionMinigame(RowBasedMinigame):
             st.error(f"Tu respuesta fue **{round_result['user_answer']}**, pero la correcta era **{data['correct_answer']}**.", icon="❌")
 
 class DataDuelMinigame(Minigame):
-    """Compara entre dos opciones."""
+    """Compara entre dos opciones"""
     POINTS_FOR_CORRECT = 10
 
     def __init__(self, *, comparison_func: Callable[[Any, Any], bool] | None = None, **kwargs):
@@ -182,6 +180,207 @@ class OracleMinigame(RowBasedMinigame):
             fig.update_layout(title="Resultado Completo Revelado", xaxis_title="Año", yaxis_title="Matrícula")
             st.plotly_chart(fig, use_container_width=True)
 
+class EstimatorMinigame(RowBasedMinigame):
+    """
+    Minijuego donde el jugador debe estimar un valor numérico usando un slider.
+    La puntuación se basa en la proximidad a la respuesta correcta
+    """
+    MAX_POINTS = 100
+
+    def prepare_round_data(self, round_index: int) -> dict:
+        correct_item = super().prepare_round_data(round_index)
+        actual_value = correct_item['value']
+        
+        slider_max = int(actual_value * random.uniform(1.5, 2.5) + random.randint(100, 500))
+        slider_max = max(slider_max, 100)
+
+        return {
+            'name': correct_item['name'],
+            'value': actual_value,
+            'slider_max': slider_max
+        }
+
+    def display_instructions(self):
+        st.subheader(f"🎯 {self.t.get('estimator_title', 'El Estimador')}")
+        st.info(self.t.get('estimator_instructions', "Usa el deslizador para estimar el valor. ¡Mientras más cerca, más puntos!"), icon="ℹ️")
+
+    def display_game_body(self, round_data: dict) -> int:
+        question_text = self.t.get(
+            'estimator_question',
+            "¿Cuál es el valor para **{item_name}**?"
+        ).format(item_name=round_data['name'])
+        st.write(question_text)
+
+        return st.slider(
+            self.t.get('_your_estimation', "Tu estimación")+":",
+            min_value=0,
+            max_value=round_data['slider_max'],
+            value=int(round_data['slider_max'] / 2),
+            key=f"slider_{self.game_id}_{self.current_round}"
+        )
+
+    def calculate_score(self, user_answer: int, round_data: dict) -> tuple[int, bool]:
+        actual_value = round_data['value']
+
+        if actual_value == 0:
+            return (100, True) if user_answer == 0 else (0, False)
+
+        error_percentage = min(1.0, abs(user_answer - actual_value) / actual_value)
+        score = int(100 * (1 - error_percentage))
+        was_close_enough = error_percentage < 0.1
+        
+        return score, was_close_enough
+
+    def display_round_feedback(self, round_result: dict, round_number: int):
+        user_answer = round_result['user_answer']
+        actual_value = round_result['round_data']['value']
+        item_name = round_result['round_data']['name']
+        score = round_result['score']
+
+        with st.container(border=True):
+            st.markdown(self.t.get('estimator_result_shower', "**Resultado para '{item_name}'**").format(item_name=item_name))
+            col1, col2 = st.columns(2)
+            col1.metric(label=self.t.get('_your_estimation', "Tu estimación"), value=f"{user_answer:,}")
+            col2.metric(label=self.t.get('_real_value', "Valor Real"), value=f"{actual_value:,}", delta=f"{user_answer - actual_value:,}")
+            
+            if round_result['was_correct']:
+                 st.success(self.t.get('estimator_claim_victory', "¡Excelente estimación! Obtuviste **{score}** puntos.").format(score=score), icon="🎯")
+            else:
+                 st.info(self.t.get('estimator_good_try', "¡Buen intento! Obtuviste **{score}** puntos.").format(score=score), icon="👍")
+
+class GeoGuesserMinigame(RowBasedMinigame):
+    """
+    Minijuego para adivinar la provincia de una universidad a partir de una lista de opciones
+    """
+    POINTS_FOR_CORRECT = 50
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.data is not None:
+            self.all_provinces = self.data['provincia'].unique().tolist()
+
+    def prepare_round_data(self, round_index: int) -> dict:
+        correct_item = super().prepare_round_data(round_index)
+        correct_province = correct_item['provincia']
+        
+        other_provinces = [p for p in self.all_provinces if p != correct_province]
+        wrong_options = random.sample(other_provinces, min(3, len(other_provinces)))
+        
+        options = wrong_options + [correct_province]
+        random.shuffle(options)
+        
+        return {
+            'university_name': correct_item['nombre_institucion'],
+            'options': options,
+            'correct_province': correct_province
+        }
+
+    def display_instructions(self):
+        st.subheader(f"🗺️ {self.t.get('geoguesser_title', 'GeoGuesser')}")
+        st.info(self.t.get('geoguesser_instructions', "Selecciona la provincia correcta para la siguiente institución."), icon="📍")
+
+    def display_game_body(self, round_data: dict) -> str:
+        st.header(round_data['university_name'])
+        return st.radio(
+            self.t.get('_where_is_it', "¿Dónde se encuentra?"),
+            options=round_data['options'],
+            key=f"radio_geo_{self.game_id}_{self.current_round}",
+            label_visibility="collapsed"
+        )
+
+    def calculate_score(self, user_answer: str, round_data: dict) -> tuple[int, bool]:
+        is_correct = (user_answer == round_data['correct_province'])
+        return self.POINTS_FOR_CORRECT if is_correct else 0, is_correct
+
+    def display_round_feedback(self, round_result: dict, round_number: int):
+        data = round_result['round_data']
+        university = data['university_name']
+        correct_province = data['correct_province']
+        
+        with st.container(border=True):
+            if round_result['was_correct']:
+                st.success(f"¡Correcto! La **{university}** está en **{correct_province}**.", icon="✅")
+            else:
+                user_answer = round_result['user_answer']
+                st.error(f"Elegiste **{user_answer}**, pero la respuesta correcta era **{correct_province}**.", icon="❌")
+
+class ImpostorMinigame(Minigame):
+    """
+    Encuentra el elemento que no pertenece a la categoría.
+    Incluye lógica para evitar preguntas obvias.
+    """
+    POINTS_FOR_CORRECT = 30
+
+    def __init__(self, *, item_col: str, category_col: str, exclude_if_contains: bool = True, **kwargs):
+        super().__init__(**kwargs)
+        if self.data is None: raise ValueError("ImpostorMinigame requiere un DataFrame.")
+        
+        self.item_col = item_col
+        self.category_col = category_col
+        
+        unique_data = self.data[[self.item_col, self.category_col]].drop_duplicates().dropna()
+
+        if exclude_if_contains:
+            mask = unique_data.apply(
+                lambda row: str(row[self.category_col]).lower() not in str(row[self.item_col]).lower(),
+                axis=1
+            )
+            self.filtered_data = unique_data[mask]
+        else:
+            self.filtered_data = unique_data
+
+    def prepare_round_data(self, round_index: int) -> dict:
+        for _ in range(10):
+            category_counts = self.filtered_data[self.category_col].value_counts()
+            valid_categories = category_counts[category_counts >= 3].index
+            if valid_categories.empty: continue
+
+            majority_category = random.choice(valid_categories)
+            majority_items_df = self.filtered_data[self.filtered_data[self.category_col] == majority_category]
+            
+            if len(majority_items_df) < 3: continue
+
+            majority_items = majority_items_df.sample(3)
+            
+            impostor_pool = self.filtered_data[self.filtered_data[self.category_col] != majority_category]
+            if impostor_pool.empty: continue
+
+            impostor_item = impostor_pool.sample(1)
+
+            options = majority_items[self.item_col].tolist() + impostor_item[self.item_col].tolist()
+            random.shuffle(options)
+            
+            return {
+                'options': options,
+                'impostor': impostor_item[self.item_col].iloc[0],
+                'correct_category': majority_category
+            }
+        
+        raise ValueError("No se pudo generar una ronda para ImpostorMinigame. Revisa los datos y el filtro.")
+
+    def display_instructions(self):
+        st.subheader(f"🕵️ {self.t.get('impostor_title', 'Encuentra al Intruso')}")
+        st.info(self.t.get('impostor_instructions', "Tres de estos elementos pertenecen al mismo grupo. ¿Cuál es el intruso?"), icon="👀")
+
+    def display_game_body(self, round_data: dict) -> str:
+        return st.radio(
+            "Selecciona el intruso:",
+            options=round_data['options'],
+            key=f"radio_impostor_{self.game_id}_{self.current_round}"
+        )
+
+    def calculate_score(self, user_answer: str, round_data: dict) -> tuple[int, bool]:
+        is_correct = (user_answer == round_data['impostor'])
+        return self.POINTS_FOR_CORRECT if is_correct else 0, is_correct
+
+    def display_round_feedback(self, round_result: dict, round_number: int):
+        data = round_result['round_data']
+        with st.container(border=True):
+            if round_result['was_correct']:
+                st.success(f"¡Exacto! **{data['impostor']}** era el intruso. Los demás pertenecen a **{data['correct_category']}**.", icon="🕵️‍♀️")
+            else:
+                st.error(f"Tu respuesta fue **{round_result['user_answer']}**. El intruso real era **{data['impostor']}**, que no pertenece a **{data['correct_category']}**.", icon="❌")
+
 if __name__ == "__main__":
     from game_engine import GameController 
 
@@ -201,7 +400,7 @@ if __name__ == "__main__":
             'oracle_choice_stable': 'Se Mantiene',
             'oracle_choice_down': 'Baja',
         },
-        'classifier_title': 'El Gran Clasificador', # Esta se sobreescribirá si se pasa en la instancia.
+        'classifier_title': 'El Gran Clasificador',
         'feedback_victory': "¡Éxito! Lograste {total_score} puntos, ¡eres un experto!",
         'feedback_defeat': "¡No te rindas! Obtuviste {total_score} puntos. ¡Puedes mejorar!",
     }

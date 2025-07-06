@@ -1,5 +1,3 @@
-# --- START OF FILE __init__.py (CORRECTED) ---
-
 import streamlit as st
 import uuid
 import streamlit.components.v1 as components
@@ -124,8 +122,6 @@ def float_parent(css=None):
     if css is not None:
         new_id = str(uuid.uuid4())[:8]
         
-        # ### CORRECCIÓN 1: Se corrigió el error tipográfico "diaplay" a "display".
-        # Esta regla CSS ahora ocultará correctamente el contenedor original.
         new_css = f'''
         <style>
             div.element-container[data-testid="element-container"]:has(div.flt-{new_id}) {{
@@ -138,8 +134,6 @@ def float_parent(css=None):
         '''
         st.markdown(new_css + f'<div class="float flt-{new_id}"></div>', unsafe_allow_html=True)
         
-        # ### CORRECCIÓN 2: El JavaScript se ha simplificado y robustecido.
-        # Ya no intenta ocultar nada, solo aplica los estilos flotantes.
         js_ = f'''
             <script>
                 // Oculta el iframe que contiene este script. Es la manera más fiable.
@@ -170,7 +164,6 @@ def sf_float(self, css=None):
     if css is not None:
         new_id = str(uuid.uuid4())[:8]
         
-        # ### CORRECCIÓN 3: Aplicada la misma lógica de corrección aquí.
         new_css = f'''
         <style>
             div.element-container[data-testid="element-container"]:has(div.flt-{new_id}) {{
@@ -183,7 +176,6 @@ def sf_float(self, css=None):
         '''
         self.markdown(new_css + f'<div class="float flt-{new_id}"></div>', unsafe_allow_html=True)
 
-        # ### CORRECCIÓN 4: JavaScript simplificado también para esta función.
         js_ = f'''
             <script>
                 // Oculta el iframe que contiene este script.
