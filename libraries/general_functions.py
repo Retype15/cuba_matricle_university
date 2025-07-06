@@ -162,8 +162,11 @@ class Translator:
         """
         final_lang = lang or self.actual_lang
         if final_lang not in self.langs_list: raise ValueError(f"Idioma no reconocido: {final_lang}")
-            
-        return _get_language_dict(final_lang, dir=self.lang_dir).get(key, f"{default or f"[{final_lang}] Missing translation for '{key}'"}")
+        
+        try:
+            return _get_language_dict(final_lang, dir=self.lang_dir).get(key, f"{default or f"[{final_lang}] Missing translation for '{key}'"}")
+        finally:
+            return default
 
     def render_selector(self, auto_rerun:bool=True):
         """Renderiza el selectbox en la barra lateral para cambiar de idioma."""

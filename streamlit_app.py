@@ -16,10 +16,10 @@ languages = { "Español": "es", "English": "en", "Français": "fr", "Italiano": 
 
 #Ernesto si lees esto, revisa que esté activo el wraper en libraries.general_functions._get_language_dict(...)
 
-
 ts:Translator = Translator(languages, 'lang') 
 
 game_controller:GameController = GameController(translation=ts.translate('gamification_controller', {}))
+
 
 @st.dialog(ts.translate('settings_title', "Configuración") + ":", width='large')
 def settings():
@@ -72,13 +72,13 @@ else:
     seccion_actual, active_sub = nav.get_active_selection()
 
     panel_progreso = None
-
+    
     if not seccion_actual == "Introduccion" or ('initial_mode_selected' in st.session_state and st.session_state.initial_mode_selected):
-        #with st.sidebar:                           #TODO:deprecated
-        #    game_controller.display_mode_toggle()  #TODO:deprecated
+        with st.sidebar:                           #TODO:deprecated
+            game_controller.display_mode_toggle()  #TODO:deprecated
         panel_progreso = FloatingPanel(
             key="progreso_player",
-            content_funcs=[game_controller.display_mode_toggle, game_controller.display_score_panel],
+            content_funcs=[game_controller.display_score_panel],
             button_icon="🏆",
             button_tooltip="Ver mi progreso"
         )
@@ -111,8 +111,9 @@ else:
             PLAYGROUND_MAP[active_sub](**_kwargs)
         else:
             st.error(ts.translate('subseccion_not_valid_in',"Subsección no válida en ")+"Playground!")
-
-    nav.create_navigation_buttons(prev_text=ts.translate('back',"Anterior: "), next_text=ts.translate('next',"Siguiente: "))
+    
+    if not seccion_actual == "Introduccion" or ('initial_mode_selected' in st.session_state and st.session_state.initial_mode_selected):
+        nav.create_navigation_buttons(prev_text=ts.translate('back',"Anterior: "), next_text=ts.translate('next',"Siguiente: "))
     
     #game_controller.confirm_deactivation_dialog() #TODO:deprecated
 

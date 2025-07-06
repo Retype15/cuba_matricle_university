@@ -45,7 +45,7 @@ class GameController:
 
     def _handle_toggle_change(self, show_confirm_dialog:bool = True):
         """
-        Esta funcion se ejecuta cuando se hace clic en el toggle y decide si cambiar el estado directamente o si mostrar un dialogo de confirmación.
+        Esta funcion se ejecuta cuando se hace clic en el toggle y decide si cambiar el estado o no.
         """
         widget_state = st.session_state.game_mode_toggle_state
 
