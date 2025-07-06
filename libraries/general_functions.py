@@ -1,10 +1,13 @@
 import io
 import re
 import json
+import gspread
+import pandas as pd
+import streamlit as st
 from typing import Any, Callable, Dict, List, Optional
 from language_detection  import detect_browser_language
-import streamlit as st
 from .streamlit_float_upd import float_init, float_parent
+from datetime import datetime
 
 def to_csv_string(list_of_dicts):
     """
@@ -22,7 +25,6 @@ def to_csv_string(list_of_dicts):
         output.write(','.join(row) + '\n')
         
     return output.getvalue().strip()
-
 
 def parse_blocks(pattern, texto):
     """
@@ -79,7 +81,6 @@ def translation(key:str, default:Any=None, lang:str|None = None) -> Any: #TODO:d
     except Exception as e:
         print(f"Error al obtener la traducción para la clave '{key}': {e}")
         return f'CRITICAL ERROR LOADING {key} KEY' 
-
 
 @st.cache_data
 def _get_language_dict(lang_code: str, dir:str='languages') -> dict:
@@ -312,3 +313,60 @@ class FloatingPanel:
                     func()
 
             panel_container.float(self.css_panel)
+
+@st.cache_resource(ttl=3600)
+def connect_to_gsheet():
+    scopes=[
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+    try:
+        creds = st.secrets["gcp_service_account"]
+        client = gspread.service_account_from_dict(creds, scopes=scopes)
+        return client
+    except Exception as e:
+        st.error(f"Error al conectar con Google Sheets: {e}")
+        return None
+
+@st.cache_data(ttl=60)
+def get_leaderboard(sheet_name: str = "LeaderboardUniversity") -> pd.DataFrame:
+    client = connect_to_gsheet()
+    if not client:
+        return pd.DataFrame()
+    try:
+        sheet = client.open(sheet_name).sheet1
+        records = sheet.get_all_records() 
+        df = pd.DataFrame(records)
+        
+        if df.empty:
+            return df
+        
+        df['Score'] = pd.to_numeric(df['Score'], errors='coerce') 
+        df.dropna(subset=['Score'], inplace=True)
+        df['Score'] = df['Score'].astype(int)
+
+        leaderboard_df = df.sort_values(by="Score", ascending=False).head(10)
+        leaderboard_df.reset_index(drop=True, inplace=True)
+        return leaderboard_df
+
+    except gspread.exceptions.SpreadsheetNotFound:
+        st.error(f"Error: No se encontró la hoja de cálculo llamada '{sheet_name}'. Avisar a administración del error!")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Ocurrió un error al obtener el leaderboard: {e}, Avisar a Administración!")
+        return pd.DataFrame()
+
+def submit_score(player_name: str, score: int, sheet_name: str = "LeaderboardUniversity"):
+    client = connect_to_gsheet()
+    if not client:
+        st.error("No se pudo enviar la puntuación debido a un problema de conexión.")
+        return False
+    try:
+        sheet = client.open(sheet_name).sheet1
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sheet.append_row([timestamp, player_name, score])
+        get_leaderboard.clear() 
+        return True
+    except Exception as e:
+        st.error(f"Ocurrió un error al enviar tu puntuación: {e}, avisa a administracion para intentar solucionarlo rápidamente.")
+        return False

@@ -1,6 +1,7 @@
 from .ai_functions import ask_ai_component
 from .plot_functions import *
 from .Gamification import *
+from .general_functions import connect_to_gsheet, get_leaderboard, submit_score
 
 def show_info(msg):
     if msg: st.caption(f"ℹ️ {msg}")
@@ -1217,7 +1218,7 @@ def B1(df_main, game_controller: GameController, ts:Translator, **kwargs):
 
     if anio_sel:
         with st.spinner(ts.translate('B1_spinner_2_snapshot', "Cargando datos para el año {year}...").format(year=anio_sel)):
-            df_unis, datos_genero, status_snap = analisis_perfil_carrera_snapshot(df_main, carrera_sel, anio_sel)
+            df_unis, datos_genero, status_snap = analisis_perfil_carr(df_main, carrera_sel, anio_sel)
         
         if status_snap == "success":
             col_genero, col_unis = st.columns(2, gap="large")
@@ -1362,7 +1363,7 @@ def B2(df_main, df_ins, game_controller: GameController, ts:Translator, **kwargs
 
                 with col_genero_pastel_uni:
                     if status_offer == "success" and datos_genero_uni and datos_genero_uni.get('Total', 0) > 0:
-                        fig_pie_genero_uni = graficate_B2_distribucion_genero_uni(datos_genero_uni, ts, curso_seleccionado_detalle_str)
+                        fig_pie_genero_uni = graficate_B2_distribution(datos_genero_uni, ts, curso_seleccionado_detalle_str)
                         st.plotly_chart(fig_pie_genero_uni, use_container_width=True)
                     else:
                         st.caption(ts.translate('b2_caption_no_gender_data_for_year', "Sin datos de género disponibles para {curso}.").format(curso=curso_seleccionado_detalle_str))
@@ -1429,8 +1430,86 @@ def conclusion(game_controller: GameController, ts:Translator, **kwargs):
     7.  **La Importancia de los Detalles:** El análisis de "Áreas de Atención" nos ha recordado que la salud del sistema también reside en la vitalidad de cada uno de sus componentes, incluyendo las carreras emergentes, aquellas con matrícula reducida o las que podrían estar concluyendo su ciclo. *(Ref. Sección 7)*
     """)
     st.markdown(hallazgos_text)
-    st.markdown("---")
+    
+    if game_controller.game_mode:
+        played_games = [g for g in game_controller.registered_games.values() if g.is_finished()]
+        
+        if played_games:
+            st.markdown("---")
+            st.header(ts.translate('conclusion_player_summary_header', "🏆 Resumen de tu Aventura como Explorador"))
+            
+            total_score = sum(g.get_result()[0] for g in played_games)
+            
+            game_types_scores = {}
+            for game in played_games:
+                type_name = game.__class__.__name__
+                game_types_scores[type_name] = game_types_scores.get(type_name, 0) + game.get_result()[0]
+            
+            best_game_type = max(game_types_scores, key=game_types_scores.get) if game_types_scores else "N/A" #type:ignore
+            
+            profiles = {
+                'ClassifierMinigame': ("profile_strategist", "🥇", "profile_strategist_desc"),
+                'DataDuelMinigame': ("profile_competitor", "⚔️", "profile_competitor_desc"),
+                'EstimatorMinigame': ("profile_visionary", "🎯", "profile_visionary_desc"),
+                'OracleMinigame': ("profile_prophet", "🔮", "profile_prophet_desc"),
+                'GeoGuesserMinigame': ("profile_cartographer", "🗺️", "profile_cartographer_desc"),
+                'ImpostorMinigame': ("profile_detective", "🕵️‍♂️", "profile_detective_desc"),
+                'SimpleQuestionMinigame': ("profile_scholar", "🧠", "profile_scholar_desc")
+            }
+            
+            profile_key, profile_icon, profile_desc_key = profiles.get(best_game_type, ("profile_explorer", "🧭", "profile_explorer_desc"))
+            profile_name = ts.translate(profile_key, "El Explorador")
+            profile_desc = ts.translate(profile_desc_key, "Disfrutas del viaje y aprendes de cada desafío.")
 
+            col1, col2, col3 = st.columns(3)
+            col1.metric(label=ts.translate('metric_total_score', "Puntuación Final"), value=f"{total_score} pts")
+            col2.metric(label=ts.translate('metric_games_played', "Juegos Completados"), value=len(played_games))
+            col3.metric(label=ts.translate('metric_analyst_profile', "Perfil de Analista"), value=profile_name, help=profile_desc)
+
+            st.success(f"**¡Felicidades, {profile_name}!** {profile_desc} Tu puntuación total refleja tu excelente desempeño.", icon=profile_icon)
+            
+            st.subheader(ts.translate('leaderboard_header', "Ranking Global de Exploradores"))
+            st.markdown(ts.translate('leaderboard_intro', "Compite con otros analistas y deja tu marca en el ranking. ¿Estarás entre los mejores?"))
+            
+            gsheet_client = connect_to_gsheet()
+            
+            if gsheet_client:
+                session_key_submitted = f"score_submitted_{game_controller.game_mode}"
+                if session_key_submitted not in st.session_state:
+                    st.session_state[session_key_submitted] = False
+
+                if not st.session_state[session_key_submitted]:
+                    with st.form("leaderboard_form", border=True):
+                        player_name = st.text_input(ts.translate('player_name_label', "Tu nombre para el ranking:"), max_chars=20)
+                        submitted = st.form_submit_button(ts.translate('submit_score_button', "🚀 ¡Enviar mi puntuación!"), type="primary", use_container_width=True)
+                        
+                        if submitted:
+                            if player_name.strip():
+                                success = submit_score(player_name.strip(), total_score)
+                                if success:
+                                    st.session_state[session_key_submitted] = True
+                                    st.balloons()
+                                    st.rerun()
+                            else:
+                                st.warning(ts.translate('enter_name_warning', "Por favor, introduce un nombre."))
+                else:
+                    st.info(ts.translate('score_submitted_info', "¡Tu puntuación ya ha sido enviada! Gracias por participar."))
+                
+                with st.spinner(ts.translate('loading_leaderboard_spinner', "Cargando el ranking...")):
+                    leaderboard_df = get_leaderboard()
+                    if not leaderboard_df.empty:
+                        leaderboard_df.index = leaderboard_df.index + 1
+                        st.dataframe(leaderboard_df.rename(columns={
+                            "Timestamp": ts.translate("leaderboard_col_timestamp", "Fecha"),
+                            "PlayerName": ts.translate("leaderboard_col_playername", "Jugador"),
+                            "Score": ts.translate("leaderboard_col_score", "Puntuación")
+                        }), use_container_width=True)
+                    else:
+                        st.caption(ts.translate('leaderboard_empty_caption', "El ranking está vacío. ¡Sé el primero en aparecer!"))
+            else:
+                st.warning(ts.translate('leaderboard_connection_warning', "No se pudo conectar al servicio de ranking. La funcionalidad no está disponible en este momento."))
+    
+    st.markdown("---")
     st.subheader(ts.translate(
         'conclusion_recommendations_subheader',
         "🧭 Trazando la Carta de Navegación: Recomendaciones Estratégicas"

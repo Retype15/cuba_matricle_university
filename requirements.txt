@@ -12,3 +12,4 @@ google-generativeai
 tabulate
 streamlit-browser-language
 streamlit_sortables
+gspread

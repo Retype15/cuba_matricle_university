@@ -74,8 +74,8 @@ else:
     panel_progreso = None
     
     if not seccion_actual == "Introduccion" or ('initial_mode_selected' in st.session_state and st.session_state.initial_mode_selected):
-        with st.sidebar:                           #TODO:deprecated
-            game_controller.display_mode_toggle()  #TODO:deprecated
+        with st.sidebar:
+            game_controller.display_mode_toggle()
         panel_progreso = FloatingPanel(
             key="progreso_player",
             content_funcs=[game_controller.display_score_panel],

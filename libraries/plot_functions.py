@@ -1184,8 +1184,10 @@ def analisis_perfil_carrera_historico(df: pd.DataFrame, carrera_seleccionada: st
         
     return df_evol_genero, rama, "success"
 
+#B1: Perfil Detallado
+
 @st.cache_data
-def analisis_perfil_carrera_snapshot(df: pd.DataFrame, carrera_seleccionada: str, anio_seleccionado: int) -> Tuple[pd.DataFrame | None, Dict | None, str]:
+def analisis_perfil_carr(df: pd.DataFrame, carrera_seleccionada: str, anio_seleccionado: int) -> Tuple[pd.DataFrame | None, Dict | None, str]:
     if df.empty or not carrera_seleccionada:
         return None, None, "error_invalid_input"
 
@@ -1402,7 +1404,7 @@ def get_uni_academic_offer(df_matricula: pd.DataFrame, sigla_institucion: str, a
 
     return df_oferta, datos_genero_uni, "success"
 
-def graficate_B2_distribucion_genero_uni(datos_genero: dict, ts: 'Translator', curso_str: str) -> go.Figure:
+def graficate_B2_distribution(datos_genero: dict, ts: 'Translator', curso_str: str) -> go.Figure:
     labels = {
         'women': ts.translate('_women', 'Mujeres'),
         'men': ts.translate('_men', 'Hombres')
