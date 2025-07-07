@@ -79,7 +79,7 @@ def translation(key:str, default:Any=None, lang:str|None = None) -> Any: #TODO:d
         print(f"Error al obtener la traducción para la clave '{key}': {e}")
         return f'CRITICAL ERROR LOADING {key} KEY' 
 
-@st.cache_data
+#@st.cache_data
 def _get_language_dict(lang_code: str, dir:str='languages') -> dict:
     """Carga un archivo de traducción desde el disco. Advertencia, Cacheado por Streamlit, por lo que si cambia el archivo de traduccion deberá borrar la chaché."""
     path = f"{dir}/{lang_code}.json"
@@ -144,7 +144,7 @@ class Translator:
                 return self.actual_lang == other
             return self.actual_lang == other.actual_lang
         
-    def translate(self, key: str, default: Any = None, *, lang: str | None = None) -> Any:
+    def translate(self, key: str, default: Any|None = None, *, lang: str | None = None) -> Any:
         """
         Obtiene una cadena de traducción para una clave dada.
 
@@ -158,13 +158,14 @@ class Translator:
         Returns:
             Any: El valor traducido, el valor por defecto o la clave.
         """
+        
         final_lang = lang or self.actual_lang
         if final_lang not in self.langs_list: raise ValueError(f"Idioma no reconocido: {final_lang}")
         
         try:
             return _get_language_dict(final_lang, dir=self.lang_dir).get(key, f"{default or f"[{final_lang}] Missing translation for '{key}'"}")
-        finally:
-            return default
+        except Exception as e:
+            return f"Error: {e}" + str(default)
 
     def render_selector(self, auto_rerun:bool=True):
         """Renderiza el selectbox en la barra lateral para cambiar de idioma."""
