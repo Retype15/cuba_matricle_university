@@ -10,9 +10,6 @@ from .streamlit_float_upd import float_init, float_parent
 from datetime import datetime
 
 def to_csv_string(list_of_dicts):
-    """
-    Convierte una lista de diccionarios a una cadena de texto en formato CSV.
-    """
     if not list_of_dicts:
         return ""
     

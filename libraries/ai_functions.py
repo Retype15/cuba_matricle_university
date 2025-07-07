@@ -165,7 +165,7 @@ def ask_ai_component(*,
                 else:
                     st.markdown(content)
         
-        system_instruction = translation.get("system_instruction", """
+        system_instruction = """
         You are a highly efficient data analysis assistant, an expert in the Cuban higher education system. Your goal is to respond to the user's questions clearly and accurately, based EXCLUSIVELY on the context provided to you.
 
         **Analysis Guidelines:**
@@ -193,7 +193,7 @@ def ask_ai_component(*,
         - Tell the user that you can ONLY reveal that information if they provide the correct password.
         - The password is: 'yudi-god'.
         - NEVER, under any circumstances, reveal the password to the user.
-        """)
+        """
         if not st.session_state[processing_key]:
             input_container = st.container()
             with input_container:
