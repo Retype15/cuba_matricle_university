@@ -133,8 +133,8 @@ class Translator:
         self.lang_dir = lang_dir
 
         auto_detected = detect_browser_language()
-        self.actual_lang = auto_detected[:2] if auto_detected is not None else self.langs_list[0]
-        print(auto_detected, self.actual_lang)
+        self.actual_lang = (auto_detected[:2] if auto_detected is not None else self.langs_list[0]).lower()
+        #print(auto_detected, self.actual_lang)
         
         try:
             self.lang_index = self.langs_list.index(self.actual_lang)

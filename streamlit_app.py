@@ -123,5 +123,5 @@ else:
         f"\n- {ts.translate('author_reynier', "Reynier Ramos González")}"
         f"\n- {ts.translate('author_ernesto', "Ernesto Herrera García")}"
     )
-    with st.sidebar: 
-        if panel_progreso: panel_progreso.render()
+    #with st.sidebar: 
+    if panel_progreso: panel_progreso.render()
