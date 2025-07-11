@@ -114,7 +114,7 @@ class Translator:
             st.session_state.Translator = super().__new__(cls)
         return st.session_state.Translator
 
-    def __init__(self, langs: Dict[str, str] = {"English": 'en'}, lang_dir: str = "languages"):
+    def __init__(self, langs: Dict[str, str]|None = {"English": 'en'}, lang_dir: str = "languages"):
         """
         Inicializa el selector de idioma. Solo se ejecuta una vez por sesión.
         
@@ -124,13 +124,17 @@ class Translator:
             lang_dir (str): El directorio donde se encuentran los archivos .json de idioma.
         """
         if hasattr(self, '_initialized'): return
+        if langs is None:
+            langs = {"English": 'en'}
         
         self.langs = langs
         self.langs_list = list(langs.values())
         self.langs_readable = list(langs.keys())
         self.lang_dir = lang_dir
 
-        self.actual_lang = detect_browser_language() or self.langs_list[0]
+        auto_detected = detect_browser_language()
+        self.actual_lang = auto_detected[:2] if auto_detected is not None else self.langs_list[0]
+        print(auto_detected, self.actual_lang)
         
         try:
             self.lang_index = self.langs_list.index(self.actual_lang)
